@@ -1803,7 +1803,7 @@ def test_mcp_tools_catalog_57_tools():
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 57, f"Expected 57 MCP tools, found {len(tools)}"
+    assert len(tools) == 59, f"Expected 59 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -3283,6 +3283,61 @@ def test_bitnet_demo_pipeline_metrics():
     total = dist["plus_ones"] + dist["zeros"] + dist["minus_ones"]
     assert total == 64
     assert 0.0 <= dist["sparsity_pct"] <= 100.0
+
+
+def test_datapath_fragmentation_and_reassembly_integrity():
+    """Validates canonical 1280B fragmentation engine, CRC32 checks, and lossless reassembly."""
+    import hashlib
+    from ipvn7.benchmark.saturation import SovereignFragmentationEngine, CANONICAL_MTU
+
+    payload = b"IPVN7_MISSION_CRITICAL_PAYLOAD_DATA_" * 3000  # ~108 KB
+    expected_hash = hashlib.sha256(payload).hexdigest()
+
+    # Fragment
+    fragments = SovereignFragmentationEngine.fragment_stream(payload)
+    assert len(fragments) > 80
+
+    for frag in fragments:
+        assert len(frag) <= CANONICAL_MTU
+        assert frag.startswith(b"IP7F")
+
+    # Reassemble
+    reconstructed = SovereignFragmentationEngine.reassemble_stream(fragments)
+    assert reconstructed == payload
+    assert hashlib.sha256(reconstructed).hexdigest() == expected_hash
+
+
+def test_datapath_saturation_benchmark_metrics():
+    """Validates local datapath saturation benchmark throughput metrics (Gbps, pps)."""
+    from ipvn7.benchmark.saturation import DatapathSaturationBenchmark
+
+    res = DatapathSaturationBenchmark.run_benchmark(megabytes=1.5, use_udp_loopback=False)
+    assert res["total_payload_mb"] == 1.5
+    assert res["canonical_mtu"] == 1280
+    assert res["total_packets"] > 1000
+    assert res["throughput_mb_s"] > 10.0
+    assert res["throughput_gbps"] > 0.08
+    assert res["packets_per_second"] > 10000
+    assert res["integrity_verified"] is True
+    assert res["sha256_match"] is True
+
+
+def test_sovereign_header_compressor_lossless():
+    """Validates static dictionary token substitution, lossless reconstruction, and bandwidth savings."""
+    from ipvn7.network.compression import SovereignHeaderCompressor
+
+    telemetry_sample = (
+        b"{\"sender\": \"did:ipvn7:genesis:node\", \"gateway\": \"http://127.0.0.1:8888\", "
+        b"\"action\": \"OVERLAY_EGRESS_FETCH\", \"status\": \"DELIVERED_1RTT_PQC\", "
+        b"\"ciphers\": [\"ML-KEM-768\", \"ML-DSA-65\", \"X25519\"], \"event\": \"HEARTBEAT\"}"
+    )
+
+    stats = SovereignHeaderCompressor.benchmark_sample(telemetry_sample)
+    assert stats["original_bytes"] == len(telemetry_sample)
+    assert stats["compressed_bytes"] < stats["original_bytes"]
+    assert stats["saved_percentage"] > 25.0
+    assert stats["lossless_verified"] is True
+
 
 
 

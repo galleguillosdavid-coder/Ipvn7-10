@@ -484,6 +484,57 @@
                 <strong class="bench-val text-green" id="bQUICRate">-- MB/s</strong>
               </div>
             </div>
+
+            <!-- Datapath Saturation Benchmark (1280B Fragmentation & Reassembly) -->
+            <div class="action-box mt-4">
+              <h4>Benchmark de Saturación de Datapath Local (Wire MTU 1280B & Gbps)</h4>
+              <p class="desc">Satura continuamente el pipeline de fragmentación 'IP7F', cálculo de CRC32 y ensamblado en memoria o a través de sockets UDP loopback para medir el límite físico de throughput en Gbps y paquetes por segundo (pps).</p>
+              
+              <div class="bench-grid mt-2">
+                <div class="bench-item">
+                  <span class="bench-label">Throughput Saturado</span>
+                  <strong class="bench-val text-cyan" id="satThroughputGbps">-- Gbps</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Throughput de Red</span>
+                  <strong class="bench-val text-green" id="satThroughputMb">-- MB/s</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Paquetes por Segundo</span>
+                  <strong class="bench-val text-purple" id="satPps">-- pps</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Latencia Fragmento</span>
+                  <strong class="bench-val text-cyan" id="satLatencyUs">-- µs</strong>
+                </div>
+              </div>
+
+              <div class="streaming-control-bar mt-3">
+                <label class="mono-text" style="font-size:0.8rem; color:var(--text-muted);">Carga Útil:</label>
+                <select id="selSatMb" class="input-field" style="max-width:130px;">
+                  <option value="2">2.0 MB (~1,670 pkts)</option>
+                  <option value="4" selected>4.0 MB (~3,340 pkts)</option>
+                  <option value="8">8.0 MB (~6,680 pkts)</option>
+                  <option value="16">16.0 MB (~13,360 pkts)</option>
+                </select>
+                <label class="mono-text" style="font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:4px;">
+                  <input type="checkbox" id="chkSatUdp"> Transmitir por Loopback UDP
+                </label>
+                <button class="btn btn-primary btn-small" id="btnRunSaturationBench">Saturar Datapath Local 1280B</button>
+              </div>
+              <div id="satResultsBox" class="json-viewer mono-text mt-3" style="max-height:140px; overflow-y:auto; font-size:0.8rem; display:none;"></div>
+            </div>
+
+            <!-- Sovereign Header & Metadata Compressor -->
+            <div class="action-box mt-4">
+              <h4>Compresor de Encabezados y Metadatos IPVN 7 (Diccionario Estático)</h4>
+              <p class="desc">Aplica sustitución atómica de tokens pre-compartidos y entropía a datagramas de control/telemetría menores a 256 bytes para reducir el consumo de ancho de banda satelital.</p>
+              <div class="streaming-control-bar mt-2">
+                <input type="text" id="txtCompressPayload" class="input-field" value='{"sender": "did:ipvn7:genesis:node", "gateway": "http://127.0.0.1:8888", "action": "OVERLAY_EGRESS_FETCH", "status": "DELIVERED_1RTT_PQC", "ciphers": ["ML-KEM-768", "ML-DSA-65"]}' style="flex:1;">
+                <button class="btn btn-accent btn-small" id="btnRunCompressSample">Comprimir Datagrama</button>
+              </div>
+              <div id="compressResultsBox" class="json-viewer mono-text mt-3" style="max-height:120px; overflow-y:auto; font-size:0.8rem; display:none;"></div>
+            </div>
           </div>
         </div>
 
@@ -1325,11 +1376,11 @@
             <div class="bench-header">
               <div>
                 <h3>Servidor Model Context Protocol (MCP) — Plano de Control IA</h3>
-                <p class="desc">Interfaz nativa JSON-RPC 2.0 (Especificación 2024-11-05) con 57 herramientas de introspección, auto-reparación, media streaming, BitNet 1.58 y edge computing agéntico.</p>
+                <p class="desc">Interfaz nativa JSON-RPC 2.0 (Especificación 2024-11-05) con 59 herramientas de introspección, auto-reparación, datapath saturation, compresión estática, BitNet 1.58 y edge computing agéntico.</p>
               </div>
               <div class="status-indicator">
                 <span class="pulsing-dot"></span>
-                <span class="mono-text" id="mcpToolCountBadge">57 HERRAMIENTAS ACTIVAS</span>
+                <span class="mono-text" id="mcpToolCountBadge">59 HERRAMIENTAS ACTIVAS</span>
               </div>
             </div>
 
@@ -1340,7 +1391,7 @@
               </div>
               <div class="bench-item">
                 <span class="bench-label">Herramientas Conectadas</span>
-                <strong class="bench-val text-green" id="mcpToolsTotal">57</strong>
+                <strong class="bench-val text-green" id="mcpToolsTotal">59</strong>
               </div>
               <div class="bench-item">
                 <span class="bench-label">Capacidades</span>
@@ -1359,6 +1410,8 @@
               <div class="streaming-control-bar mt-2">
                 <select id="selMcpTool" class="select-field" style="max-width:250px;">
                   <option value="get_node_status">get_node_status</option>
+                  <option value="ipvn7_benchmark_saturation_throughput">ipvn7_benchmark_saturation_throughput (Datapath Gbps)</option>
+                  <option value="ipvn7_compress_telemetry_payload">ipvn7_compress_telemetry_payload (Compresión)</option>
                   <option value="ipvn7_bitnet_quantize_and_infer">ipvn7_bitnet_quantize_and_infer (BitNet 1.58)</option>
                   <option value="ipvn7_dispatch_edge_ai_prompt">ipvn7_dispatch_edge_ai_prompt (Edge AI)</option>
                   <option value="ipvn7_dispatch_remote_media_frame">ipvn7_dispatch_remote_media_frame (Media)</option>

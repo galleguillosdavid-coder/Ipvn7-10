@@ -1100,6 +1100,37 @@ class IPVN7MCPServer:
                     "required": ["x", "weights"],
                 },
             },
+            {
+                "name": "ipvn7_benchmark_saturation_throughput",
+                "description": "Ejecuta benchmark continuo de saturación del pipeline de fragmentación y ensamblado de datagramas canónicos MTU 1280B en memoria y loopback UDP, reportando Gbps y Mpps.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "megabytes": {
+                            "type": "number",
+                            "description": "Tamaño del buffer a fragmentar y ensamblar en MB (ej: 8.0)",
+                        },
+                        "use_udp_loopback": {
+                            "type": "boolean",
+                            "description": "Si es True, transmite los fragmentos a través de socket UDP loopback local",
+                        },
+                    },
+                },
+            },
+            {
+                "name": "ipvn7_compress_telemetry_payload",
+                "description": "Comprime datagramas de control y telemetría de menos de 256 bytes utilizando diccionario estático de tokens IPVN 7 y empaquetado de entropía, verificando reconstrucción lossless.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "text": {
+                            "type": "string",
+                            "description": "Cadena o JSON de telemetría a comprimir",
+                        },
+                    },
+                    "required": ["text"],
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1715,6 +1746,17 @@ class IPVN7MCPServer:
                 bias = arguments.get("bias")
                 model_name = arguments.get("model_name", "bitnet-edge-worker")
                 res = self.node.execute_bitnet_forward(x, weights, bias=bias, model_name=model_name)
+                return True, res
+
+            elif name == "ipvn7_benchmark_saturation_throughput":
+                mb = float(arguments.get("megabytes", 8.0))
+                use_udp = bool(arguments.get("use_udp_loopback", False))
+                res = self.node.benchmark_saturation(megabytes=mb, use_udp=use_udp)
+                return True, res
+
+            elif name == "ipvn7_compress_telemetry_payload":
+                text = arguments.get("text", "")
+                res = self.node.compress_telemetry_payload(text)
                 return True, res
 
             else:

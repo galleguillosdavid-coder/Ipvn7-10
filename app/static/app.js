@@ -582,6 +582,77 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Action: Run Datapath Saturation Benchmark (1280B Gbps)
+  const btnSatBench = document.getElementById("btnRunSaturationBench");
+  if (btnSatBench) {
+    btnSatBench.addEventListener("click", async () => {
+      const mb = document.getElementById("selSatMb")?.value || "4";
+      const chkUdp = document.getElementById("chkSatUdp")?.checked ? "1" : "0";
+      const resultsBox = document.getElementById("satResultsBox");
+
+      btnSatBench.disabled = true;
+      btnSatBench.textContent = "Saturando Datapath...";
+      if (resultsBox) {
+        resultsBox.style.display = "block";
+        resultsBox.textContent = "Ejecutando fragmentación 1280B y pipeline de saturación...";
+      }
+
+      try {
+        const res = await fetch(`/api/benchmark/saturation?mb=${mb}&udp=${chkUdp}`);
+        const data = await res.json();
+
+        const elGbps = document.getElementById("satThroughputGbps");
+        const elMb = document.getElementById("satThroughputMb");
+        const elPps = document.getElementById("satPps");
+        const elLat = document.getElementById("satLatencyUs");
+
+        if (elGbps) elGbps.textContent = `${data.throughput_gbps} Gbps`;
+        if (elMb) elMb.textContent = `${data.throughput_mb_s} MB/s`;
+        if (elPps) elPps.textContent = `${Math.round(data.packets_per_second).toLocaleString()} pps`;
+        if (elLat) elLat.textContent = `${data.avg_fragment_latency_us} µs`;
+
+        if (resultsBox) {
+          resultsBox.textContent = JSON.stringify(data, null, 2);
+        }
+      } catch (err) {
+        if (resultsBox) resultsBox.textContent = `Error en saturación: ${err}`;
+      } finally {
+        btnSatBench.disabled = false;
+        btnSatBench.textContent = "Saturar Datapath Local 1280B";
+      }
+    });
+  }
+
+  // Action: Run Static Dictionary Header Compression
+  const btnCompress = document.getElementById("btnRunCompressSample");
+  if (btnCompress) {
+    btnCompress.addEventListener("click", async () => {
+      const inputVal = document.getElementById("txtCompressPayload")?.value.trim() || "";
+      const resultsBox = document.getElementById("compressResultsBox");
+
+      btnCompress.disabled = true;
+      try {
+        const res = await fetch("/api/compression/benchmark", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: inputVal }),
+        });
+        const data = await res.json();
+        if (resultsBox) {
+          resultsBox.style.display = "block";
+          resultsBox.textContent = JSON.stringify(data, null, 2);
+        }
+      } catch (err) {
+        if (resultsBox) {
+          resultsBox.style.display = "block";
+          resultsBox.textContent = `Error de compresión: ${err}`;
+        }
+      } finally {
+        btnCompress.disabled = false;
+      }
+    });
+  }
+
   // Action: Clear Logs
   document.getElementById("btnClearLogs").addEventListener("click", () => {
     document.getElementById("packetLogsBody").innerHTML = "";

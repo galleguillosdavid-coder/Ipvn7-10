@@ -367,6 +367,24 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
             demo_res = BitNetQuantizer.run_demo_pipeline(rows, cols, seed)
             self._send_json(demo_res)
 
+        elif path == "/api/benchmark/saturation":
+            qs = parse_qs(parsed.query)
+            mb = float(qs.get("mb", [4.0])[0])
+            use_udp = qs.get("udp", ["0"])[0] in ("1", "true", "True")
+            mb = max(0.5, min(32.0, mb))
+            res = PRIMARY_NODE.benchmark_saturation(megabytes=mb, use_udp=use_udp)
+            self._send_json(res)
+
+        elif path == "/api/compression/benchmark":
+            qs = parse_qs(parsed.query)
+            sample_text = qs.get("text", [""])[0]
+            if sample_text:
+                res = PRIMARY_NODE.compress_telemetry_payload(sample_text)
+            else:
+                from ipvn7.network.compression import SovereignHeaderCompressor
+                res = SovereignHeaderCompressor.benchmark_sample()
+            self._send_json(res)
+
         elif path == "/api/resilience/status":
             self._send_json(PRIMARY_NODE.resilience_guardian.get_health_status())
 
@@ -614,6 +632,11 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 "status": "SEAMLESS_CONTINUITY",
             })
             self._send_json({"success": mig_ok, "interface": interface_name})
+
+        elif path == "/api/compression/benchmark":
+            text_payload = body.get("text", "did:ipvn7:genesis:node:control:signal:pqc:heartbeat")
+            res = PRIMARY_NODE.compress_telemetry_payload(text_payload)
+            self._send_json(res)
 
         elif path == "/api/onion/route":
             msg_text = body.get("payload", "Sphinx Confidential Datagram Payload")

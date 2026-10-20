@@ -1212,3 +1212,15 @@ class IPVN7Node:
             "active_connections": len([c for c in self.quic_connections.values() if c.state == ConnectionState.ESTABLISHED]),
             "stats": self.stats,
         }
+
+    def benchmark_saturation(self, megabytes: float = 8.0, use_udp: bool = False) -> Dict[str, Any]:
+        """Runs the continuous 1280B fragmentation saturation benchmark."""
+        from ..benchmark.saturation import DatapathSaturationBenchmark
+        return DatapathSaturationBenchmark.run_benchmark(megabytes=megabytes, use_udp_loopback=use_udp)
+
+    def compress_telemetry_payload(self, text: str) -> Dict[str, Any]:
+        """Compresses telemetry payload using static token dictionary."""
+        from ..network.compression import SovereignHeaderCompressor
+        payload = text.encode("utf-8")
+        return SovereignHeaderCompressor.benchmark_sample(payload)
+

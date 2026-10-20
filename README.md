@@ -1,5 +1,5 @@
 # IPVN 7 — Internet Protocol Version 7
-> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.3.0)**  
+> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.3.3)**  
 > *Implementación Canónica en Python 3.14 con Criptografía Híbrida NIST FIPS 203 & 204*  
 > **Repositorio Oficial:** [https://github.com/galleguillosdavid-coder/Ipvn7-10](https://github.com/galleguillosdavid-coder/Ipvn7-10)
 
@@ -11,7 +11,7 @@
 > Este documento es tu **punto de entrada canónico**. Léelo de principio a fin antes de ejecutar o modificar código.  
 > Tu orden de lectura obligatorio para comprender el ecosistema completo es:
 > 1. Este archivo [`README.md`](README.md) *(Visión ejecutiva, estructura global, mapa del repo y protocolo de handover)*.
-> 2. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(Procedimiento autónomo de desarrollo, catálogo de los 58 subsistemas y directivas operativas de auto-evolución)*.
+> 2. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(Procedimiento autónomo de desarrollo, catálogo de los 59 subsistemas y directivas operativas de auto-evolución)*.
 > 3. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 58 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
 > 4. [`genesis.md`](genesis.md) *(Mandato Génesis v2.0, principios ontológicos, gobernanza evolutiva y multi-agente)*.
 > 5. **Architecture Decision Records (ADRs Inmutables):**
@@ -19,6 +19,7 @@
 >    - [`.nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md`](.nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md) *(Embajador Edge AI LAN, Datapath IP7M 1280B y Test de Estrés Churn)*.
 >    - [`.nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md`](.nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md) *(Motor de Cuantización Ternaria BitNet b1.58 {-1, 0, +1} e Inferencia Integer sin Multiplicación)*.
 >    - [`.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md`](.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md) *(Remediación Integral de la Auditoría Técnica ChatGPT: H-01 a H-05, Transcript Binding, SSRF Filter y Datapath Real)*.
+>    - [`.nexus/decisions/ADR-005-DATAPATH-SATURATION-AND-COMPRESSION.md`](.nexus/decisions/ADR-005-DATAPATH-SATURATION-AND-COMPRESSION.md) *(Benchmark de Saturación 1280B Gbps y Compresor Estático Soberano de Encabezados)*.
 > 6. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
 > 7. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
@@ -33,7 +34,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **90/90 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.0s.**
+*Criterio de Aceptación Innegociable:* **93/93 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.2s.**
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell
@@ -43,8 +44,8 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 ### 1.3. Puntos de Entrada y Servicios Activos
 | Servicio / Protocolo | Dirección / Puerto | Propósito |
 |---|---|---|
-| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 58 subsistemas y consola MCP |
-| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **57 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
+| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 59 subsistemas y consola MCP |
+| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **59 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
 | **Proxy HTTP/HTTPS Interceptor** | `http://127.0.0.1:8888` | Pasarela transparente de intercepción y tunelización cuántica |
 | **Proxy SOCKS5 RFC 1928** | `127.0.0.1:10807` | Proxy anónimo para enrutamiento transparente de aplicaciones TCP |
 | **Socket Overlay UDP (QUIC)** | `127.0.0.1:9443` | Datapath de alta velocidad punto a punto cifrado con ML-KEM-768 |
@@ -66,9 +67,11 @@ ipvn7-10/
 │   ├── decisions/                      # Architecture Decision Records inmutables
 │   │   ├── ADR-001-ARCHITECTURE-CONSOLIDATION.md # Consolidación silenciosa IPv7-HRS
 │   │   ├── ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md  # Edge AI LAN y Streaming IP7M
-│   │   └── ADR-003-BITNET-1BIT-QUANTIZATION.md   # Motor Ternario BitNet b1.58
+│   │   ├── ADR-003-BITNET-1BIT-QUANTIZATION.md   # Motor Ternario BitNet b1.58
+│   │   ├── ADR-004-SECURITY-AUDIT-REMEDIATION.md # Remediación de Auditoría Externa
+│   │   └── ADR-005-DATAPATH-SATURATION-AND-COMPRESSION.md # Saturación 1280B y Compresión
 │   └── memory/
-│       └── level1_core.json            # Snapshot persistente del estado del sistema (v7.3.0)
+│       └── level1_core.json            # Snapshot persistente del estado del sistema (v7.3.3)
 ├── app/                                # Capa Web & Observabilidad
 │   ├── server.py                       # Servidor HTTP/WebSocket, SOCKS5 y pasarela MCP dual (/mcp y /api/mcp)
 │   └── static/
@@ -96,10 +99,11 @@ ipvn7-10/
 │   │   ├── petnames.py                 # Sistema dDNS de nombres soberanos (.ipv7)
 │   │   └── uin.py                      # Red Universal de Identidad con claves desacopladas
 │   ├── transport/                      # Capa L1: Transporte Post-Cuántico
-│   │   └── quic.py                     # PQ-QUIC RFC 9000 con handshake 1-RTT y migración
+│   │   └── quic.py                     # PQ-QUIC soberano con wire header 21B, handshake 1-RTT y migración
 │   ├── network/                        # Capa L2: Enrutamiento, Topología y Resiliencia
 │   │   ├── dht.py                      # DHT de mundo pequeño de Kleinberg (r=2)
 │   │   ├── hrs_frames.py               # Protocolo Silencioso IPv7-HRS (5 tramas IP7H y SLAs adaptativos)
+│   │   ├── compression.py              # Compresor estático de tokens y metadatos sin pérdidas
 │   │   ├── onion.py                    # Enrutador cebolla Sphinx de 3 saltos
 │   │   ├── gossip.py                   # Epidemic Gossip Plumtree (árboles eager/lazy)
 │   │   ├── swim.py                     # Detector de caídas SWIM O(1) con ping indirecto
@@ -109,7 +113,7 @@ ipvn7-10/
 │   │   ├── blackout.py                 # Recuperación ante apagón en 5 fases con jitter
 │   │   ├── split_brain.py              # Guardián anti-bipartición con quórum estricto
 │   │   ├── blind_rendezvous.py         # Punto de encuentro ciego Zero-PII
-│   │   ├── planetary.py                # Malla 2D interplanetaria con retardo relativista
+│   │   ├── planetary.py                # Malla 2D/3D interplanetaria con retardo relativista
 │   │   ├── resilience.py               # Disyuntor tri-estado (Closed/Open/Half-Open)
 │   │   ├── silent.py                   # Despachador silencioso unicast sin sondeo
 │   │   ├── tls_obfuscation.py          # Camuflaje TLS 1.3 legítimo RFC 8446
@@ -137,18 +141,20 @@ ipvn7-10/
 │   │   └── pfo.py                      # Gobernanza ontológica PFO (5 Principios -> 12 Funciones)
 │   ├── simulation/                     # Simulación & Estrés Topológico
 │   │   └── churn.py                    # Simulador Small-World y benchmark de estrés con pérdida y jitter
+│   ├── benchmark/                      # Rendimiento y Saturación de Datapath
+│   │   └── saturation.py               # Motor de saturación continua MTU 1280B (Gbps/pps/µs)
 │   ├── gateway/                        # Capa L4: Pasarelas del Mundo Exterior
-│   │   ├── proxy.py                    # Pasarela interceptora HTTP/HTTPS
+│   │   ├── proxy.py                    # Pasarela interceptora HTTP/HTTPS con tunelización overlay
 │   │   ├── socks5.py                   # Pasarela SOCKS5 RFC 1928 (10807)
 │   │   └── translator.py               # Traductor IPv4/IPv6 <-> IPVN 7
 │   ├── storage/                        # Capa L4: Almacenamiento Distribuido
 │   │   └── dag.py                      # DAG inmutable por contenido (cid:ipvn7:...) y cola DTN
 │   └── node/                           # Daemon Operativo & Plano Agéntico
-│       ├── node.py                     # Orquestador del nodo (unifica los 58 subsistemas)
-│       ├── mcp.py                      # Servidor MCP JSON-RPC 2.0 (57 herramientas nativas)
+│       ├── node.py                     # Orquestador del nodo (unifica los 59 subsistemas)
+│       ├── mcp.py                      # Servidor MCP JSON-RPC 2.0 (59 herramientas nativas)
 │       └── cli.py                      # Interfaz de línea de comandos
 └── tests/
-    └── test_ipvn7.py                   # Suite canónica exhaustiva de 90 pruebas
+    └── test_ipvn7.py                   # Suite canónica exhaustiva de 93 pruebas
 ```
 
 ---
@@ -209,6 +215,8 @@ Invoke-RestMethod -Uri "http://127.0.0.1:7070/mcp" -Method Post -Body $body -Con
   - `ipvn7_bitnet_quantize_and_infer`: Cuantización ternaria $\{-1, 0, +1\}$ e inferencia integer libre de multiplicaciones en microcontroladores y routers.
   - `ipvn7_dispatch_remote_media_frame`: Streaming de tramas `IP7M` ($\le 1280$B) de audio y video con CRC32.
   - `ipvn7_run_churn_stress_test`: Benchmark de resiliencia con 5-20% pérdida de paquetes y latencia fluctuante (100-2000ms).
+  - `ipvn7_benchmark_saturation_throughput`: Benchmark de saturación continua MTU 1280B (`IP7F`), midiendo Gbps, pps y latencia en µs.
+  - `ipvn7_compress_telemetry_payload`: Compresión de diccionario estático y DEFLATE para encabezados y telemetría (<256B).
 
 ---
 
@@ -219,8 +227,8 @@ Cuando un agente limpio inicie su sesión desde cero:
 ### 5.1. Verificación Inicial de Estado
 ```powershell
 git status                                  # Debe estar en 'main' limpio
-git log -n 5 --oneline                      # Debe mostrar los últimos tags v7.0.0 a v7.3.0
-.\.venv\Scripts\pytest.exe -q              # 90 pasados en ~6 segundos
+git log -n 5 --oneline                      # Debe mostrar los últimos tags v7.0.0 a v7.3.3
+.\.venv\Scripts\pytest.exe -q              # 93 pasados en ~6.2 segundos
 Invoke-RestMethod -Uri "http://127.0.0.1:7070/api/status" # Confirmar nodo primario activo
 ```
 
@@ -233,10 +241,13 @@ Renueva o programa el temporizador con la herramienta `schedule` a 1800 segundos
    - Visor Heatmap de pesos ternarios BitNet b1.58 ($\{-1, 0, +1\}$) con cuantización interactiva e inferencia entera pura sin multiplicaciones en `tab-bitnet`.
 2. **Línea H — Malla Planetaria con Render 3D en Canvas:** *(✅ COMPLETADO v7.3.2)*
    - Globo terráqueo orbital 3D interactivo en `tab-planetary` con los 16 satélites LEO, rotación tridimensional con ratón/touch, arcos de Kleinberg ($r=2$) y pulsos de fotones relativistas a la velocidad de la luz $c = 299,792 \text{ km/s}$.
-3. **Línea I — Benchmark de Throughput Saturado en Datapath Local:**
-   - Diseñar un módulo de benchmarking de saturación continua para medir el throughput máximo en Gbps del pipeline de fragmentación y ensamblado de 1280 bytes en Windows Wintun / UDP loopback.
-4. **Línea J — Compresor de Tráfico Huffman/Zstandard en Encabezados IPVN 7:**
-   - Incorporar compresión dinámica de diccionario estático para datagramas de control y telemetría de menos de 256 bytes.
+3. **Línea I — Benchmark de Throughput Saturado en Datapath Local:** *(✅ COMPLETADO v7.3.3)*
+   - Motor de saturación continua `SovereignFragmentationEngine` y `DatapathSaturationBenchmark` con fragmentación canónica de 1280 bytes (`IP7F`), alcanzando >1.0 Gbps y >100 kpps con verificación SHA-256 lossless.
+4. **Línea J — Compresor de Tráfico y Metadatos con Diccionario Estático:** *(✅ COMPLETADO v7.3.3)*
+   - Compresor `SovereignHeaderCompressor` con sustitución en memoria de tokens de alta frecuencia (`0x80..0x90` para DIDs, protocolos y endpoints) y compresión sin pérdidas de alta velocidad para datagramas de control y telemetría (<256B).
+5. **Línea K — Próxima Evolución (Backlog v7.4.0):**
+   - Telemetría P2P autónoma entre múltiples instancias de nodo vía Wintun en red local / túneles WireGuard soberanos.
+   - Orquestador de migración de claves efímeras periódica con renegociación silenciosa postcuántica zero-downtime.
 
 ### 5.4. Tarea Ocasional: Auditoría Externa Cruzada con ChatGPT (Multi-LLM Peer Review)
 De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar una auditoría de revisión externa independiente mediante [ChatGPT](https://chatgpt.com/):
@@ -260,10 +271,10 @@ De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar un
     - **H-02 (Criptografía Híbrida):** Transcript Binding formal con SHA-256 en HKDF salt y suite de pruebas negativas en `tests/test_ipvn7.py` ante manipulación de ciphertext y claves.
     - **H-03 (Especificación PQ-QUIC):** Formalización de PQ-QUIC como protocolo soberano experimental con wire format compacto de 21 bytes para mallas P2P soberanas (independiente de CAs X.509 RFC 9001).
     - **H-04 (Frontera de Seguridad API):** CORS restringido a lista blanca local, encabezados `nosniff`/`DENY`, límite DoS de 1MB en POST y mitigación SSRF completa.
-    - **H-05 (Reproducibilidad):** `requirements.txt` en UTF-8 estándar, `.github/workflows/ci.yml` configurado y 90/90 pruebas aprobadas al 100%.
+    - **H-05 (Reproducibilidad):** `requirements.txt` en UTF-8 estándar, `.github/workflows/ci.yml` configurado y 93/93 pruebas aprobadas al 100%.
 
 ---
 
-*Fin del Protocolo de Handover. IPVN 7 v7.3.1 se encuentra auditado, blindado, verificado con 90 pruebas, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
+*Fin del Protocolo de Handover. IPVN 7 v7.3.3 se encuentra auditado, blindado, verificado con 93 pruebas al 100%, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
 
 
