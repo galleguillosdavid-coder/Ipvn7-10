@@ -408,6 +408,9 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 "accounts": PRIMARY_NODE.accounting.list_accounts(50),
             })
 
+        elif path == "/api/settlement/summary":
+            self._send_json(PRIMARY_NODE.get_settlement_ledger_summary())
+
         elif path == "/api/services":
             self._send_json({
                 "services": PRIMARY_NODE.services.list_services(),
@@ -1323,6 +1326,28 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 pmtu_probe_success=pmtu_ok,
             )
             self._send_json({"success": True, "result": res})
+
+        elif path == "/api/settlement/issue":
+            ben_did = body.get("beneficiary_did", PEER_NODE.did)
+            credits_val = int(body.get("bandwidth_credits", 1048576))
+            try:
+                res = PRIMARY_NODE.issue_reciprocity_token(ben_did, credits_val)
+                self._send_json(res)
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=400)
+
+        elif path == "/api/settlement/settle":
+            token_dict = body.get("token")
+            if not token_dict:
+                self._send_json({"success": False, "error": "Missing token payload"}, status=400)
+                return
+            pub_hex = body.get("issuer_pubkey_hex")
+            pub_bytes = bytes.fromhex(pub_hex) if pub_hex else PEER_NODE.identity.keypair.ed25519_pub.public_bytes_raw()
+            res = PRIMARY_NODE.settle_reciprocity_token(token_dict, pub_bytes)
+            if body.get("remediate_quota", False) and res.get("success"):
+                rem = PRIMARY_NODE.remediate_quota_with_reciprocity(token_dict.get("beneficiary_did", PRIMARY_NODE.did))
+                res["remediation"] = rem
+            self._send_json(res)
 
         elif path in ("/api/mcp", "/mcp"):
             # Audit H-03: Mandatory authentication for MCP JSON-RPC control plane

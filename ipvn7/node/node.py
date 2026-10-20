@@ -83,6 +83,7 @@ from ..network.hrs_frames import HRSDispatcher, HRSFrame, HRSFrameType, DevicePr
 from ..network.geopolicy import GeoPolicyRouter, RoutingPolicyMode, GeoRegion, GeoNodeDescriptor
 from ..network.dht_sync import PrivateDHTInterregionSync, SovereignBloomFilter, CANONICAL_SYNC_MTU
 from ..network.tunnel_telemetry import SovereignTunnelTelemetry, TunnelMetrics, TunnelHealthState, DEFAULT_PMTU
+from ..network.settlement import SovereignReciprocitySettlement, ReciprocityToken
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -282,6 +283,13 @@ class IPVN7Node:
             interface_type="wintun",
             remote_endpoint="127.0.0.1:9443",
             initial_pmtu=DEFAULT_PMTU,
+        )
+
+        # Sovereign Reciprocity Tokens & Micro-Economic Settlement Subsystem (Line O / IP7R)
+        self.settlement = SovereignReciprocitySettlement(
+            local_did=self.did,
+            accounting=self.accounting,
+            private_key=self.identity.keypair.ed25519_priv,
         )
 
     # -------------------------------------------------------------
@@ -1369,5 +1377,67 @@ class IPVN7Node:
             pmtu_probe_size=pmtu_probe_size,
             pmtu_probe_success=pmtu_probe_success,
         )
+
+    def issue_reciprocity_token(
+        self,
+        beneficiary_did: str,
+        bandwidth_credits: int,
+    ) -> Dict[str, Any]:
+        """
+        Issues a cryptographically signed ReciprocityToken (IP7R) to reward a peer for routed bandwidth.
+        """
+        token = self.settlement.issue_token(
+            beneficiary_did=beneficiary_did,
+            bandwidth_credits=bandwidth_credits,
+        )
+        return {
+            "success": True,
+            "token": token.to_dict(),
+            "summary": self.settlement.get_summary(),
+        }
+
+    def settle_reciprocity_token(
+        self,
+        token_data: Dict[str, Any],
+        issuer_pubkey_bytes: bytes,
+    ) -> Dict[str, Any]:
+        """
+        Validates, redeems and adds credits from an incoming ReciprocityToken.
+        """
+        token = ReciprocityToken.from_dict(token_data)
+        success, message, receipt = self.settlement.settle_token(token, issuer_pubkey_bytes)
+        return {
+            "success": success,
+            "message": message,
+            "receipt": receipt,
+            "summary": self.settlement.get_summary(),
+        }
+
+    def remediate_quota_with_reciprocity(
+        self,
+        did: str,
+        credits_to_redeem: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Burns earned reciprocity credits to clear Tit-for-Tat routing deficits and upgrade QoS tier.
+        """
+        success, message, new_tier = self.settlement.apply_quota_remediation(
+            did=did,
+            credits_to_redeem=credits_to_redeem,
+        )
+        return {
+            "success": success,
+            "message": message,
+            "new_tier": new_tier.value,
+            "remaining_credits": self.settlement.get_balance(did),
+            "accounting_summary": self.accounting.get_peer_account(did),
+        }
+
+    def get_settlement_ledger_summary(self) -> Dict[str, Any]:
+        """
+        Returns full telemetry of the micro-economic settlement engine.
+        """
+        return self.settlement.get_summary()
+
 
 

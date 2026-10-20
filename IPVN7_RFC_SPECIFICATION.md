@@ -713,11 +713,28 @@ La arquitectura cuenta con una suite integral de 42 pruebas de integración y re
 
 ---
 
+## 59. Tokens Canónicos de Reciprocidad & Liquidación Micro-Económica Soberana (IP7R)
+
+- **Comprobantes Criptográficos de Tránsito (Proof-of-Transit):** Estructura inmutable `ReciprocityToken` que certifica la transferencia de ancho de banda entre un consumidor emisor y un intermediario/relay beneficiario.
+- **Formato Canónico de Alambre `IP7R` (MTU <= 1280B):**
+  - Magic bytes: `0x49503752` (`b"IP7R"`).
+  - Estructura: `[4B MAGIC][1B OPCODE][2B LENGTH][PAYLOAD][4B CRC32]`.
+  - Opcodes: `0x01` (`TOKEN_ISSUE`), `0x02` (`SETTLEMENT_CLAIM`), `0x03` (`SETTLEMENT_RECEIPT`), `0x04` (`AUDIT_BALANCE`).
+- **Defensa Anti-Replay y Prevención de Doble Gasto:**
+  - Identificador único `token_id` derivado por SHA-256.
+  - Registro monótono estricto de nonces por emisor (`nonce > last_nonce`).
+  - Prohibición estricta de auto-emisión (`issuer_did != beneficiary_did`).
+  - Caducidad temporal acotada a 30 épocas (30 días).
+- **Gobernanza de Cuotas y Remediación QoS:**
+  - Los nodos con cuotas deprimidas en `TransitAccounting` (`THROTTLED` o `BEST_EFFORT`) pueden canjear tokens acumulados mediante `apply_quota_remediation()`, promoviendo su `ServiceTier` de forma descentralizada sin intermediarios centrales.
+
+---
+
 ## Resumen de Verificación y Suites de Prueba
 
-- **Suites de Prueba Ejecutadas:** 84 pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados.
-- **Resultado:** 100% aprobado (84/84) en ~6.61 segundos en hardware de producción Windows 11.
-- **Herramientas MCP Activas:** 57 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+- **Suites de Prueba Ejecutadas:** Pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados (108+ pruebas unitarias aprobadas).
+- **Herramientas MCP Activas:** 66 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+
 
 
 

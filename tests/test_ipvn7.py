@@ -1803,7 +1803,7 @@ def test_mcp_tools_catalog_57_tools():
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 63, f"Expected 63 MCP tools, found {len(tools)}"
+    assert len(tools) == 66, f"Expected 66 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -4194,4 +4194,225 @@ def test_audit_3_h02_h05_socks5_concurrency_and_mode_accounting():
     cli2.close()
     gw.stop()
     node.stop()
+
+
+# ==============================================================================
+# Line O: Sovereign Reciprocity Tokens & Micro-Economic Settlement Tests (ADR-013)
+# ==============================================================================
+
+def test_line_o_reciprocity_token_issuance_and_verification():
+    """Line O (ADR-013): Validates ReciprocityToken issuance, Ed25519 signatures and verification."""
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+    from ipvn7.network.settlement import SovereignReciprocitySettlement, ReciprocityToken
+
+    issuer_key = ed25519.Ed25519PrivateKey.generate()
+    issuer_pub_bytes = issuer_key.public_key().public_bytes_raw()
+
+    settlement = SovereignReciprocitySettlement(
+        local_did="did:ipvn7:issuer-node-001",
+        private_key=issuer_key,
+    )
+
+    token = settlement.issue_token(
+        beneficiary_did="did:ipvn7:relay-node-002",
+        bandwidth_credits=10 * 1024 * 1024, # 10 MB
+    )
+
+    assert token.issuer_did == "did:ipvn7:issuer-node-001"
+    assert token.beneficiary_did == "did:ipvn7:relay-node-002"
+    assert token.bandwidth_credits == 10 * 1024 * 1024
+    assert token.nonce == 1
+    assert len(token.token_id) == 32
+    assert len(token.signature_hex) > 64
+
+    # Dict round-trip
+    token_dict = token.to_dict()
+    reconstructed = ReciprocityToken.from_dict(token_dict)
+    assert reconstructed.token_id == token.token_id
+
+    # Verification with correct pubkey
+    is_valid, msg = settlement.verify_token(reconstructed, issuer_pub_bytes)
+    assert is_valid is True
+    assert "valid" in msg.lower()
+
+    # Verification with attacker pubkey MUST fail
+    attacker_key = ed25519.Ed25519PrivateKey.generate()
+    is_valid_fake, msg_fake = settlement.verify_token(reconstructed, attacker_key.public_key().public_bytes_raw())
+    assert is_valid_fake is False
+
+
+def test_line_o_reciprocity_anti_fraud_and_bounds():
+    """Line O (ADR-013): Validates defensive bounds and anti-fraud checks on reciprocity tokens."""
+    import pytest
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+    from ipvn7.network.settlement import (
+        SovereignReciprocitySettlement,
+        ReciprocityToken,
+        MAX_CREDITS_PER_TOKEN,
+    )
+
+    issuer_key = ed25519.Ed25519PrivateKey.generate()
+    settlement = SovereignReciprocitySettlement(
+        local_did="did:ipvn7:fraud-test-node",
+        private_key=issuer_key,
+    )
+
+    # 1. Prohibit self-issuance
+    with pytest.raises(ValueError, match="Self-issuance"):
+        settlement.issue_token("did:ipvn7:fraud-test-node", 1000)
+
+    # 2. Prohibit non-positive credits
+    with pytest.raises(ValueError, match="positive"):
+        settlement.issue_token("did:ipvn7:other-node", 0)
+
+    # 3. Prohibit credit cap overflow
+    with pytest.raises(ValueError, match="maximum cap"):
+        settlement.issue_token("did:ipvn7:other-node", MAX_CREDITS_PER_TOKEN + 1)
+
+    # 4. Tampered credits verification failure
+    token = settlement.issue_token("did:ipvn7:other-node", 5000)
+    tampered_token = ReciprocityToken(
+        token_id=token.token_id,
+        issuer_did=token.issuer_did,
+        beneficiary_did=token.beneficiary_did,
+        bandwidth_credits=99999999,  # tampered
+        epoch=token.epoch,
+        nonce=token.nonce,
+        issued_at=token.issued_at,
+        signature_hex=token.signature_hex,
+    )
+    ok, reason = settlement.verify_token(tampered_token, issuer_key.public_key().public_bytes_raw())
+    assert ok is False
+
+
+def test_line_o_settlement_and_double_spend_prevention():
+    """Line O (ADR-013): Validates token redemption, balance crediting and strict double-spend rejection."""
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+    from ipvn7.network.settlement import SovereignReciprocitySettlement
+
+    issuer_key = ed25519.Ed25519PrivateKey.generate()
+    issuer_pub_bytes = issuer_key.public_key().public_bytes_raw()
+
+    issuer_engine = SovereignReciprocitySettlement(
+        local_did="did:ipvn7:client-payer",
+        private_key=issuer_key,
+    )
+
+    beneficiary_engine = SovereignReciprocitySettlement(
+        local_did="did:ipvn7:relay-earner",
+    )
+
+    # Issue token for 50 MB
+    token1 = issuer_engine.issue_token("did:ipvn7:relay-earner", 50 * 1024 * 1024)
+
+    # First settlement MUST succeed
+    ok1, msg1, receipt1 = beneficiary_engine.settle_token(token1, issuer_pub_bytes)
+    assert ok1 is True
+    assert beneficiary_engine.get_balance("did:ipvn7:relay-earner") == 50 * 1024 * 1024
+
+    # Second settlement of exact same token MUST fail with double-spend rejection
+    ok2, msg2, _ = beneficiary_engine.settle_token(token1, issuer_pub_bytes)
+    assert ok2 is False
+    assert "Double-spend" in msg2
+
+    # Issue token 2 and verify sequential nonce acceptance
+    token2 = issuer_engine.issue_token("did:ipvn7:relay-earner", 20 * 1024 * 1024)
+    assert token2.nonce == 2
+    ok3, msg3, _ = beneficiary_engine.settle_token(token2, issuer_pub_bytes)
+    assert ok3 is True
+    assert beneficiary_engine.get_balance("did:ipvn7:relay-earner") == 70 * 1024 * 1024
+
+
+def test_line_o_quota_remediation_tit_for_tat():
+    """Line O (ADR-013): Validates dynamic Tit-for-Tat tier remediation using reciprocity credits."""
+    from ipvn7.network.accounting import TransitAccounting, ServiceTier
+    from ipvn7.network.settlement import SovereignReciprocitySettlement
+
+    accounting = TransitAccounting(courtesy_bytes=1000, courtesy_packets=10)
+    settlement = SovereignReciprocitySettlement(
+        local_did="did:ipvn7:local-gateway",
+        accounting=accounting,
+    )
+
+    peer_did = "did:ipvn7:asymmetric-peer"
+
+    # Depress peer ratio by recording massive Tx with zero Rx -> forces THROTTLED tier
+    accounting.record_tx(peer_did, 100 * 1024 * 1024) # 100 MB transmitted to peer
+    for _ in range(15):
+        accounting.record_tx(peer_did, 1024)
+
+    initial_tier = accounting.get_tier(peer_did)
+    assert initial_tier in (ServiceTier.THROTTLED, ServiceTier.BEST_EFFORT)
+
+    # Seed peer with earned reciprocity credits
+    settlement.credit_balances[peer_did] = 120 * 1024 * 1024 # 120 MB in reciprocity credits
+
+    # Apply remediation
+    ok, msg, new_tier = settlement.apply_quota_remediation(peer_did)
+    assert ok is True
+    assert new_tier in (ServiceTier.NORMAL, ServiceTier.PRIORITY)
+    assert settlement.get_balance(peer_did) == 0
+
+
+def test_line_o_reciprocity_wire_framing_ip7r():
+    """Line O (ADR-013): Validates canonical IP7R binary wire framing, MTU bounds and CRC32 integrity."""
+    import pytest
+    from ipvn7.network.settlement import (
+        SovereignReciprocitySettlement,
+        OP_TOKEN_ISSUE,
+        MAGIC_RECIPROCITY,
+    )
+
+    payload = b"PAYLOAD-TEST-RECIPROCITY-RECEIPT-CANONICAL-MTU"
+    frame = SovereignReciprocitySettlement.serialize_frame(OP_TOKEN_ISSUE, payload)
+
+    assert frame.startswith(MAGIC_RECIPROCITY)
+    assert len(frame) <= 1280
+
+    opcode, extracted = SovereignReciprocitySettlement.deserialize_frame(frame)
+    assert opcode == OP_TOKEN_ISSUE
+    assert extracted == payload
+
+    # Corrupt CRC32 check
+    corrupt_frame = frame[:-1] + bytes([frame[-1] ^ 0xFF])
+    with pytest.raises(ValueError, match="CRC32 integrity"):
+        SovereignReciprocitySettlement.deserialize_frame(corrupt_frame)
+
+
+def test_line_o_mcp_reciprocity_tools():
+    """Line O (ADR-013): Validates MCP Tools 64, 65 and 66 integration on node."""
+    from ipvn7.node.node import IPVN7Node
+
+    node_a = IPVN7Node(alias="NodeA-Issuer", bind_host="127.0.0.1")
+    node_b = IPVN7Node(alias="NodeB-Relay", bind_host="127.0.0.1")
+
+    # Tool 64: ipvn7_issue_reciprocity_token
+    ok_iss, res_iss = node_a.mcp_server.execute_tool(
+        "ipvn7_issue_reciprocity_token",
+        {"beneficiary_did": node_b.did, "bandwidth_credits": 8 * 1024 * 1024},
+    )
+    assert ok_iss is True
+    token_dict = res_iss["token"]
+    assert token_dict["beneficiary_did"] == node_b.did
+
+    # Tool 65: ipvn7_settle_reciprocity_token
+    ok_set, res_set = node_b.mcp_server.execute_tool(
+        "ipvn7_settle_reciprocity_token",
+        {
+            "token": token_dict,
+            "issuer_pubkey_hex": node_a.identity.keypair.ed25519_pub.public_bytes_raw().hex(),
+            "remediate_quota": True,
+        },
+    )
+    assert ok_set is True
+    assert res_set["success"] is True
+
+    # Tool 66: ipvn7_get_settlement_ledger
+    ok_led, res_led = node_b.mcp_server.execute_tool(
+        "ipvn7_get_settlement_ledger",
+        {},
+    )
+    assert ok_led is True
+    assert res_led["stats"]["tokens_settled"] >= 1
+
 

@@ -1209,6 +1209,54 @@ class IPVN7MCPServer:
                     },
                 },
             },
+            {
+                "name": "ipvn7_issue_reciprocity_token",
+                "description": "Emite y firma un token canónico de reciprocidad (IP7R) recompensando a un par por ancho de banda de tránsito enrutado.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "beneficiary_did": {
+                            "type": "string",
+                            "description": "DID soberano del nodo intermediario/relay beneficiario",
+                        },
+                        "bandwidth_credits": {
+                            "type": "integer",
+                            "description": "Cantidad de bytes acreditados como prueba de tránsito (ej: 10485760 para 10 MB)",
+                        },
+                    },
+                    "required": ["beneficiary_did", "bandwidth_credits"],
+                },
+            },
+            {
+                "name": "ipvn7_settle_reciprocity_token",
+                "description": "Liquida y redime un token de reciprocidad firmado, aplicando créditos al beneficiario y opcionalmente remediando su cuota Tit-for-Tat.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "token": {
+                            "type": "object",
+                            "description": "Diccionario completo del ReciprocityToken emitido",
+                        },
+                        "issuer_pubkey_hex": {
+                            "type": "string",
+                            "description": "Clave pública Ed25519 del emisor en hexadecimal (opcional si se resuelve localmente)",
+                        },
+                        "remediate_quota": {
+                            "type": "boolean",
+                            "description": "Si es True, aplica de inmediato los créditos para actualizar el nivel QoS Tit-for-Tat",
+                        },
+                    },
+                    "required": ["token"],
+                },
+            },
+            {
+                "name": "ipvn7_get_settlement_ledger",
+                "description": "Consulta el libro mayor de liquidación micro-económica, balance de créditos de reciprocidad, tokens gastados y estadísticas.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1869,6 +1917,34 @@ class IPVN7MCPServer:
                     pmtu_probe_size=pmtu_sz,
                     pmtu_probe_success=pmtu_ok,
                 )
+                return True, res
+
+            elif name == "ipvn7_issue_reciprocity_token":
+                ben_did = arguments.get("beneficiary_did")
+                if not ben_did:
+                    return False, "Falta el parámetro 'beneficiary_did'"
+                credits_val = int(arguments.get("bandwidth_credits", 1048576))
+                res = self.node.issue_reciprocity_token(ben_did, credits_val)
+                return True, res
+
+            elif name == "ipvn7_settle_reciprocity_token":
+                token_dict = arguments.get("token")
+                if not token_dict:
+                    return False, "Falta el parámetro 'token'"
+                pub_hex = arguments.get("issuer_pubkey_hex")
+                if pub_hex:
+                    pub_bytes = bytes.fromhex(pub_hex)
+                else:
+                    # Attempt to extract from local keypair or DID Doc
+                    pub_bytes = self.node.identity.keypair.ed25519_pub.public_bytes_raw()
+                res = self.node.settle_reciprocity_token(token_dict, pub_bytes)
+                if arguments.get("remediate_quota", False) and res.get("success"):
+                    rem_res = self.node.remediate_quota_with_reciprocity(token_dict.get("beneficiary_did", self.node.did))
+                    res["remediation"] = rem_res
+                return True, res
+
+            elif name == "ipvn7_get_settlement_ledger":
+                res = self.node.get_settlement_ledger_summary()
                 return True, res
 
             else:
