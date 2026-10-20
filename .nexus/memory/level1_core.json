@@ -1,17 +1,17 @@
 {
   "system": "IPVN 7 Autonomous Network Operating System",
-  "version": "7.8.0",
+  "version": "7.9.0",
   "git": {
     "branch": "main",
     "remote_origin": "https://github.com/galleguillosdavid-coder/Ipvn7-10.git",
-    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0", "v7.4.0", "v7.5.0", "v7.6.0", "v7.7.0", "v7.8.0"],
+    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0", "v7.4.0", "v7.5.0", "v7.6.0", "v7.7.0", "v7.8.0", "v7.9.0"],
     "clean_working_tree": true
   },
   "runtime_environment": {
     "os": "Windows 11 AMD64 (PowerShell)",
     "python": ".\\.venv\\Scripts\\python.exe (Python 3.14.6)",
     "pytest_command": ".\\.venv\\Scripts\\pytest.exe -q",
-    "test_suite_status": "103/103 passing (100% pass rate, 0 regressions)",
+    "test_suite_status": "104/104 passing (100% pass rate, 0 regressions)",
     "ports": {
       "web_ui": 7070,
       "mcp_server": "7070/mcp",
@@ -36,7 +36,7 @@
     "security_governance_policy": ".nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md"
   },
   "subsystems": {
-    "total_active_subsystems": 64,
+    "total_active_subsystems": 65,
     "network_layers": 4,
     "mcp_tools_count": 63,
     "hrs_frame_opcodes": [

@@ -3939,3 +3939,83 @@ def test_audit_h05_simulation_small_world_clamping():
     # Total nodes must be clamped to maximum 120
     assert res_data["total_nodes"] <= 120
     assert res_data["churn_ratio"] <= 0.85
+
+
+def test_sovereign_exit_relay_true_overlay_datapath():
+    """Validates True Overlay Datapath Forwarding through Exit Node without direct client connection."""
+    from ipvn7.gateway.exit_relay import (
+        SovereignExitRelayServer,
+        SovereignExitRelayClient,
+        MAGIC_EXIT_RELAY,
+        CMD_CONNECT,
+        CMD_CONNECTED,
+        CMD_DATA,
+        STATUS_OK,
+    )
+    from unittest.mock import patch
+    import socket
+    import threading
+
+    # 1. Setup local client node and remote exit node
+    client_node = IPVN7Node(alias="Client-Gateway", bind_host="127.0.0.1")
+    exit_node = IPVN7Node(alias="Exit-Relay-Node", bind_host="127.0.0.1")
+    client_node.start_background_listener()
+    exit_node.start_background_listener()
+
+    # Bootstrap mutual peers
+    client_node.bootstrap_peer(exit_node.did, "127.0.0.1", exit_node.bound_port)
+    exit_node.bootstrap_peer(client_node.did, "127.0.0.1", client_node.bound_port)
+
+    # 2. Setup mock target echo server
+    echo_srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    echo_srv.bind(("127.0.0.1", 0))
+    echo_srv.listen(5)
+    echo_port = echo_srv.getsockname()[1]
+
+    def run_echo():
+        try:
+            conn, _ = echo_srv.accept()
+            data = conn.recv(1024)
+            if data:
+                conn.sendall(b"ECHO:" + data)
+            conn.close()
+        except Exception:
+            pass
+
+    t_echo = threading.Thread(target=run_echo, daemon=True)
+    t_echo.start()
+
+    # 3. Instantiate Exit Relay Server on Exit Node and Client on Local Node
+    server = SovereignExitRelayServer(exit_node)
+    client = SovereignExitRelayClient(client_node, exit_node.did)
+
+    # Mock EgressSecurityPolicy on Exit Node to allow local test echo port
+    with patch("ipvn7.gateway.exit_relay.EgressSecurityPolicy.resolve_and_validate_host", return_value=(True, "Allowed in test", ["127.0.0.1"])):
+        # Create paired socket simulating local application connected to gateway
+        s_app, s_client = socket.socketpair()
+
+        def app_work():
+            s_app.sendall(b"Hello Quantum Sovereign Internet!")
+            resp = s_app.recv(1024)
+            assert resp == b"ECHO:Hello Quantum Sovereign Internet!"
+            s_app.close()
+
+        t_app = threading.Thread(target=app_work, daemon=True)
+        t_app.start()
+
+        # Open tunneled stream through Exit Node
+        ok, reason, transferred = client.open_tunneled_stream("test.internal", echo_port, s_client, timeout=4.0)
+
+        t_app.join(timeout=3.0)
+        s_client.close()
+        echo_srv.close()
+
+        assert ok is True
+        assert transferred > 0
+        assert server.stats["connections_handled"] >= 1
+        assert server.stats["bytes_forwarded_outbound"] > 0
+        assert server.stats["bytes_forwarded_inbound"] > 0
+
+    client_node.stop()
+    exit_node.stop()
+

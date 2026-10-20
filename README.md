@@ -1,5 +1,5 @@
 # IPVN 7 — Internet Protocol Version 7
-> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.8.0)**  
+> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.9.0)**  
 > *Implementación Canónica en Python 3.14 con Criptografía Híbrida NIST FIPS 203 & 204*  
 > **Repositorio Oficial:** [https://github.com/galleguillosdavid-coder/Ipvn7-10](https://github.com/galleguillosdavid-coder/Ipvn7-10)
 
@@ -26,6 +26,7 @@
 >    - [`.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md`](.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md) *(Sincronización Privada Interregional de DHT mediante Filtros de Bloom y Tramas Canónicas IP7S)*.
 >    - [`.nexus/decisions/ADR-009-SOVEREIGN-TUNNEL-TELEMETRY-AND-PMTU.md`](.nexus/decisions/ADR-009-SOVEREIGN-TUNNEL-TELEMETRY-AND-PMTU.md) *(Telemetría de Túneles Soberanos, Descubrimiento Dinámico de Path MTU y Failover Bicast)*.
 >    - [`.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md`](.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md) *(Remediación Integral de la Segunda Auditoría ChatGPT: H-01 a H-08, EgressSecurityPolicy, MCP Auth y Blindaje de Salida)*.
+>    - [`.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md`](.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md) *(Canal de Datos Overlay Real a través de Nodos de Salida mediante Enmarcado Canónico IP7X)*.
 > 7. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
 > 8. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
@@ -40,7 +41,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **103/103 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.81s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
+*Criterio de Aceptación Innegociable:* **104/104 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.15s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell
