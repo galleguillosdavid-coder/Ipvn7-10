@@ -173,6 +173,10 @@ Para mantener el ciclo de vida evolutivo sin intervención humana:
    - **Paso 6: Sincronización Documental.** Actualizar `IPVN7_RFC_SPECIFICATION.md` con las nuevas secciones normativas.
    - **Paso 7: Re-agendar el ciclo.** Volver al Paso 1 mediante `schedule`.
 
+3. **Tarea Ocasional: Auditoría Externa Multi-LLM con ChatGPT ([https://chatgpt.com/](https://chatgpt.com/)):**
+   - **Objetivo:** Ejecutar periódicamente o tras cada hito arquitectónico una auditoría cruzada independiente con ChatGPT para revisión adversaria de seguridad ZTNA, análisis de resistencia cuántica y coherencia RFC.
+   - **Procedimiento:** Proveer el contexto de los ADRs consolidados y el RFC actual a la interfaz de [https://chatgpt.com/](https://chatgpt.com/), auditar posibles fallas de borde (split-brain, replay, desincronización de identidades efímeras) y trasladar los hallazgos validados a nuevos ADRs y pruebas unitarias de regresión en `tests/test_ipvn7.py`.
+
 ---
 
 ## 6. Filosofía de Ingeniería

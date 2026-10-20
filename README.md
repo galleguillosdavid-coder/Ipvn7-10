@@ -234,7 +234,22 @@ Renueva o programa el temporizador con la herramienta `schedule` a 1800 segundos
 3. **Línea I — Benchmark de Throughput Saturado en Datapath Local:**
    - Diseñar un módulo de benchmarking de saturación continua para medir el throughput máximo en Gbps del pipeline de fragmentación y ensamblado de 1280 bytes en Windows Wintun / UDP loopback.
 
+### 5.4. Tarea Ocasional: Auditoría Externa Cruzada con ChatGPT (Multi-LLM Peer Review)
+De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar una auditoría de revisión externa independiente mediante [ChatGPT](https://chatgpt.com/):
+
+- **Objetivo:** Obtener validación adversaria cruzada, auditoría de vectores de ataque Zero-Trust y revisión de coherencia de las especificaciones RFC con un modelo de IA externo.
+- **Enlace de Interacción Oficial:** [https://chatgpt.com/](https://chatgpt.com/)
+- **Protocolo de Auditoría Ocasional:**
+  1. **Preparación del Contexto:** Extraer el estado actual del repositorio resumiendo [`README.md`](README.md), [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md), el último ADR en `.nexus/decisions/` y el resultado de la suite de pruebas unitarias (`pytest -q`).
+  2. **Solicitud de Auditoría (Prompt Maestro):**
+     > *"Audita críticamente la arquitectura, protocolos wire de 1280B, contratos criptográficos (ML-KEM-768 / BitNet b1.58) e invariantes de seguridad del protocolo IPVN 7. Identifica posibles vectores de ataque (replay, split-brain, desbordamiento de búfer, desincronización de reloj en identidades efímeras) y propone mejoras compactas sin introducir dependencias externas."*
+  3. **Evaluación de Hallazgos:** Analizar las observaciones emitidas por ChatGPT. Si se descubren vulnerabilidades o mejoras valiosas:
+     - Documentar la resolución en un nuevo Architecture Decision Record (`ADR-00X-...`).
+     - Escribir pruebas unitarias preventivas que demuestren la neutralización del vector de riesgo en `tests/test_ipvn7.py`.
+     - Actualizar la especificación técnica en `IPVN7_RFC_SPECIFICATION.md`.
+
 ---
 
 *Fin del Protocolo de Handover. IPVN 7 v7.3.0 se encuentra verificado, empaquetado, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
+
 
