@@ -927,3 +927,116 @@ body {
   border-top: 1px solid var(--border-glass);
   margin-top: 3rem;
 }
+
+/* 3D Planetary Globe Canvas */
+.planetary-canvas-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  margin: 1rem auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 35px rgba(0, 242, 254, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  background: radial-gradient(circle at center, #0a1122 0%, #03060d 100%);
+  text-align: center;
+}
+
+#planetaryGlobeCanvas {
+  display: block;
+  width: 100%;
+  height: 380px;
+  cursor: grab;
+}
+
+#planetaryGlobeCanvas:active {
+  cursor: grabbing;
+}
+
+.globe-hud-overlay {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent-cyan);
+  pointer-events: none;
+  background: rgba(3, 6, 13, 0.65);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 242, 254, 0.2);
+}
+
+.globe-controls-bar {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(10, 17, 34, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* BitNet b1.58 Heatmap & AI Visualizer */
+.bitnet-grid-container {
+  display: inline-grid;
+  gap: 4px;
+  background: rgba(5, 8, 16, 0.85);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  box-shadow: 0 0 25px rgba(138, 43, 226, 0.12);
+  margin: 1rem auto;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ternary-cell {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.ternary-cell:hover {
+  transform: scale(1.18);
+  z-index: 10;
+}
+
+.cell-plus-one {
+  background: rgba(0, 255, 170, 0.22);
+  color: #00ffa6;
+  border: 1px solid rgba(0, 255, 170, 0.6);
+  box-shadow: 0 0 8px rgba(0, 255, 170, 0.25);
+}
+
+.cell-zero {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cell-minus-one {
+  background: rgba(255, 64, 96, 0.22);
+  color: #ff4060;
+  border: 1px solid rgba(255, 64, 96, 0.6);
+  box-shadow: 0 0 8px rgba(255, 64, 96, 0.25);
+}
+
+.bitnet-math-banner {
+  background: rgba(20, 15, 35, 0.7);
+  border-left: 3px solid #b388ff;
+  padding: 0.8rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+

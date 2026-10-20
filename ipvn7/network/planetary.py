@@ -210,3 +210,37 @@ class PlanetaryMeshCluster:
             "kleinberg_exponent": 2.0,
             "speed_of_light_kms": self.SPEED_OF_LIGHT_KMS,
         }
+
+    def get_topology_snapshot(self) -> Dict[str, Any]:
+        """
+        Retorna la topología completa con coordenadas 2D de cuadrícula
+        y proyección 3D esférica orbital para el visor de la Tierra en el Control Center.
+        """
+        nodes_data = []
+        half_dim = max(1.0, (self.dim - 1) / 2.0)
+
+        for n in self.nodes.values():
+            # Mapeo a latitud [-72°, +72°] y longitud [-180°, +180°]
+            lat = ((n.coords.y - half_dim) / half_dim) * (math.pi / 2.5)
+            lon = ((n.coords.x - half_dim) / half_dim) * math.pi
+
+            # Coordenadas cartesianas 3D en la esfera unitaria LEO (radio 1.05 con altitud de órbita)
+            orbit_r = 1.08
+            x3d = orbit_r * math.cos(lat) * math.cos(lon)
+            y3d = orbit_r * math.sin(lat)
+            z3d = orbit_r * math.cos(lat) * math.sin(lon)
+
+            node_dict = n.to_dict()
+            node_dict["geo"] = {
+                "lat_deg": round(math.degrees(lat), 2),
+                "lon_deg": round(math.degrees(lon), 2),
+                "x3d": round(x3d, 4),
+                "y3d": round(y3d, 4),
+                "z3d": round(z3d, 4),
+            }
+            nodes_data.append(node_dict)
+
+        return {
+            "metrics": self.get_mesh_metrics(),
+            "nodes": nodes_data,
+        }

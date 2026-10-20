@@ -33,7 +33,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **88/88 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.5s.**
+*Criterio de Aceptación Innegociable:* **90/90 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.0s.**
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell
@@ -148,7 +148,7 @@ ipvn7-10/
 │       ├── mcp.py                      # Servidor MCP JSON-RPC 2.0 (57 herramientas nativas)
 │       └── cli.py                      # Interfaz de línea de comandos
 └── tests/
-    └── test_ipvn7.py                   # Suite canónica exhaustiva de 84 pruebas
+    └── test_ipvn7.py                   # Suite canónica exhaustiva de 90 pruebas
 ```
 
 ---
@@ -166,7 +166,7 @@ Todo agente que continúe el desarrollo debe respetar estos 5 mandatos estrictos
 4. **Rotación Efímera de Identidad (24 Horas):**
    - Los nodos rotan diariamente su DID de capa física (`did:ipvn7:ephemeral:...`) mediante HMAC-SHA256 para impedir el rastreo físico, manteniendo inmutables los petnames `.ipv7` y el DID raíz en la capa de aplicación.
 5. **Cero Regresiones (100% Tests Passing):**
-   - Antes de cada commit, la suite completa debe aprobarse: `.\.venv\Scripts\pytest.exe -q` (**84/84 OK**). Si un cambio rompe un test existente, el cambio es defectuoso y debe corregirse antes de proceder.
+   - Antes de cada commit, la suite completa debe aprobarse: `.\.venv\Scripts\pytest.exe -q` (**90/90 OK**). Si un cambio rompe un test existente, el cambio es defectuoso y debe corregirse antes de proceder.
 
 ---
 
@@ -220,7 +220,7 @@ Cuando un agente limpio inicie su sesión desde cero:
 ```powershell
 git status                                  # Debe estar en 'main' limpio
 git log -n 5 --oneline                      # Debe mostrar los últimos tags v7.0.0 a v7.3.0
-.\.venv\Scripts\pytest.exe -q              # 84 pasados en ~6 segundos
+.\.venv\Scripts\pytest.exe -q              # 90 pasados en ~6 segundos
 Invoke-RestMethod -Uri "http://127.0.0.1:7070/api/status" # Confirmar nodo primario activo
 ```
 
@@ -257,10 +257,10 @@ De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar un
     - **H-02 (Criptografía Híbrida):** Transcript Binding formal con SHA-256 en HKDF salt y suite de pruebas negativas en `tests/test_ipvn7.py` ante manipulación de ciphertext y claves.
     - **H-03 (Especificación PQ-QUIC):** Formalización de PQ-QUIC como protocolo soberano experimental con wire format compacto de 21 bytes para mallas P2P soberanas (independiente de CAs X.509 RFC 9001).
     - **H-04 (Frontera de Seguridad API):** CORS restringido a lista blanca local, encabezados `nosniff`/`DENY`, límite DoS de 1MB en POST y mitigación SSRF completa.
-    - **H-05 (Reproducibilidad):** `requirements.txt` en UTF-8 estándar, `.github/workflows/ci.yml` configurado y 88/88 pruebas aprobadas al 100%.
+    - **H-05 (Reproducibilidad):** `requirements.txt` en UTF-8 estándar, `.github/workflows/ci.yml` configurado y 90/90 pruebas aprobadas al 100%.
 
 ---
 
-*Fin del Protocolo de Handover. IPVN 7 v7.3.1 se encuentra auditado, blindado, verificado con 88 pruebas, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
+*Fin del Protocolo de Handover. IPVN 7 v7.3.1 se encuentra auditado, blindado, verificado con 90 pruebas, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
 
 

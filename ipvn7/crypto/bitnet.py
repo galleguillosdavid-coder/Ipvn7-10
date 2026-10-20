@@ -163,6 +163,11 @@ class BitNetQuantizer:
         return y
 
     @staticmethod
+    def forward_linear(packed_weights: PackedTernaryWeights, x: List[float], bias: Optional[List[float]] = None) -> List[float]:
+        """Convenience alias accepting (packed_weights, x) signature."""
+        return BitNetQuantizer.forward(x, packed_weights, bias)
+
+    @staticmethod
     def serialize_model(packed: PackedTernaryWeights, model_name: str = "bitnet-tiny") -> bytes:
         """Serializes packed ternary model to canonical binary layout."""
         name_bytes = model_name.encode("utf-8")
@@ -189,3 +194,60 @@ class BitNetQuantizer:
         packed_data = data[offset:]
 
         return name, PackedTernaryWeights(rows=rows, cols=int(cols_float), scale=scale, packed_data=packed_data)
+
+    @staticmethod
+    def create_demo_layer(rows: int = 8, cols: int = 8, seed: int = 42) -> Tuple[List[List[float]], List[float]]:
+        """Generates a deterministic synthetic float weight matrix and input activation."""
+        import random
+        rng = random.Random(seed)
+        weights = [[round(rng.gauss(0.0, 1.0), 3) for _ in range(cols)] for _ in range(rows)]
+        x = [round(rng.uniform(-1.0, 1.0), 3) for _ in range(cols)]
+        return weights, x
+
+    @staticmethod
+    def run_demo_pipeline(rows: int = 8, cols: int = 8, seed: int = 42) -> Dict[str, Any]:
+        """Runs an end-to-end BitNet b1.58 quantization and integer inference demo."""
+        import time
+        weights, x = BitNetQuantizer.create_demo_layer(rows, cols, seed)
+
+        t0 = time.perf_counter_ns()
+        packed = BitNetQuantizer.quantize_weights(weights)
+        quant_time_us = (time.perf_counter_ns() - t0) / 1000.0
+
+        t0 = time.perf_counter_ns()
+        y_quant = BitNetQuantizer.forward(x, packed)
+        infer_time_us = (time.perf_counter_ns() - t0) / 1000.0
+
+        # Float32 baseline for comparison
+        y_float = []
+        for r in weights:
+            dot = sum(w * xv for w, xv in zip(r, x))
+            y_float.append(round(dot, 4))
+
+        ternary_matrix = BitNetQuantizer.unpack_weights(packed)
+
+        # Count frequencies
+        plus_ones = sum(row.count(1) for row in ternary_matrix)
+        minus_ones = sum(row.count(-1) for row in ternary_matrix)
+        zeros = sum(row.count(0) for row in ternary_matrix)
+
+        return {
+            "model_name": f"bitnet-layer-{rows}x{cols}",
+            "rows": rows,
+            "cols": cols,
+            "scale_factor": round(packed.scale, 4),
+            "compression_ratio": packed.compression_ratio,
+            "memory_saved_pct": round((1.0 - (1.0 / max(1.0, packed.compression_ratio))) * 100.0, 1),
+            "quantization_time_us": round(quant_time_us, 2),
+            "integer_inference_time_us": round(infer_time_us, 2),
+            "ternary_weights": ternary_matrix,
+            "input_x": x,
+            "y_integer_output": y_quant,
+            "y_float_baseline": y_float,
+            "weight_distribution": {
+                "plus_ones": plus_ones,
+                "zeros": zeros,
+                "minus_ones": minus_ones,
+                "sparsity_pct": round((zeros / (rows * cols)) * 100.0, 1) if (rows * cols) > 0 else 0.0,
+            },
+        }

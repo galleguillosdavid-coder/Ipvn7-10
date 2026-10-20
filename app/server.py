@@ -33,6 +33,7 @@ from ipvn7.network.onion import SphinxHop, ACTION_DELIVER, ACTION_FORWARD
 from ipvn7.access.services import ServiceScope
 from ipvn7.network.explainable import CandidateMetrics
 from ipvn7.security.delegation import ExecutionTier
+from ipvn7.crypto.bitnet import BitNetQuantizer
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
@@ -352,6 +353,19 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
 
         elif path == "/api/planetary/metrics":
             self._send_json(PRIMARY_NODE.planetary_mesh.get_mesh_metrics())
+
+        elif path == "/api/planetary/topology":
+            self._send_json(PRIMARY_NODE.planetary_mesh.get_topology_snapshot())
+
+        elif path == "/api/bitnet/demo":
+            qs = parse_qs(parsed.query)
+            rows = int(qs.get("rows", [8])[0])
+            cols = int(qs.get("cols", [8])[0])
+            seed = int(qs.get("seed", [42])[0])
+            rows = max(2, min(32, rows))
+            cols = max(2, min(32, cols))
+            demo_res = BitNetQuantizer.run_demo_pipeline(rows, cols, seed)
+            self._send_json(demo_res)
 
         elif path == "/api/resilience/status":
             self._send_json(PRIMARY_NODE.resilience_guardian.get_health_status())

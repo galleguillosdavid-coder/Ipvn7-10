@@ -3243,4 +3243,47 @@ def test_proxy_overlay_mode_validation():
     assert proxy.stats["overlay_packets_routed"] == 0
 
 
+def test_planetary_topology_3d_snapshot():
+    """Validates 3D orbital spherical coordinate projection for PlanetaryMeshCluster."""
+    from ipvn7.network.planetary import PlanetaryMeshCluster
+
+    cluster = PlanetaryMeshCluster(node_count=16, seed=777)
+    snapshot = cluster.get_topology_snapshot()
+
+    assert "metrics" in snapshot
+    assert "nodes" in snapshot
+    assert len(snapshot["nodes"]) == 16
+
+    for node in snapshot["nodes"]:
+        assert "geo" in node
+        geo = node["geo"]
+        assert "lat_deg" in geo
+        assert "lon_deg" in geo
+        assert "x3d" in geo
+        assert "y3d" in geo
+        assert "z3d" in geo
+        # Check radius is approximately orbit_r (1.08)
+        r = (geo["x3d"]**2 + geo["y3d"]**2 + geo["z3d"]**2)**0.5
+        assert 1.07 <= r <= 1.09
+
+
+def test_bitnet_demo_pipeline_metrics():
+    """Validates end-to-end BitNet b1.58 demo pipeline and zero-multiplication inference."""
+    from ipvn7.crypto.bitnet import BitNetQuantizer
+
+    res = BitNetQuantizer.run_demo_pipeline(rows=8, cols=8, seed=123)
+    assert res["rows"] == 8
+    assert res["cols"] == 8
+    assert res["compression_ratio"] > 8.0
+    assert res["memory_saved_pct"] > 85.0
+    assert len(res["y_integer_output"]) == 8
+    assert len(res["y_float_baseline"]) == 8
+
+    dist = res["weight_distribution"]
+    total = dist["plus_ones"] + dist["zeros"] + dist["minus_ones"]
+    assert total == 64
+    assert 0.0 <= dist["sparsity_pct"] <= 100.0
+
+
+
 

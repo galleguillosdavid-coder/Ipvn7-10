@@ -147,6 +147,7 @@
           <button class="tab-btn" data-tab="tab-chat-healing">Chat Soberano & Link Healing</button>
           <button class="tab-btn" data-tab="tab-uin-shadow-pfo">Identidad UIN, Shadow & PFO</button>
           <button class="tab-btn" data-tab="tab-wan-desktop">Sondeo WAN & Escritorio Remoto</button>
+          <button class="tab-btn" data-tab="tab-bitnet">BitNet b1.58 Ternary AI</button>
           <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (57 Herramientas IA)</button>
         </div>
 
@@ -908,6 +909,20 @@
               <div class="bench-item">
                 <span class="bench-label">Exponente de Potencias</span>
                 <strong class="bench-val" id="pmExponent">r = 2.0</strong>
+              </div>
+            </div>
+
+            <!-- 3D Interactive Planetary Globe Canvas -->
+            <div class="planetary-canvas-wrap mt-4">
+              <div class="globe-hud-overlay">
+                <div>🌐 LEO ORBITAL MESH &bull; 16 SATELITES (c = 299,792 km/s)</div>
+                <div style="color:var(--text-dim); font-size:0.7rem; margin-top:2px;">Arrastra para rotar la esfera 3D &bull; Los enlaces pulsan fotones de datos</div>
+              </div>
+              <canvas id="planetaryGlobeCanvas" width="680" height="380"></canvas>
+              <div class="globe-controls-bar">
+                <button class="btn btn-outline btn-small" id="btnToggleGlobeRotation">Pausar Rotación</button>
+                <button class="btn btn-accent btn-small" id="btnPulsePhotons">Emitir Pulso Fotónico LEO</button>
+                <button class="btn btn-outline btn-small" id="btnResetGlobeCamera">Resetear Cámara 3D</button>
               </div>
             </div>
 
