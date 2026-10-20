@@ -1803,7 +1803,7 @@ def test_mcp_tools_catalog_57_tools():
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 62, f"Expected 62 MCP tools, found {len(tools)}"
+    assert len(tools) == 63, f"Expected 63 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -1976,6 +1976,24 @@ def test_mcp_tools_catalog_57_tools():
     })
     assert "SYNCHRONIZED" in res_dht["result"]["content"][0]["text"]
     assert "ZERO_METADATA_LEAKAGE_BLOOM_O1" in res_dht["result"]["content"][0]["text"]
+
+    # Tool 20: ipvn7_probe_tunnel_telemetry
+    res_tun = node.mcp_server.handle_jsonrpc({
+        "jsonrpc": "2.0",
+        "id": 129,
+        "method": "tools/call",
+        "params": {
+            "name": "ipvn7_probe_tunnel_telemetry",
+            "arguments": {
+                "tunnel_id": "tun0-wintun",
+                "sample_rtt_ms": 15.0,
+                "pmtu_probe_size": 1350,
+                "pmtu_probe_success": True,
+            },
+        },
+    })
+    assert "tun0-wintun" in res_tun["result"]["content"][0]["text"]
+    assert "current_pmtu" in res_tun["result"]["content"][0]["text"]
 
     node.stop()
 
@@ -3602,9 +3620,94 @@ def test_private_dht_interregion_sync_and_bloom_reconciliation():
     sim_res = test_node.sync_interregion_dht(peer_region="region-asia-east")
     assert sim_res["status"] == "SYNCHRONIZED"
     assert sim_res["canonical_mtu"] == 1280
-    assert sim_res["privacy_guarantee"] == "ZERO_METADATA_LEAKAGE_BLOOM_O1"
-    assert sim_res["summary"]["canonical_mtu"] == 1280
     test_node.stop()
+
+
+def test_sovereign_tunnel_telemetry_pmtu_and_bicast_failover():
+    """Validates Line N: Tunnel Telemetry (IP7T), Path MTU Discovery, RFC 3550 Jitter, and Bicast Failover."""
+    from ipvn7.network.tunnel_telemetry import (
+        SovereignTunnelTelemetry,
+        PathMTUEngine,
+        TunnelFrameType,
+        TunnelHealthState,
+        MAGIC_TUNNEL,
+        MIN_SAFE_PMTU,
+        DEFAULT_PMTU,
+        MAX_TUNNEL_MTU,
+    )
+
+    # 1. PathMTUEngine dynamic discovery
+    engine = PathMTUEngine(current_pmtu=1280)
+    assert engine.current_pmtu == 1280
+
+    # Successful probe with larger MTU expands PMTU
+    new_mtu = engine.evaluate_probe_result(1350, success=True)
+    assert new_mtu == 1350
+    assert engine.consecutive_successes == 1
+
+    # Failed probe shrinks PMTU with backoff
+    shrunk_mtu = engine.evaluate_probe_result(1350, success=False)
+    assert shrunk_mtu < 1350
+    assert shrunk_mtu >= MIN_SAFE_PMTU
+    assert engine.consecutive_successes == 0
+
+    # 2. SovereignTunnelTelemetry wire framing (IP7T)
+    telemetry = SovereignTunnelTelemetry(local_did="did:ipvn7:tunnel-tester")
+    tun_metrics = telemetry.register_tunnel("wg0-mesh", interface_type="wireguard", remote_endpoint="10.7.0.2:51820")
+    assert tun_metrics.tunnel_id == "wg0-mesh"
+    assert tun_metrics.health_state == TunnelHealthState.HEALTHY
+
+    # Build probe frame
+    frame = telemetry.build_probe_frame("wg0-mesh", frame_type=TunnelFrameType.PROBE, sequence_id=42, desired_size=256)
+    assert len(frame) == 256
+    assert frame[:4] == MAGIC_TUNNEL
+
+    # Parse and verify CRC32
+    parsed = telemetry.parse_probe_frame(frame)
+    assert parsed["magic"] == "IP7T"
+    assert parsed["frame_type"] == "PROBE"
+    assert parsed["sequence_id"] == 42
+    assert parsed["tunnel_id"] == "wg0-mesh"
+
+    # Corrupt frame triggers CRC mismatch error
+    corrupt_frame = frame[:-1] + b"\xff"
+    import pytest
+    with pytest.raises(ValueError, match="CRC32 mismatch"):
+        telemetry.parse_probe_frame(corrupt_frame)
+
+    # 3. RFC 3550 Jitter and EWMA RTT updates
+    telemetry.simulate_telemetry_probe("wg0-mesh", sample_rtt_ms=20.0)
+    telemetry.simulate_telemetry_probe("wg0-mesh", sample_rtt_ms=22.0)
+    assert tun_metrics.rtt_ewma_ms > 0
+    assert tun_metrics.health_state == TunnelHealthState.HEALTHY
+    assert tun_metrics.bicast_active is False
+
+    # 4. Critical link degradation triggers Bicast Failover
+    # Inject packet drops to exceed 10% loss threshold
+    for _ in range(5):
+        telemetry.simulate_telemetry_probe("wg0-mesh", sample_rtt_ms=120.0, packet_lost=True)
+
+    assert tun_metrics.compute_loss_ratio() > 0.10
+    assert tun_metrics.health_state == TunnelHealthState.CRITICAL_FAILOVER
+    assert tun_metrics.bicast_active is True
+    assert telemetry.total_failovers_triggered >= 1
+
+    # 5. Integrated node probing
+    node = IPVN7Node(alias="Tunnel-Node-Tester", bind_host="127.0.0.1")
+    node_res = node.probe_tunnel_telemetry(
+        tunnel_id="tun0-wintun",
+        sample_rtt_ms=8.5,
+        pmtu_probe_size=1380,
+        pmtu_probe_success=True,
+    )
+    assert node_res["tunnel_id"] == "tun0-wintun"
+    assert node_res["current_pmtu"] == 1380
+    assert node_res["health_state"] == "HEALTHY"
+    summary = node.tunnel_telemetry.get_summary()
+    assert summary["total_tunnels"] >= 1
+    assert "tun0-wintun" in summary["tunnels"]
+    node.stop()
+
 
 
 

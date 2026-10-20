@@ -1180,6 +1180,35 @@ class IPVN7MCPServer:
                     },
                 },
             },
+            {
+                "name": "ipvn7_probe_tunnel_telemetry",
+                "description": "Monitorea continuamente la salud del túnel (Wintun/WireGuard/UDP), calcula Jitter RFC 3550, descubre Path MTU adaptativo y dispara conmutación multipath bicast automática ante degradación.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "tunnel_id": {
+                            "type": "string",
+                            "description": "Identificador del túnel monitoreado (por defecto 'tun0-wintun')",
+                        },
+                        "sample_rtt_ms": {
+                            "type": "number",
+                            "description": "Muestra de RTT en milisegundos para actualizar EWMA y Jitter (por defecto 12.5)",
+                        },
+                        "packet_lost": {
+                            "type": "boolean",
+                            "description": "Indica si la sonda sufrió pérdida para cálculo de tasa de caída",
+                        },
+                        "pmtu_probe_size": {
+                            "type": "integer",
+                            "description": "Tamaño de trama en bytes para descubrimiento dinámico de Path MTU (576 a 1420)",
+                        },
+                        "pmtu_probe_success": {
+                            "type": "boolean",
+                            "description": "Resultado de tránsito de la trama de prueba de PMTU",
+                        },
+                    },
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1823,6 +1852,23 @@ class IPVN7MCPServer:
             elif name == "ipvn7_sync_interregion_dht":
                 peer_reg = arguments.get("peer_region", "region-europe-central")
                 res = self.node.sync_interregion_dht(peer_region=peer_reg)
+                return True, res
+
+            elif name == "ipvn7_probe_tunnel_telemetry":
+                tid = arguments.get("tunnel_id", "tun0-wintun")
+                rtt = float(arguments.get("sample_rtt_ms", 12.5))
+                lost = bool(arguments.get("packet_lost", False))
+                pmtu_sz = arguments.get("pmtu_probe_size")
+                if pmtu_sz is not None:
+                    pmtu_sz = int(pmtu_sz)
+                pmtu_ok = bool(arguments.get("pmtu_probe_success", True))
+                res = self.node.probe_tunnel_telemetry(
+                    tunnel_id=tid,
+                    sample_rtt_ms=rtt,
+                    packet_lost=lost,
+                    pmtu_probe_size=pmtu_sz,
+                    pmtu_probe_success=pmtu_ok,
+                )
                 return True, res
 
             else:

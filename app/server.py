@@ -466,6 +466,9 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
         elif path == "/api/dht/sync/summary":
             self._send_json(PRIMARY_NODE.dht_sync.get_summary())
 
+        elif path == "/api/tunnel/telemetry":
+            self._send_json(PRIMARY_NODE.tunnel_telemetry.get_summary())
+
         elif path == "/api/upnp/status":
             self._send_json(PRIMARY_NODE.upnp_mapper.get_summary())
 
@@ -1204,6 +1207,23 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
         elif path == "/api/dht/sync":
             peer_reg = body.get("peer_region", "region-europe-central")
             res = PRIMARY_NODE.sync_interregion_dht(peer_region=peer_reg)
+            self._send_json({"success": True, "result": res})
+
+        elif path == "/api/tunnel/telemetry/probe":
+            tid = body.get("tunnel_id", "tun0-wintun")
+            rtt = float(body.get("sample_rtt_ms", 12.5))
+            lost = bool(body.get("packet_lost", False))
+            pmtu_sz = body.get("pmtu_probe_size")
+            if pmtu_sz is not None:
+                pmtu_sz = int(pmtu_sz)
+            pmtu_ok = bool(body.get("pmtu_probe_success", True))
+            res = PRIMARY_NODE.probe_tunnel_telemetry(
+                tunnel_id=tid,
+                sample_rtt_ms=rtt,
+                packet_lost=lost,
+                pmtu_probe_size=pmtu_sz,
+                pmtu_probe_success=pmtu_ok,
+            )
             self._send_json({"success": True, "result": res})
 
         elif path in ("/api/mcp", "/mcp"):

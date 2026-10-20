@@ -82,6 +82,7 @@ from ..identity.ephemeral import EphemeralIdentityManager
 from ..network.hrs_frames import HRSDispatcher, HRSFrame, HRSFrameType, DeviceProfile, AdaptiveSLA
 from ..network.geopolicy import GeoPolicyRouter, RoutingPolicyMode, GeoRegion, GeoNodeDescriptor
 from ..network.dht_sync import PrivateDHTInterregionSync, SovereignBloomFilter, CANONICAL_SYNC_MTU
+from ..network.tunnel_telemetry import SovereignTunnelTelemetry, TunnelMetrics, TunnelHealthState, DEFAULT_PMTU
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -272,6 +273,15 @@ class IPVN7Node:
             local_did=self.did,
             region_name="region-latam-south",
             dht=self.dht,
+        )
+
+        # Sovereign Tunnel Telemetry & Adaptive Path MTU Subsystem (IP7T & Bicast Failover)
+        self.tunnel_telemetry = SovereignTunnelTelemetry(local_did=self.did)
+        self.tunnel_telemetry.register_tunnel(
+            tunnel_id="tun0-wintun",
+            interface_type="wintun",
+            remote_endpoint="127.0.0.1:9443",
+            initial_pmtu=DEFAULT_PMTU,
         )
 
     # -------------------------------------------------------------
@@ -1340,4 +1350,24 @@ class IPVN7Node:
         result = self.dht_sync.execute_peer_sync_simulation(peer_sync)
         result["summary"] = self.dht_sync.get_summary()
         return result
+
+    def probe_tunnel_telemetry(
+        self,
+        tunnel_id: str = "tun0-wintun",
+        sample_rtt_ms: float = 12.5,
+        packet_lost: bool = False,
+        pmtu_probe_size: Optional[int] = None,
+        pmtu_probe_success: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Executes a live or simulated tunnel telemetry probe with RFC 3550 jitter and PMTU discovery.
+        """
+        return self.tunnel_telemetry.simulate_telemetry_probe(
+            tunnel_id=tunnel_id,
+            sample_rtt_ms=sample_rtt_ms,
+            packet_lost=packet_lost,
+            pmtu_probe_size=pmtu_probe_size,
+            pmtu_probe_success=pmtu_probe_success,
+        )
+
 
