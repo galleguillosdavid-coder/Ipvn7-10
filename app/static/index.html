@@ -1212,7 +1212,17 @@
               <div class="streaming-control-bar mt-3">
                 <button class="btn btn-accent btn-small" id="btnSimulateMouseMove">Inyectar Cursor Move (X: 0.5, Y: 0.5)</button>
                 <button class="btn btn-outline btn-small" id="btnSimulateKeyPress">Inyectar Pulsación (Key: Enter)</button>
+                <button class="btn btn-primary btn-small" id="btnStreamTestVideoFrame">Transmitir Trama IP7M (AV1 / 1280B)</button>
               </div>
+
+              <!-- Live Interactive Canvas for Remote Desktop & IP7M Video Stream -->
+              <div class="mt-4" style="text-align: center; position: relative;">
+                <canvas id="rdLiveCanvas" width="640" height="320" style="background: radial-gradient(circle at center, #0e1526 0%, #050811 100%); border: 1px solid rgba(0, 255, 200, 0.3); border-radius: 8px; width: 100%; max-width: 640px; cursor: crosshair; box-shadow: 0 0 25px rgba(0, 255, 200, 0.12);"></canvas>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:6px;">
+                  <span class="text-green">&bull; CANVAS INTERACTIVO EN TIEMPO REAL:</span> Mueva el ratón o haga clic sobre el visor para inyectar coordenadas normalizadas directas a la sesión remota.
+                </div>
+              </div>
+
               <div id="rdInputResultBox" class="json-viewer mono-text mt-3" style="max-height:120px; overflow-y:auto; font-size:0.8rem; display:none;"></div>
             </div>
           </div>

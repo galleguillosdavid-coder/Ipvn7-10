@@ -2035,6 +2035,201 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // --- Interactive Remote Desktop Canvas & IP7M Video Stream Visualizer ---
+  const rdCanvas = document.getElementById("rdLiveCanvas");
+  let rdCursorX = 0.5;
+  let rdCursorY = 0.5;
+  let rdClickRipples = [];
+  let rdVideoFlash = 0.0;
+
+  if (rdCanvas) {
+    const ctx = rdCanvas.getContext("2d");
+
+    function renderRdCanvas() {
+      const W = rdCanvas.width;
+      const H = rdCanvas.height;
+
+      // 1. Clear background
+      ctx.fillStyle = "#070b14";
+      ctx.fillRect(0, 0, W, H);
+
+      // 2. High-tech cybernetic grid
+      ctx.strokeStyle = "rgba(0, 255, 200, 0.08)";
+      ctx.lineWidth = 1;
+      const step = 32;
+      for (let x = 0; x < W; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+      for (let y = 0; y < H; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+
+      // 3. Scanline effect
+      const t = Date.now() * 0.002;
+      const scanY = (t * 80) % H;
+      ctx.fillStyle = "rgba(0, 255, 200, 0.06)";
+      ctx.fillRect(0, scanY, W, 4);
+
+      // 4. Video frame burst effect
+      if (rdVideoFlash > 0.01) {
+        ctx.fillStyle = `rgba(0, 255, 200, ${rdVideoFlash * 0.25})`;
+        ctx.fillRect(0, 0, W, H);
+        rdVideoFlash *= 0.88;
+      }
+
+      // 5. Click ripple animations
+      for (let i = rdClickRipples.length - 1; i >= 0; i--) {
+        const rip = rdClickRipples[i];
+        rip.radius += 2.5;
+        rip.alpha *= 0.92;
+        ctx.strokeStyle = `rgba(0, 255, 200, ${rip.alpha})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(rip.x * W, rip.y * H, rip.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        if (rip.alpha < 0.02) {
+          rdClickRipples.splice(i, 1);
+        }
+      }
+
+      // 6. Draw HUD Telemetry Box
+      ctx.fillStyle = "rgba(10, 20, 35, 0.75)";
+      ctx.strokeStyle = "rgba(0, 255, 200, 0.4)";
+      ctx.fillRect(16, 16, 260, 80);
+      ctx.strokeRect(16, 16, 260, 80);
+
+      ctx.font = "11px 'Courier New', monospace";
+      ctx.fillStyle = "#00ffc8";
+      ctx.fillText("SESSION: notebook.ipv7 (E2EE)", 26, 36);
+      ctx.fillStyle = "#94a3b8";
+      ctx.fillText("CRYPTO:  ML-KEM-768 + ChaCha20", 26, 52);
+      ctx.fillStyle = "#38bdf8";
+      ctx.fillText("MTU:     1280B (IP7M Fragmenter)", 26, 68);
+      ctx.fillStyle = "#4ade80";
+      ctx.fillText(`FPS:     60.0  | RTT: 5.4ms`, 26, 84);
+
+      // 7. Draw cursor indicator
+      const px = rdCursorX * W;
+      const py = rdCursorY * H;
+
+      ctx.strokeStyle = "#00ffc8";
+      ctx.lineWidth = 1.5;
+      // Crosshair
+      ctx.beginPath();
+      ctx.moveTo(px - 10, py);
+      ctx.lineTo(px + 10, py);
+      ctx.moveTo(px, py - 10);
+      ctx.lineTo(px, py + 10);
+      ctx.stroke();
+
+      // Outer targeting ring
+      ctx.strokeStyle = "rgba(0, 255, 200, 0.6)";
+      ctx.beginPath();
+      ctx.arc(px, py, 14, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = "#00ffc8";
+      ctx.font = "9px monospace";
+      ctx.fillText(`X:${rdCursorX.toFixed(3)} Y:${rdCursorY.toFixed(3)}`, px + 18, py - 6);
+
+      requestAnimationFrame(renderRdCanvas);
+    }
+
+    renderRdCanvas();
+
+    // Mouse move tracking on canvas
+    let lastMoveSent = 0;
+    rdCanvas.addEventListener("mousemove", (e) => {
+      const rect = rdCanvas.getBoundingClientRect();
+      rdCursorX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      rdCursorY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+      const now = Date.now();
+      if (now - lastMoveSent > 120) {
+        lastMoveSent = now;
+        fetch("/api/remote_desktop/input", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event_type: "mouse_move", x: rdCursorX, y: rdCursorY })
+        }).catch(() => {});
+      }
+    });
+
+    // Mouse click tracking on canvas
+    rdCanvas.addEventListener("click", (e) => {
+      const rect = rdCanvas.getBoundingClientRect();
+      const clickX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const clickY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+      rdClickRipples.push({ x: clickX, y: clickY, radius: 4, alpha: 0.9 });
+
+      const resBox = document.getElementById("rdInputResultBox");
+      if (resBox) {
+        resBox.style.display = "block";
+        resBox.textContent = `Inyectando click en coords (${clickX.toFixed(3)}, ${clickY.toFixed(3)})...`;
+      }
+
+      fetch("/api/remote_desktop/input", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event_type: "mouse_click", x: clickX, y: clickY, button: 1 })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (resBox) resBox.textContent = JSON.stringify(data, null, 2);
+        fetchRemoteDesktopStatus();
+      })
+      .catch(err => {
+        if (resBox) resBox.textContent = `Error inyectando click: ${err}`;
+      });
+    });
+  }
+
+  // --- Button: Live IP7M Video Frame Streaming Trigger ---
+  const btnStreamVideo = document.getElementById("btnStreamTestVideoFrame");
+  if (btnStreamVideo) {
+    btnStreamVideo.addEventListener("click", async () => {
+      const resBox = document.getElementById("rdInputResultBox");
+      if (resBox) {
+        resBox.style.display = "block";
+        resBox.textContent = "Fragmentando y transmitiendo trama IP7M (AV1 / 1280B)...";
+      }
+
+      btnStreamVideo.disabled = true;
+      try {
+        const rpcPayload = {
+          jsonrpc: "2.0",
+          id: Date.now(),
+          method: "tools/call",
+          params: {
+            name: "ipvn7_dispatch_remote_media_frame",
+            arguments: { frame_type: "video_keyframe", codec: "av1" }
+          }
+        };
+
+        const res = await fetch("/api/mcp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rpcPayload)
+        });
+        const data = await res.json();
+        rdVideoFlash = 1.0;
+        if (resBox) resBox.textContent = JSON.stringify(data, null, 2);
+        fetchRemoteDesktopStatus();
+      } catch (err) {
+        if (resBox) resBox.textContent = `Error transmitiendo trama IP7M: ${err}`;
+      } finally {
+        btnStreamVideo.disabled = false;
+      }
+    });
+  }
+
   fetchDagBlocks();
   fetchDiagnostics();
   fetchPetnames();
