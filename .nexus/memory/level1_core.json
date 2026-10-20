@@ -1,10 +1,10 @@
 {
   "system": "IPVN 7 Autonomous Network Operating System",
-  "version": "7.1.0",
+  "version": "7.2.0",
   "git": {
     "branch": "main",
     "remote_origin": "https://github.com/galleguillosdavid-coder/Ipvn7-10.git",
-    "tags": ["v7.0.0", "v7.1.0"],
+    "tags": ["v7.0.0", "v7.1.0", "v7.2.0"],
     "clean_working_tree": true
   },
   "runtime_environment": {
@@ -29,6 +29,7 @@
       "ChaCha20-Poly1305"
     ],
     "quiet_wire_protocol": "IP7H_HRS_5_FRAME",
+    "media_wire_protocol": "IP7M_1280B_CHUNKS",
     "ephemeral_rotation_hours": 24,
     "max_acceptable_test_failures": 0
   },
@@ -42,6 +43,11 @@
       "RESPONSE (0x03)",
       "HEARTBEAT (0x04)",
       "STATE_CHANGE (0x05)"
+    ],
+    "media_frame_types": [
+      "video_keyframe (0x01)",
+      "video_delta (0x02)",
+      "audio_opus (0x03)"
     ],
     "adaptive_slas": {
       "iot": {"heartbeat": 3.0, "timeout": 10.0, "retries": 2},
@@ -60,15 +66,10 @@
   ],
   "handover": {
     "ready_for_clean_agent": true,
-    "completed_milestones": [
-      "Línea A: Integración de Edge AI / Ollama en shadow_device.py (Completado)",
-      "Línea B: WebRTC media streaming IP7M en remote_desktop.py (Completado)",
-      "Línea C: Pruebas de estrés y resiliencia en churn.py con pérdida 5-20% y jitter (Completado)"
-    ],
     "next_priorities": [
-      "Línea E: Integración visual directa del streaming IP7M en el canvas HTML5 de app.js",
-      "Línea F: Embajador BitNet / 1-bit quantization local para micro-nodos IoT",
-      "Línea G: Render 3D WebGL de la Malla Planetaria con retardo relativista en vivo"
+      "Línea E: Integración visual reactiva del streaming multimedia IP7M en el canvas HTML5 de app/static/app.js",
+      "Línea F: Cuantización local ultra-ligera BitNet de 1-bit para nodos Edge IoT de baja potencia",
+      "Línea G: Malla Planetaria con render 3D WebGL de órbitas y retardo relativista"
     ]
   }
 }
