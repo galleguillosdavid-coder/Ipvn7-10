@@ -4416,3 +4416,33 @@ def test_line_o_mcp_reciprocity_tools():
     assert res_led["stats"]["tokens_settled"] >= 1
 
 
+def test_laia_invariants_automated_quality_gate():
+    """LAIA Directive: Automates continuous verification of all core architectural invariants."""
+    from scripts.verify_laia_invariants import (
+        check_inv1_zero_static_secrets,
+        check_inv2_mcp_and_control_auth,
+        check_inv3_egress_anti_ssrf,
+        check_inv4_wire_framing_integrity,
+        check_inv6_zero_raw_secret_leakage,
+        check_inv7_bounded_concurrency,
+    )
+
+    inv1_ok, v1 = check_inv1_zero_static_secrets()
+    assert inv1_ok, f"INV-1 Violated: {v1}"
+
+    inv2_ok, v2 = check_inv2_mcp_and_control_auth()
+    assert inv2_ok, f"INV-2 Violated: {v2}"
+
+    inv3_ok, v3 = check_inv3_egress_anti_ssrf()
+    assert inv3_ok, f"INV-3 Violated: {v3}"
+
+    inv4_ok, v4 = check_inv4_wire_framing_integrity()
+    assert inv4_ok, f"INV-4 Violated: {v4}"
+
+    inv6_ok, v6 = check_inv6_zero_raw_secret_leakage()
+    assert inv6_ok, f"INV-6 Violated: {v6}"
+
+    inv7_ok, v7 = check_inv7_bounded_concurrency()
+    assert inv7_ok, f"INV-7 Violated: {v7}"
+
+

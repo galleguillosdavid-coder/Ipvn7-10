@@ -44,7 +44,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **114/114 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~7.0s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
+*Criterio de Aceptación Innegociable:* **115/115 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~7.0s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell

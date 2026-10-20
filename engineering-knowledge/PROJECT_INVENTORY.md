@@ -9,7 +9,7 @@
 
 | Directorio | Tecnología | Estado | Descripción y Hallazgos |
 | :--- | :--- | :--- | :--- |
-| **`ipvn7-10`** | Python 3.14 / PQC | **ACTIVO (v7.10.0)** | Implementación de referencia actual. Handshake híbrido NIST FIPS 203/204 con firma digital, Exit Node Relay, SOCKS5 acotado, BitNet b1.58, Small-World DHT y 108 pruebas pasando. |
+| **`ipvn7-10`** | Python 3.14 / PQC | **ACTIVO (v7.11.0)** | Implementación de referencia actual. Handshake híbrido NIST FIPS 203/204 con firma digital, Exit Node Relay IP7X, SOCKS5 acotado, BitNet b1.58, Small-World DHT, Línea O (Reciprocidad IP7R), 66 herramientas MCP y 115 pruebas pasando. |
 | **`ipvn7  vX7`** | Go / Python | Histórico | Prototipo híbrido con `pkg/l1/socks5_gateway.go`. Introdujo la pasarela SOCKS5 original pero realizaba conexiones directas sin overlay. |
 | **`ipvn7 vX`** | Python | Histórico | Experimentos tempranos de routing por capas y sockets directos. |
 | **`0.7` / `0.7 - copia`** | Python | Histórico | Primeros prototipos de tramas canónicas y descubrimiento P2P básico. |

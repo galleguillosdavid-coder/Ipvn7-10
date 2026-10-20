@@ -2,7 +2,7 @@
 ## Protocolo Soberano Post-Cuántico & Guía de Auto-Evolución para Agentes e Ingenieros
 
 > **Versión Canónica de Referencia:** IPVN 7.11.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
-> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (114/114 pasadas en CI Python 3.12, 3.13 y 3.14).  
+> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (115/115 pasadas en CI Python 3.12, 3.13 y 3.14).  
 > **Política de Gobernanza y Anti-Fallos:** Cumplimiento obligatorio de [SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md), [ADR-010](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md), [ADR-011](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md), [ADR-012](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md), [ADR-013](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md) y [`engineering-knowledge/`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/engineering-knowledge/README.md).  
 > **Fecha de Sincronización:** Octubre 2026
 
@@ -27,7 +27,7 @@ El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red 
 
 ## 2. Catálogo de Subsistemas Activos (Capas L0 a L4)
 
-Actualmente, el repositorio cuenta con **66 subsistemas de protocolo integrados** y probados al 100% (114 pruebas unitarias):
+Actualmente, el repositorio cuenta con **66 subsistemas de protocolo integrados** y probados al 100% (115 pruebas unitarias):
 
 ### Capa L0: Acceso al Medio & Aceleración Datapath
 - [`ipvn7/gateway/exit_relay.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/gateway/exit_relay.py): Servidor y cliente de relay de salida con enmarcado canónico `IP7X` para transporte overlay real.
@@ -113,11 +113,11 @@ Cualquier agente o usuario puede verificar y ejecutar el sistema de forma comple
 
 ### 3.2. Ejecución de la Suite de Pruebas (Zero Regressions)
 ```powershell
-# Ejecutar la suite completa de 114 tests unitarios
+# Ejecutar la suite completa de 115 tests unitarios
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (114/114) con código de salida 0.**
+*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (115/115) con código de salida 0.**
 
 ### 3.3. Lanzamiento del Servidor y Control Center Web
 ```powershell
