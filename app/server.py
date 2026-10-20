@@ -1342,7 +1342,12 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Missing token payload"}, status=400)
                 return
             pub_hex = body.get("issuer_pubkey_hex")
-            pub_bytes = bytes.fromhex(pub_hex) if pub_hex else PEER_NODE.identity.keypair.ed25519_pub.public_bytes_raw()
+            if pub_hex:
+                pub_bytes = bytes.fromhex(pub_hex)
+            elif token_dict.get("issuer_did") == PRIMARY_NODE.did:
+                pub_bytes = PRIMARY_NODE.identity.keypair.ed25519_pub.public_bytes_raw()
+            else:
+                pub_bytes = PEER_NODE.identity.keypair.ed25519_pub.public_bytes_raw()
             res = PRIMARY_NODE.settle_reciprocity_token(token_dict, pub_bytes)
             if body.get("remediate_quota", False) and res.get("success"):
                 rem = PRIMARY_NODE.remediate_quota_with_reciprocity(token_dict.get("beneficiary_did", PRIMARY_NODE.did))

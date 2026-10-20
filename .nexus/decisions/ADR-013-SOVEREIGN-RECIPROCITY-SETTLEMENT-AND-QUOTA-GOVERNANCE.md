@@ -1,80 +1,51 @@
-# ADR-013: Gobernanza de Cuotas y Liquidación Micro-Económica Soberana con Tokens de Reciprocidad P2P
+# ADR-013: Sovereign Reciprocity Settlement and Micro-Economic Quota Governance (Línea O)
 
-- **Estado:** Aceptado e Implementado
-- **Fecha:** 2026-10-20
-- **Versión de IPVN 7:** v7.11.0
-- **Autor:** Agente Autónomo Autoevolutivo (Línea O del Backlog Soberano)
-- **Suite de Pruebas:** 108+ aprobadas (100% verde, 0 regresiones)
-- **Herramientas MCP Activas:** 66 herramientas nativas
+## Estado
+Aceptado e Implementado (v7.11.0)
 
----
+## Fecha
+2026-10-20
 
-## 1. Contexto y Desafío de Equidad en la Malla (Tit-for-Tat)
+## Contexto y Motivación
+Bajo el modelo de tráfico simétrico de IPVN 7 (implementado en Línea J con contabilidad de tránsito P2P y Service Tiers: Priority, Normal, Throttled, Blocked), un nodo asimétrico (por ejemplo, clientes móviles, nodos detrás de CGNAT severo o consumidores puros de contenido) podía quedar permanentemente degradado en tier `THROTTLED` debido a un ratio de reciprocidad bajo (`ratio < 0.25`), sin un mecanismo nativo para canjear servicios computacionales auxiliares (routing relay, almacenamiento DHT, o crédito de reciprocidad transferible) por cuota de tránsito prioritaria.
 
-En redes ad-hoc y mallas descentralizadas como IPVN 7, los nodos intermedios actúan como repetidores (*relays*) y enrutadores para pares remotos. El modelo original de contabilidad `TransitAccounting` aplica la heurística clásica de *Tit-for-Tat* clasificando a los pares según el ratio $\text{Ratio} = \frac{\text{Bytes Rx}}{\text{Bytes Tx}}$.
+Asimismo, era imperativo evitar esquemas de pago centralizados basados en fiat o tokens de blockchain pesados con dependencias externas, preservando la soberanía matemática del nodo y la autosuficiencia en redes de malla locales (offline mesh).
 
-Sin embargo, este modelo presentaba limitaciones en topologías asimétricas:
-1. **Problema del Nodo Hoja o Borde:** Nodos en periferias geográficas o dispositivos móviles a menudo consumen más ancho de banda del que pueden enrutar directamente hacia un par específico, cayendo indebidamente en los niveles de servicio `BEST_EFFORT` o `THROTTLED`.
-2. **Falta de Compensación Multilateral:** Si el nodo B enruta 100 MB para el nodo A, pero el nodo A no tiene tráfico directo que enrutar de vuelta a B, la contribución altruista de B no podía ser transferida ni acreditada para mejorar su acceso ante un tercer nodo C.
-3. **Vulnerabilidad a Replay y Doble Gasto:** Cualquier sistema de crédito descentralizado sin cadena de bloques centralizada debe prevenir ataques de repetición de recibos, falsificación de firmas y auto-emisión fraudulenta.
+## Decisión de Diseño
+Se introduce la **Línea O (v7.11.0)**: **Sovereign Reciprocity Settlement and Micro-Economic Quota Governance** (`ipvn7/network/settlement.py`), compuesto por:
 
----
+1. **Tokens de Reciprocidad Criptográficos (`ReciprocityToken`)**:
+   - Estructura inmutable con `token_id` derivado del hash SHA-256 de sus componentes canónicos.
+   - Campos: `issuer_did`, `beneficiary_did`, `amount_credits`, `nonce`, `issued_at`, `expires_at`, `signature`.
+   - Firma criptográfica asimétrica Ed25519 sobre el hash canónico del token.
+   - Protección estricta contra replay y doble gasto mediante `settled_tokens_ledger` persistente y nonces monótonamente incrementales por emisor.
+   - Control estricto de caducidad temporal (`expires_at < time.time()`).
 
-## 2. Decisión de Arquitectura Soberana
+2. **Protocolo Canónico de Enmarcado Wire (`IP7R`)**:
+   - Cabecera binaria canónica de 4 bytes: `IP7R`.
+   - Opcode (1 byte): `0x01` (TOKEN_ISSUE), `0x02` (TOKEN_SETTLE), `0x03` (TOKEN_ACK), `0x04` (REMEDIATION_NOTICE).
+   - Longitud (2 bytes, big-endian) del payload JSON canónico UTF-8.
+   - Checksum CRC32 (4 bytes, big-endian) al final del paquete para validación instantánea de integridad física en el cable antes de deserializar.
+   - Cumple el invariante estricto de MTU de red $\le 1280$ bytes (IPv6/IPVN7 safe).
 
-Se implementa el subsistema **`SovereignReciprocitySettlement`** (`ipvn7/network/settlement.py`), estructurado sobre los siguientes contratos:
+3. **Remediación Dinámica de Cuotas de Tránsito (Tit-for-Tat Compensatorio)**:
+   - Los créditos de reciprocidad acumulados en el balance del nodo (`earned_credits`) pueden ser quemados voluntariamente (`apply_quota_remediation`) para acreditar bytes recibidos equivalentes en `TransitAccounting`.
+   - Cada crédito de reciprocidad canjeado remedia una cuota de $1024$ bytes ($1\text{ crédito} = 1\text{ KB de crédito de tránsito}$).
+   - Si el nodo receptor se encontraba en tier `THROTTLED` debido a ratio bajo, la remediación eleva su ratio a $\ge 0.5$, restituyendo inmediatamente su tier de servicio a `NORMAL` o `PRIORITY`.
 
-### A. Token Criptográfico de Reciprocidad (`ReciprocityToken`)
-Cada comprobante de tránsito (*Proof-of-Transit*) contiene:
-- `token_id`: Identificador canónico SHA-256 de 32 caracteres hex.
-- `issuer_did`: DID del nodo consumidor que certifica la recepción del servicio.
-- `beneficiary_did`: DID del nodo relay que proporcionó el tránsito.
-- `bandwidth_credits`: Cantidad de bytes acreditados (entero estrictamente positivo, tope de 100 GiB por token).
-- `epoch`: Época diaria (`int(time.time() // 86400)`), con ventana de caducidad máxima de 30 días.
-- `nonce`: Secuencia monótona estricta por emisor.
-- `issued_at`: Marca de tiempo Unix.
-- `signature_hex`: Firma digital Ed25519 sobre el payload canónico `IP7R-TOKEN-V1:...`.
+4. **Herramientas de Agente MCP Nativas (64, 65, 66)**:
+   - Herramienta 64: `ipvn7_issue_reciprocity_token` — Emite un token firmado con cuota de créditos.
+   - Herramienta 65: `ipvn7_settle_reciprocity_token` — Liquida y valida un token de reciprocidad, actualizando el balance del nodo.
+   - Herramienta 66: `ipvn7_get_settlement_ledger` — Inspecciona el balance económico de reciprocidad, tokens liquidados y estado contable.
 
-### B. Enmarcado Canónico en el Cable `IP7R` (MTU <= 1280B)
-Se estandariza el Magic en cable `b"IP7R"` (4 bytes) con formato binario seguro:
-`[4B MAGIC (IP7R)][1B OPCODE][2B LENGTH][PAYLOAD][4B CRC32]`
-Opcodes normativos:
-- `0x01` - `OP_TOKEN_ISSUE`: Emisión de comprobante de tránsito firmado.
-- `0x02` - `OP_SETTLEMENT_CLAIM`: Reclamo de liquidación por el beneficiario.
-- `0x03` - `OP_SETTLEMENT_RECEIPT`: Confirmación y emisión de recibo de balance acreditado.
-- `0x04` - `OP_AUDIT_BALANCE`: Auditoría y consulta de saldo de créditos no gastados.
+5. **Superficie de Control HTTP Soberana**:
+   - `GET /api/settlement/summary`: Estado en tiempo real de balances y créditos acumulados.
+   - `POST /api/settlement/issue`: Emisión segura de tokens de reciprocidad para nodos cooperativos.
+   - `POST /api/settlement/settle`: Liquidación atómica y verificación criptográfica.
 
-### C. Prevención de Doble Gasto y Replay
-1. **Registro Inmutable de Tokens Gastados:** El motor mantiene el conjunto `spent_token_ids`; cualquier intento de presentar un token previamente liquidado es rechazado inmediatamente con error de doble gasto.
-2. **Monotonía de Nonces por Emisor:** Se audita que `token.nonce > last_nonce[issuer]`.
-3. **Prohibición de Auto-Emisión:** `token.issuer_did != token.beneficiary_did`.
-4. **Ventana Temporal Acotada:** Rechazo de tokens con épocas futuras o superiores a 30 días de antigüedad.
-
-### D. Gobernanza de Cuotas y Remediación QoS
-El método `apply_quota_remediation(did)` permite a un nodo en estado `THROTTLED` o `BEST_EFFORT` canjear sus créditos acumulados de reciprocidad para saldar su déficit en `TransitAccounting`. Los créditos quemados aumentan `bytes_rx`, recalculando y promoviendo automáticamente su `ServiceTier` a `NORMAL` o `PRIORITY`.
-
----
-
-## 3. Interfaces Operativas y Herramientas MCP Incorporadas
-
-1. **Herramientas MCP del Plano de Control Agéntico (Herramientas 64, 65 y 66):**
-   - `ipvn7_issue_reciprocity_token`: Emite y firma un token canónico `IP7R`.
-   - `ipvn7_settle_reciprocity_token`: Liquida un token, valida la firma Ed25519 y acredita el balance.
-   - `ipvn7_get_settlement_ledger`: Inspecciona el libro mayor de liquidación y balances.
-
-2. **Endpoints REST HTTP en `app/server.py`:**
-   - `GET /api/settlement/summary`: Resumen de tokens emitidos, liquidados y balances activos.
-   - `POST /api/settlement/issue`: Emisión autenticada de comprobantes de reciprocidad.
-   - `POST /api/settlement/settle`: Liquidación y remediación de cuotas QoS.
-
-3. **Invariantes de Ingeniería Preservados (LAIA):**
-   - Cero dependencias externas (`ed25519` vía `cryptography`, `struct`, `zlib`).
-   - Cero credenciales estáticas.
-   - Datapath MTU de 1280 bytes respetado al 100%.
-
----
-
-## 4. Consecuencias y Beneficios
-
-- **Equidad Descentralizada:** Resuelve el problema del "free-rider" y los desbalances de enrutamiento asimétrico sin depender de servidores de facturación centrales ni blockchains de alta latencia.
-- **Micro-Incentivos en Tiempo Real:** Permite a nodos de bajos recursos ganar créditos de tránsito durante la noche enrutando paquetes para otros, y gastarlos durante el día en streaming o consultas de alta prioridad.
+## Consecuencias y Garantías Verificables
+- **Sin Dependencias Centralizadas**: Funciona puramente con firmas Ed25519 nativas de `cryptography` y contabilidad local en memoria.
+- **Invariante Anti-Doble Gasto**: Un token con `token_id` ya liquidado es rechazado deterministamente con `ValueError("Token ... has already been settled")`.
+- **Invariante Anti-Replay Temporal**: Tokens con marcas de tiempo en el futuro o expirados son descartados.
+- **Invariante de Formato Wire**: Paquetes malformados, con longitud inconsistente o checksum CRC32 corrupto son rechazados antes de ejecución.
+- **Cobertura de Pruebas**: 6 pruebas unitarias específicas añadidas en `tests/test_ipvn7.py` elevando la suite completa a 114/114 pruebas en PASS.

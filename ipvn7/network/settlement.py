@@ -107,8 +107,10 @@ class SovereignReciprocitySettlement:
         self.private_key = private_key
         self._lock = threading.Lock()
 
-        # Nonce tracking per issuer to enforce strict monotonic sequence
-        self.issuer_nonces: Dict[str, int] = {}
+        # Nonce tracking: issued_nonces for outgoing, redeemed_nonces for incoming
+        self.issued_nonces: Dict[str, int] = {}
+        self.redeemed_nonces: Dict[str, int] = {}
+        self.issuer_nonces = self.redeemed_nonces
         # Set of redeemed token IDs to prevent double settlement
         self.spent_token_ids: Set[str] = set()
         # Cumulative balance of unspent credits per DID
@@ -152,8 +154,8 @@ class SovereignReciprocitySettlement:
             raise ValueError(f"Bandwidth credits exceed maximum cap of {MAX_CREDITS_PER_TOKEN} bytes")
 
         with self._lock:
-            current_nonce = self.issuer_nonces.get(self.local_did, 0) + 1
-            self.issuer_nonces[self.local_did] = current_nonce
+            current_nonce = self.issued_nonces.get(self.local_did, 0) + 1
+            self.issued_nonces[self.local_did] = current_nonce
             now = time.time()
             epoch = self.current_epoch()
 
@@ -240,15 +242,15 @@ class SovereignReciprocitySettlement:
                 return False, f"Token verification rejected: {reason}", {}
 
             # 3. Check monotonic nonce progression for issuer
-            last_nonce = self.issuer_nonces.get(token.issuer_did, 0)
-            if token.nonce <= last_nonce and token.issuer_did in self.issuer_nonces:
+            last_nonce = self.redeemed_nonces.get(token.issuer_did, 0)
+            if token.nonce <= last_nonce and token.issuer_did in self.redeemed_nonces:
                 # Reject replayed or out-of-order lower nonce from same issuer
                 self.stats["tokens_rejected"] += 1
                 return False, f"Nonce replay detected (expected > {last_nonce}, got {token.nonce})", {}
 
             # Mark token spent and record sequence
             self.spent_token_ids.add(token.token_id)
-            self.issuer_nonces[token.issuer_did] = token.nonce
+            self.redeemed_nonces[token.issuer_did] = token.nonce
 
             # Credit beneficiary's unspent balance
             beneficiary = token.beneficiary_did
