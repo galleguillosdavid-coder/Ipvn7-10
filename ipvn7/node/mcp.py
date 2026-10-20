@@ -1167,6 +1167,19 @@ class IPVN7MCPServer:
                     "required": ["target_did"],
                 },
             },
+            {
+                "name": "ipvn7_sync_interregion_dht",
+                "description": "Sincroniza el estado de la tabla de enrutamiento DHT entre regiones geográficas mediante filtros de Bloom criptográficos y tramas binarias canónicas IP7S (MTU <= 1280B) sin fuga de metadatos.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "peer_region": {
+                            "type": "string",
+                            "description": "Región geográfica del par DHT (ej: 'region-europe-central', 'region-asia-east', 'region-northamerica-east')",
+                        },
+                    },
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1805,6 +1818,11 @@ class IPVN7MCPServer:
                 enclave = arguments.get("enclave")
                 excluded = arguments.get("excluded_regions")
                 res = self.node.select_geopolicy_route(target_did, mode=mode, enclave=enclave, excluded_regions=excluded)
+                return True, res
+
+            elif name == "ipvn7_sync_interregion_dht":
+                peer_reg = arguments.get("peer_region", "region-europe-central")
+                res = self.node.sync_interregion_dht(peer_region=peer_reg)
                 return True, res
 
             else:

@@ -463,6 +463,8 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 self._send_json(res)
             except Exception as e:
                 self._send_json({"error": str(e)}, status=400)
+        elif path == "/api/dht/sync/summary":
+            self._send_json(PRIMARY_NODE.dht_sync.get_summary())
 
         elif path == "/api/upnp/status":
             self._send_json(PRIMARY_NODE.upnp_mapper.get_summary())
@@ -1197,6 +1199,11 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
             bias = body.get("bias")
             model_name = body.get("model_name", "iot-edge-worker")
             res = PRIMARY_NODE.execute_bitnet_forward(x, weights, bias=bias, model_name=model_name)
+            self._send_json({"success": True, "result": res})
+
+        elif path == "/api/dht/sync":
+            peer_reg = body.get("peer_region", "region-europe-central")
+            res = PRIMARY_NODE.sync_interregion_dht(peer_region=peer_reg)
             self._send_json({"success": True, "result": res})
 
         elif path in ("/api/mcp", "/mcp"):

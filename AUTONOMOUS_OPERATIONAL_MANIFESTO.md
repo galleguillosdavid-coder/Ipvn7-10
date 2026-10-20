@@ -1,8 +1,8 @@
 # MANIFIESTO OPERACIONAL AUTÓNOMO IPVN 7
 ## Protocolo Soberano Post-Cuántico & Guía de Auto-Evolución para Agentes e Ingenieros
 
-> **Versión Canónica de Referencia:** IPVN 7.5.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
-> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (95/95 pasadas).  
+> **Versión Canónica de Referencia:** IPVN 7.6.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
+> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (96/96 pasadas).  
 > **Fecha de Sincronización:** Octubre 2026
 
 ---
@@ -16,13 +16,13 @@ El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red 
 2. **Identidad Descentralizada Soberana (DID):** Espacio de direccionamiento de 256 bits (`did:ipvn7:<hex>`), eliminando la dependencia de servidores DNS o entidades certificadoras (CA) centrales.
 3. **Privacidad & Evasión de DPI por Defecto:** Enrutamiento cebolla Sphinx de 3 saltos, camuflaje TLS 1.3 RFC 8446 (`0x17 0x03 0x03`), detección activa de envenenamiento DNS e inyecciones TCP RST.
 4. **Resiliencia Extrema & Auto-Reparación:** Red de mundo pequeño de Kleinberg ($r=2$), detector de fallos SWIM $O(1)$, protocolo de recuperación post-apagón en 5 fases, y copiloto IA de red con auto-reparación en bucle cerrado.
-5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con **61 herramientas nativas** para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
+5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con **62 herramientas nativas** para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
 
 ---
 
 ## 2. Catálogo de Subsistemas Activos (Capas L0 a L4)
 
-Actualmente, el repositorio cuenta con **61 subsistemas de protocolo integrados** y probados al 100% (95 pruebas unitarias):
+Actualmente, el repositorio cuenta con **62 subsistemas de protocolo integrados** y probados al 100% (96 pruebas unitarias):
 
 ### Capa L0: Acceso al Medio & Aceleración Datapath
 - [`ipvn7/access/hal.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/hal.py): Capa de abstracción de hardware y driver de sockets UDP overlay.
@@ -58,6 +58,8 @@ Actualmente, el repositorio cuenta con **61 subsistemas de protocolo integrados*
 - [`ipvn7/network/fsm.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/fsm.py): Autómata finito determinista (FSM) de ciclo de vida del nodo con contención ZTNA.
 - [`ipvn7/network/pipeline.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/pipeline.py): Línea de montaje Pipes & Filters con captura inmutable en Dead-Letter Queue.
 - [`ipvn7/network/hrs_frames.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/hrs_frames.py): Sustrato silencioso IPv7-HRS ("La Red Responde, No Grita") con 5 tramas canónicas (`IP7H`) y SLAs adaptativos por perfil.
+- [`ipvn7/network/geopolicy.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/geopolicy.py): Enrutador de políticas geodistribuidas 3D (Haversine LEO 550km), geofencing y enclaves de soberanía jurídica (ADR-007).
+- [`ipvn7/network/dht_sync.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/dht_sync.py): Sincronización interregional privada de DHT con filtros de Bloom criptográficos y tramas binarias IP7S MTU 1280B (ADR-008).
 
 ### Capa L3: Seguridad ZTNA, Confianza & Diagnóstico
 - [`ipvn7/security/firewall.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/security/firewall.py): Cortafuegos de microsegmentación Zero-Trust (ZTNA) con política Default-Deny en el datapath.

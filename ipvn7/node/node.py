@@ -81,6 +81,7 @@ from ..network.pipeline import DataPipeline, PacketContext
 from ..identity.ephemeral import EphemeralIdentityManager
 from ..network.hrs_frames import HRSDispatcher, HRSFrame, HRSFrameType, DeviceProfile, AdaptiveSLA
 from ..network.geopolicy import GeoPolicyRouter, RoutingPolicyMode, GeoRegion, GeoNodeDescriptor
+from ..network.dht_sync import PrivateDHTInterregionSync, SovereignBloomFilter, CANONICAL_SYNC_MTU
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -265,6 +266,13 @@ class IPVN7Node:
         # Geodistributed Policy & Sovereignty Enclave Router
         self.geopolicy_router = GeoPolicyRouter(local_did=self.did)
         self.geopolicy_router.populate_default_planetary_topology()
+
+        # Interregional DHT Private Synchronization Subsystem (Bloom & IP7S Wire MTU 1280B)
+        self.dht_sync = PrivateDHTInterregionSync(
+            local_did=self.did,
+            region_name="region-latam-south",
+            dht=self.dht,
+        )
 
     # -------------------------------------------------------------
     # Lifecycle Management
@@ -1305,4 +1313,31 @@ class IPVN7Node:
             "candidate_count_evaluated": decision.candidate_count_evaluated,
             "rejections": decision.rejection_reasons,
         }
+
+    def sync_interregion_dht(self, peer_region: str = "region-europe-central") -> Dict[str, Any]:
+        """
+        Executes a privacy-preserving interregional DHT sync cycle using Bloom filters and IP7S framing.
+        """
+        # Create a peer DHT instance for the remote region
+        peer_did = f"did:ipvn7:region-peer-{peer_region[:12]}"
+        peer_node = DHTNode.from_did(peer_did, locators=[], tier=DHTRoutingTier.TIER_1_METRO)
+        peer_dht = HierarchicalSmallWorldDHT(peer_node)
+
+        # Seed peer with distinct locators
+        sample_locs = [
+            NodeLocator(ip="198.51.100.42", port=7071, interface_type="ethernet", latency_ms=12.5),
+            NodeLocator(ip="203.0.113.88", port=7072, interface_type="optical", latency_ms=8.0),
+        ]
+        peer_dht.store_locators(peer_did, sample_locs)
+
+        peer_sync = PrivateDHTInterregionSync(
+            local_did=peer_did,
+            region_name=peer_region,
+            dht=peer_dht,
+        )
+
+        # Execute bilateral reconciliation simulation
+        result = self.dht_sync.execute_peer_sync_simulation(peer_sync)
+        result["summary"] = self.dht_sync.get_summary()
+        return result
 

@@ -1,5 +1,5 @@
 # IPVN 7 — Internet Protocol Version 7
-> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.5.0)**  
+> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.6.0)**  
 > *Implementación Canónica en Python 3.14 con Criptografía Híbrida NIST FIPS 203 & 204*  
 > **Repositorio Oficial:** [https://github.com/galleguillosdavid-coder/Ipvn7-10](https://github.com/galleguillosdavid-coder/Ipvn7-10)
 
@@ -22,6 +22,7 @@
 >    - [`.nexus/decisions/ADR-005-DATAPATH-SATURATION-AND-COMPRESSION.md`](.nexus/decisions/ADR-005-DATAPATH-SATURATION-AND-COMPRESSION.md) *(Benchmark de Saturación 1280B Gbps y Compresor Estático Soberano de Encabezados)*.
 >    - [`.nexus/decisions/ADR-006-SILENT-PQC-REKEYING-AND-FORWARD-SECRECY.md`](.nexus/decisions/ADR-006-SILENT-PQC-REKEYING-AND-FORWARD-SECRECY.md) *(Orquestador de Rotación Silenciosa PQC Zero-Downtime y Destrucción Segura de Memoria)*.
 >    - [`.nexus/decisions/ADR-007-GEOPOLICY-ROUTING-AND-DATA-SOVEREIGNTY.md`](.nexus/decisions/ADR-007-GEOPOLICY-ROUTING-AND-DATA-SOVEREIGNTY.md) *(Enrutador de Políticas Geodistribuidas, Geofencing y Enclaves de Soberanía de Datos)*.
+>    - [`.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md`](.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md) *(Sincronización Privada Interregional de DHT mediante Filtros de Bloom y Tramas Canónicas IP7S)*.
 > 6. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
 > 7. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
@@ -36,7 +37,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **95/95 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~7.07s.**
+*Criterio de Aceptación Innegociable:* **96/96 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.36s.**
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell
@@ -46,8 +47,8 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 ### 1.3. Puntos de Entrada y Servicios Activos
 | Servicio / Protocolo | Dirección / Puerto | Propósito |
 |---|---|---|
-| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 61 subsistemas y consola MCP |
-| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **61 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
+| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 62 subsistemas y consola MCP |
+| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **62 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
 | **Proxy HTTP/HTTPS Interceptor** | `http://127.0.0.1:8888` | Pasarela transparente de intercepción y tunelización cuántica |
 | **Proxy SOCKS5 RFC 1928** | `127.0.0.1:10807` | Proxy anónimo para enrutamiento transparente de aplicaciones TCP |
 | **Socket Overlay UDP (QUIC)** | `127.0.0.1:9443` | Datapath de alta velocidad punto a punto cifrado con ML-KEM-768 |
@@ -223,6 +224,7 @@ Invoke-RestMethod -Uri "http://127.0.0.1:7070/mcp" -Method Post -Body $body -Con
   - `ipvn7_compress_telemetry_payload`: Compresión de diccionario estático y DEFLATE para encabezados y telemetría (<256B).
   - `ipvn7_orchestrate_silent_rekey`: Orquestador de re-keying silencioso PQC continuo con ventana de gracia zero-downtime (30s) y destrucción segura de memoria (zeroization).
   - `ipvn7_select_geopolicy_route`: Enrutamiento dinámico por políticas geodistribuidas, distancia geodésica 3D, geofencing y enclaves de soberanía.
+  - `ipvn7_sync_interregion_dht`: Sincronización interregional DHT privada mediante filtros de Bloom criptográficos (512-bit) y tramas canónicas IP7S ($\le 1280$B MTU) sin fuga de metadatos.
 
 ---
 
@@ -255,9 +257,10 @@ Renueva o programa el temporizador con la herramienta `schedule` a 1800 segundos
    - Motor `SilentKeyRotationOrchestrator` con ratcheting criptográfico transcript-bound (X25519 + ML-KEM-768), soporte out-of-order dual en ventana de gracia (30s) zero-downtime y sobrescritura obligatoria de RAM (`memory zeroization`).
 6. **Línea L — Enrutador de Políticas Geodistribuidas y Soberanía de Datos:** *(✅ COMPLETADO v7.5.0)*
    - Motor `GeoPolicyRouter` con cálculo geodésico Haversine 3D (órbita LEO 550km), latencia EWMA, confianza Web of Trust, geofencing y enclaves de soberanía jurídica (`MERCOSUR`, `EU_GDPR`, `ORBITAL_COMMONS`).
-7. **Línea M — Próxima Evolución (Backlog v7.6.0):**
-   - Telemetría P2P autónoma entre múltiples instancias de nodo vía Wintun en red local / túneles WireGuard soberanos.
-   - Sincronización continua de estados DHT interregionales sin fuga de metadatos.
+7. **Línea M — Sincronización Privada Interregional de DHT con Filtros de Bloom:** *(✅ COMPLETADO v7.6.0)*
+   - Motor `PrivateDHTInterregionSync` y `SovereignBloomFilter` (512 bits) con tramas canónicas wire `IP7S` ($\le 1280$B), compresión estática delta y reconciliación sin fuga de identidades (`ZERO_METADATA_LEAKAGE_BLOOM_O1`).
+8. **Línea N — Próxima Evolución (Backlog v7.7.0):**
+   - Telemetría P2P autónoma entre múltiples instancias de nodo vía Wintun en red local / túneles WireGuard soberanos con adaptación automática de MTU y multipath bicast.
 
 ### 5.4. Tarea Ocasional: Auditoría Externa Cruzada con ChatGPT (Multi-LLM Peer Review)
 De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar una auditoría de revisión externa independiente mediante [ChatGPT](https://chatgpt.com/):
@@ -285,6 +288,6 @@ De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar un
 
 ---
 
-*Fin del Protocolo de Handover. IPVN 7 v7.5.0 se encuentra auditado, blindado, verificado con 95 pruebas al 100%, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
+*Fin del Protocolo de Handover. IPVN 7 v7.6.0 se encuentra auditado, blindado, verificado con 96 pruebas al 100%, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
 
 
