@@ -183,17 +183,57 @@ class BitNetQuantizer:
 
     @staticmethod
     def deserialize_model(data: bytes) -> Tuple[str, PackedTernaryWeights]:
-        """Deserializes canonical binary buffer to model name and PackedTernaryWeights."""
-        if len(data) < 20 or not data.startswith(MAGIC_BITNET):
-            raise ValueError("Invalid BitNet container magic or truncated buffer")
+        """
+        Deserializes canonical binary buffer to model name and PackedTernaryWeights.
+        Implements strict defensive validation against fuzzing, out-of-bounds inputs,
+        dimension exhaustion, and malformed container structures (Auditoría H-06).
+        """
+        if not isinstance(data, (bytes, bytearray)):
+            raise ValueError("Input data must be bytes or bytearray")
+        if len(data) < 20:
+            raise ValueError(f"Truncated BitNet container header: length {len(data)} < 20")
+        if not data.startswith(MAGIC_BITNET):
+            raise ValueError(f"Invalid BitNet container magic: expected {MAGIC_BITNET!r}, got {data[:4]!r}")
 
         magic, name_len, rows, cols_float, scale = struct.unpack("!4sHHdf", data[:20])
-        offset = 20
-        name = data[offset:offset + name_len].decode("utf-8")
-        offset += name_len
-        packed_data = data[offset:]
 
-        return name, PackedTernaryWeights(rows=rows, cols=int(cols_float), scale=scale, packed_data=packed_data)
+        if name_len <= 0 or name_len > 256:
+            raise ValueError(f"Invalid model name length: {name_len} (must be between 1 and 256 bytes)")
+
+        if len(data) < 20 + name_len:
+            raise ValueError(f"Buffer truncated: cannot read {name_len} bytes of model name")
+
+        try:
+            name = data[20:20 + name_len].decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError(f"Model name is not valid UTF-8: {exc}")
+
+        if not math.isfinite(cols_float):
+            raise ValueError(f"Invalid column dimension: non-finite float {cols_float}")
+        cols = int(cols_float)
+        if cols_float != cols:
+            raise ValueError(f"Invalid column dimension: non-integer float {cols_float}")
+
+        if rows <= 0 or rows > 4096:
+            raise ValueError(f"Invalid rows dimension: {rows} (must be between 1 and 4096)")
+        if cols <= 0 or cols > 4096:
+            raise ValueError(f"Invalid cols dimension: {cols} (must be between 1 and 4096)")
+
+        if not math.isfinite(scale) or scale <= 0.0:
+            raise ValueError(f"Invalid scale factor: {scale} (must be positive and finite)")
+
+        offset = 20 + name_len
+        packed_data = data[offset:]
+        total_weights = rows * cols
+        expected_packed_len = (total_weights + 3) // 4
+
+        if len(packed_data) != expected_packed_len:
+            raise ValueError(
+                f"Packed weight buffer mismatch: got {len(packed_data)} bytes, "
+                f"expected {expected_packed_len} bytes for shape ({rows}, {cols})"
+            )
+
+        return name, PackedTernaryWeights(rows=rows, cols=cols, scale=scale, packed_data=packed_data)
 
     @staticmethod
     def create_demo_layer(rows: int = 8, cols: int = 8, seed: int = 42) -> Tuple[List[List[float]], List[float]]:

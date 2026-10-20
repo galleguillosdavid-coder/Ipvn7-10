@@ -1,9 +1,9 @@
 # MANIFIESTO OPERACIONAL AUTÓNOMO IPVN 7
 ## Protocolo Soberano Post-Cuántico & Guía de Auto-Evolución para Agentes e Ingenieros
 
-> **Versión Canónica de Referencia:** IPVN 7.9.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
-> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (104/104 pasadas en CI Python 3.12, 3.13 y 3.14).  
-> **Política de Gobernanza y Anti-Fallos:** Cumplimiento obligatorio de [SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md), [ADR-010](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md) y [ADR-011](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md).  
+> **Versión Canónica de Referencia:** IPVN 7.10.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
+> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (108/108 pasadas en CI Python 3.12, 3.13 y 3.14).  
+> **Política de Gobernanza y Anti-Fallos:** Cumplimiento obligatorio de [SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md), [ADR-010](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md), [ADR-011](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md), [ADR-012](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md) y [`engineering-knowledge/`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/engineering-knowledge/README.md).  
 > **Fecha de Sincronización:** Octubre 2026
 
 ---
@@ -13,19 +13,20 @@
 El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red soberana de próxima generación diseñada para superar las limitaciones estructurales de IPv4 e IPv6 frente a la computación cuántica, la censura centralizada y la falta de privacidad en Internet.
 
 ### Pilares Fundamentales:
-1. **Criptografía Post-Cuántica Nativa (NIST FIPS 203 & 204):** Resistencia cuántica mediante ML-KEM-768 (Kyber) y ML-DSA-65 (Dilithium) en modo híbrido con X25519 y Ed25519.
+1. **Criptografía Post-Cuántica Nativa (NIST FIPS 203 & 204):** Resistencia cuántica mediante ML-KEM-768 (Kyber) y ML-DSA-65 (Dilithium) en modo híbrido con X25519 y Ed25519 con verificación obligatoria de firmas en el handshake.
 2. **Identidad Descentralizada Soberana (DID):** Espacio de direccionamiento de 256 bits (`did:ipvn7:<hex>`), eliminando la dependencia de servidores DNS o entidades certificadoras (CA) centrales.
 3. **Privacidad & Evasión de DPI por Defecto:** Enrutamiento cebolla Sphinx de 3 saltos, camuflaje TLS 1.3 RFC 8446 (`0x17 0x03 0x03`), detección activa de envenenamiento DNS e inyecciones TCP RST.
 4. **Resiliencia Extrema & Auto-Reparación:** Red de mundo pequeño de Kleinberg ($r=2$), detector de fallos SWIM $O(1)$, protocolo de recuperación post-apagón en 5 fases, y copiloto IA de red con auto-reparación en bucle cerrado.
 5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con **63 herramientas nativas** para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
 6. **Gobernanza de Seguridad Inmutable:** Aislamiento universal de salida anti-SSRF (`ipaddress`), autenticación obligatoria del plano de control MCP, mitigación anti-DNS Rebinding y datapath 100% honesto y verificable.
 7. **Transporte de Salida Real por Malla (Exit Relay IP7X):** Canal de datos overlay cifrado de extremo a extremo que desacopla físicamente al cliente de los destinos finales en Internet.
+8. **Sistema Permanente de Ingeniería LAIA:** Memoria técnica persistente en `engineering-knowledge/` para prevención transversal de errores recurrentes.
 
 ---
 
 ## 2. Catálogo de Subsistemas Activos (Capas L0 a L4)
 
-Actualmente, el repositorio cuenta con **65 subsistemas de protocolo integrados** y probados al 100% (104 pruebas unitarias):
+Actualmente, el repositorio cuenta con **65 subsistemas de protocolo integrados** y probados al 100% (108 pruebas unitarias):
 
 ### Capa L0: Acceso al Medio & Aceleración Datapath
 - [`ipvn7/gateway/exit_relay.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/gateway/exit_relay.py): Servidor y cliente de relay de salida con enmarcado canónico `IP7X` para transporte overlay real.

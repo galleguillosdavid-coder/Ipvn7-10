@@ -167,6 +167,65 @@ class PQCHybridKeyExchange:
             info=b"IPVN7-PQ-QUIC-HANDSHAKE-V1-AUTH",
         )
 
+    @staticmethod
+    def server_respond_authenticated(
+        peer_x25519_pub_bytes: bytes,
+        peer_mlkem_pub_bytes: bytes,
+        server_keypair: PQCKeyPair,
+    ) -> Tuple[bytes, bytes, bytes, Dict[str, bytes]]:
+        """
+        Audit 3 H-09: Authenticated Server Response with cryptographic transcript signing.
+        Binds server long-term identity (ML-DSA-65 and Ed25519) to the complete handshake transcript,
+        preventing Active Man-in-the-Middle (MITM) attacks.
+        Returns:
+            (server_x25519_pub_bytes, mlkem_ciphertext, derived_key, server_signature_dict)
+        """
+        srv_x_pub_bytes, mlkem_ct, derived_key = PQCHybridKeyExchange.server_respond(
+            peer_x25519_pub_bytes, peer_mlkem_pub_bytes
+        )
+        transcript_hash = hashlib.sha256(peer_x25519_pub_bytes + srv_x_pub_bytes + mlkem_ct).digest()
+        signatures = PQCDigitalSignature.sign_hybrid(
+            transcript_hash,
+            server_keypair.mldsa_priv,
+            server_keypair.ed25519_priv,
+        )
+        return srv_x_pub_bytes, mlkem_ct, derived_key, signatures
+
+    @staticmethod
+    def client_finalize_authenticated(
+        client_x_priv: x25519.X25519PrivateKey,
+        client_k_priv: mlkem.MLKEM768PrivateKey,
+        server_x25519_pub_bytes: bytes,
+        mlkem_ciphertext: bytes,
+        server_signatures: Dict[str, bytes],
+        server_mldsa_pub_bytes: bytes,
+        server_ed25519_pub_bytes: bytes,
+    ) -> bytes:
+        """
+        Audit 3 H-09: Client completes handshake only after validating server's digital identity signatures
+        over the exact handshake transcript. Aborts with ValueError if signatures do not match.
+        """
+        client_x_pub_bytes = client_x_priv.public_key().public_bytes_raw()
+        transcript_hash = hashlib.sha256(client_x_pub_bytes + server_x25519_pub_bytes + mlkem_ciphertext).digest()
+
+        # Cryptographic verification of server identity
+        valid = PQCDigitalSignature.verify_hybrid(
+            transcript_hash,
+            server_signatures.get("mldsa_sig", b""),
+            server_signatures.get("ed25519_sig", b""),
+            server_mldsa_pub_bytes,
+            server_ed25519_pub_bytes,
+        )
+        if not valid:
+            raise ValueError("Invalid server signature on handshake transcript (potential MITM)")
+
+        return PQCHybridKeyExchange.client_finalize(
+            client_x_priv, client_k_priv, server_x25519_pub_bytes, mlkem_ciphertext
+        )
+
+
+HybridHandshake = PQCHybridKeyExchange
+
 
 class PQCDigitalSignature:
     """

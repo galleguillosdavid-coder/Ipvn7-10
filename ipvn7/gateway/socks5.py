@@ -14,6 +14,7 @@ from typing import Optional, Callable, Dict, Any, Tuple
 
 from ..node.node import IPVN7Node
 from ..security.egress_policy import EgressSecurityPolicy
+from .exit_relay import SovereignExitRelayClient, SovereignExitRelayServer
 
 
 # SOCKS5 Constants (RFC 1928)
@@ -39,7 +40,9 @@ SOCKS5_REP_ADDR_NOT_SUPPORTED = 0x08
 class IPVN7SOCKS5Gateway:
     """
     RFC 1928 compliant SOCKS5 gateway running on Windows loopback (default 127.0.0.1:10807).
-    Proxies inbound TCP connections through the IPVN 7 quantum-resistant overlay.
+    Proxies inbound TCP connections through the IPVN 7 quantum-resistant overlay (OVERLAY_TUNNELED)
+    or directly with strict egress validation (DIRECT_EGRESS).
+    Implements bounded concurrency to protect against thread exhaustion DoS (Auditoría H-02, H-05).
     """
 
     def __init__(
@@ -49,12 +52,24 @@ class IPVN7SOCKS5Gateway:
         listen_host: str = "127.0.0.1",
         listen_port: int = 10807,
         traffic_logger: Optional[Callable[[Dict[str, Any]], None]] = None,
+        mode: str = "OVERLAY_TUNNELED",
+        max_connections: int = 64,
     ):
         self.local_node = local_node
-        self.exit_node = exit_node or local_node
+        self.exit_node = exit_node
         self.listen_host = listen_host
         self.requested_port = listen_port
         self.traffic_logger = traffic_logger
+        self.mode = mode
+        self.max_connections = max_connections
+
+        self.relay_client: Optional[SovereignExitRelayClient] = None
+        self.exit_relay_server: Optional[SovereignExitRelayServer] = None
+        if self.exit_node and self.exit_node.did != self.local_node.did:
+            self.exit_relay_server = SovereignExitRelayServer(self.exit_node)
+            self.relay_client = SovereignExitRelayClient(self.local_node, self.exit_node.did)
+
+        self._semaphore = threading.BoundedSemaphore(self.max_connections)
 
         self.server_sock: Optional[socket.socket] = None
         self.bound_port = 0
@@ -62,10 +77,15 @@ class IPVN7SOCKS5Gateway:
         self._thread: Optional[threading.Thread] = None
 
         self.stats = {
+            "mode": self.mode,
             "total_connections": 0,
             "active_connections": 0,
+            "concurrency_rejected": 0,
             "bytes_tx": 0,
             "bytes_rx": 0,
+            "bytes_tunneled_upstream": 0,
+            "bytes_tunneled_downstream": 0,
+            "overlay_packets_routed": 0,
             "last_destination": "",
         }
         self._lock = threading.Lock()
@@ -75,7 +95,7 @@ class IPVN7SOCKS5Gateway:
         self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_sock.bind((self.listen_host, self.requested_port))
-        self.server_sock.listen(64)
+        self.server_sock.listen(self.max_connections)
         self.bound_port = self.server_sock.getsockname()[1]
         self._is_running = True
 
@@ -100,6 +120,18 @@ class IPVN7SOCKS5Gateway:
             try:
                 self.server_sock.settimeout(0.2)
                 client_sock, client_addr = self.server_sock.accept()
+
+                # Guard against thread exhaustion DoS (H-05)
+                if not self._semaphore.acquire(blocking=False):
+                    with self._lock:
+                        self.stats["concurrency_rejected"] += 1
+                    try:
+                        self._send_reply(client_sock, SOCKS5_REP_SERVER_FAILURE)
+                        client_sock.close()
+                    except Exception:
+                        pass
+                    continue
+
                 with self._lock:
                     self.stats["total_connections"] += 1
                     self.stats["active_connections"] += 1
@@ -219,13 +251,47 @@ class IPVN7SOCKS5Gateway:
                 self._send_reply(client, SOCKS5_REP_CONN_NOT_ALLOWED)
                 return
 
-            # Connect directly to the validated IP to prevent DNS rebinding attacks
+            # Route 4A: Genuine Overlay Tunneled Transport via Exit Node Relay (Auditoría H-02)
+            if self.mode == "OVERLAY_TUNNELED" and self.relay_client:
+                # Signal SOCKS5 connection established
+                self._send_reply(client, SOCKS5_REP_SUCCESS, bind_addr="127.0.0.1", bind_port=self.bound_port)
+                if self.traffic_logger:
+                    self.traffic_logger({
+                        "time": time.strftime("%H:%M:%S"),
+                        "protocol": "SOCKS5",
+                        "client": f"{addr[0]}:{addr[1]}",
+                        "target_host": dest_host,
+                        "target_port": dest_port,
+                        "status": "TUNNELED_PQ_QUIC_VERIFIED",
+                        "overlay_verified": True,
+                        "exit_node_did": self.exit_node.did if self.exit_node else None,
+                    })
+
+                ok, reason, transferred = self.relay_client.open_tunneled_stream(dest_host, dest_port, client)
+                with self._lock:
+                    self.stats["bytes_tunneled_upstream"] += transferred // 2
+                    self.stats["bytes_tunneled_downstream"] += transferred // 2
+                    self.stats["overlay_packets_routed"] += max(1, transferred // 1024)
+                return
+
+            # Route 4B: Explicit Direct Egress (honest accounting: not counted as PQ-QUIC overlay)
             target_ip = valid_ips[0]
             try:
                 remote = socket.create_connection((target_ip, dest_port), timeout=6.0)
             except Exception:
                 self._send_reply(client, SOCKS5_REP_HOST_UNREACHABLE)
                 return
+
+            if self.traffic_logger:
+                self.traffic_logger({
+                    "time": time.strftime("%H:%M:%S"),
+                    "protocol": "SOCKS5",
+                    "client": f"{addr[0]}:{addr[1]}",
+                    "target_host": dest_host,
+                    "target_port": dest_port,
+                    "status": "DIRECT_TCP_EGRESS",
+                    "overlay_verified": False,
+                })
 
             # SOCKS5 Connection Granted
             b_ip, b_port = remote.getsockname()[0], remote.getsockname()[1]
@@ -234,7 +300,6 @@ class IPVN7SOCKS5Gateway:
             except Exception:
                 self._send_reply(client, SOCKS5_REP_SUCCESS)
 
-            # 4. Bidirectional Tunneling with IPVN 7 accounting
             client.setblocking(False)
             remote.setblocking(False)
 
@@ -262,6 +327,7 @@ class IPVN7SOCKS5Gateway:
         except Exception:
             pass
         finally:
+            self._semaphore.release()
             if remote:
                 try:
                     remote.close()

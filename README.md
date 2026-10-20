@@ -1,5 +1,5 @@
 # IPVN 7 — Internet Protocol Version 7
-> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.9.0)**  
+> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.10.0)**  
 > *Implementación Canónica en Python 3.14 con Criptografía Híbrida NIST FIPS 203 & 204*  
 > **Repositorio Oficial:** [https://github.com/galleguillosdavid-coder/Ipvn7-10](https://github.com/galleguillosdavid-coder/Ipvn7-10)
 
@@ -11,23 +11,25 @@
 > Este documento es tu **punto de entrada canónico**. Léelo de principio a fin antes de ejecutar o modificar código.  
 > Tu orden de lectura obligatorio para comprender el ecosistema completo es:
 > 1. Este archivo [`README.md`](README.md) *(Visión ejecutiva, estructura global, mapa del repo y protocolo de handover)*.
-> 2. [`.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md`](.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md) *(Política inmutable anti-fallos, gobernanza SSRF, autenticación de control y honestidad de datapath)*.
-> 3. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(Procedimiento autónomo de desarrollo, catálogo de subsistemas y directivas operativas de auto-evolución)*.
-> 4. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 58 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
-> 5. [`genesis.md`](genesis.md) *(Mandato Génesis v2.0, principios ontológicos, gobernanza evolutiva y multi-agente)*.
-> 6. **Architecture Decision Records (ADRs Inmutables):**
+> 2. [`engineering-knowledge/`](engineering-knowledge/README.md) *(Sistema LAIA: Constitución, Reglas Operativas ER-SEC-001..012, Invariantes y Lecciones Aprendidas)*.
+> 3. [`.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md`](.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md) *(Política inmutable anti-fallos, gobernanza SSRF, autenticación de control y modos de falla de IA)*.
+> 4. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(Procedimiento autónomo de desarrollo, catálogo de subsistemas y directivas operativas de auto-evolución)*.
+> 5. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 58 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
+> 6. [`genesis.md`](genesis.md) *(Mandato Génesis v2.0, principios ontológicos, gobernanza evolutiva y multi-agente)*.
+> 7. **Architecture Decision Records (ADRs Inmutables):**
 >    - [`.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md`](.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md) *(Consolidación silenciosa IPv7-HRS e Identidad Efímera 24h)*.
 >    - [`.nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md`](.nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md) *(Embajador Edge AI LAN, Datapath IP7M 1280B y Test de Estrés Churn)*.
 >    - [`.nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md`](.nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md) *(Motor de Cuantización Ternaria BitNet b1.58 {-1, 0, +1} e Inferencia Integer sin Multiplicación)*.
->    - [`.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md`](.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md) *(Remediación Integral de la Auditoría Técnica ChatGPT: H-01 a H-05, Transcript Binding, SSRF Filter y Datapath Real)*.
+>    - [`.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md`](.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md) *(Remediación Integral de la Auditoría Técnica ChatGPT: H-01 a H-05)*.
 >    - [`.nexus/decisions/ADR-005-DATAPATH-SATURATION-AND-COMPRESSION.md`](.nexus/decisions/ADR-005-DATAPATH-SATURATION-AND-COMPRESSION.md) *(Benchmark de Saturación 1280B Gbps y Compresor Estático Soberano de Encabezados)*.
 >    - [`.nexus/decisions/ADR-006-SILENT-PQC-REKEYING-AND-FORWARD-SECRECY.md`](.nexus/decisions/ADR-006-SILENT-PQC-REKEYING-AND-FORWARD-SECRECY.md) *(Orquestador de Rotación Silenciosa PQC Zero-Downtime y Destrucción Segura de Memoria)*.
 >    - [`.nexus/decisions/ADR-007-GEOPOLICY-ROUTING-AND-DATA-SOVEREIGNTY.md`](.nexus/decisions/ADR-007-GEOPOLICY-ROUTING-AND-DATA-SOVEREIGNTY.md) *(Enrutador de Políticas Geodistribuidas, Geofencing y Enclaves de Soberanía de Datos)*.
->    - [`.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md`](.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md) *(Sincronización Privada Interregional de DHT mediante Filtros de Bloom y Tramas Canónicas IP7S)*.
->    - [`.nexus/decisions/ADR-009-SOVEREIGN-TUNNEL-TELEMETRY-AND-PMTU.md`](.nexus/decisions/ADR-009-SOVEREIGN-TUNNEL-TELEMETRY-AND-PMTU.md) *(Telemetría de Túneles Soberanos, Descubrimiento Dinámico de Path MTU y Failover Bicast)*.
->    - [`.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md`](.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md) *(Remediación Integral de la Segunda Auditoría ChatGPT: H-01 a H-08, EgressSecurityPolicy, MCP Auth y Blindaje de Salida)*.
->    - [`.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md`](.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md) *(Canal de Datos Overlay Real a través de Nodos de Salida mediante Enmarcado Canónico IP7X)*.
-> 7. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
+>    - [`.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md`](.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md) *(Sincronización Privada Interregional de DHT mediante Filtros de Bloom)*.
+>    - [`.nexus/decisions/ADR-009-SOVEREIGN-TUNNEL-TELEMETRY-AND-PMTU.md`](.nexus/decisions/ADR-009-SOVEREIGN-TUNNEL-TELEMETRY-AND-PMTU.md) *(Telemetría de Túneles Soberanos, Path MTU dinámico y Failover Bicast)*.
+>    - [`.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md`](.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md) *(Remediación Integral de la Auditoría #2: EgressSecurityPolicy y MCP Auth)*.
+>    - [`.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md`](.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md) *(Canal de Datos Overlay Real mediante Enmarcado Canónico IP7X)*.
+>    - [`.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md`](.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md) *(Remediación Integral de la Auditoría #3: Tokens Dinámicos, PQC Handshake MITM Auth, SOCKS5 Bounded Relay, BitNet Fuzz Defense y Censura de Secretos)*.
+> 8. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
 > 8. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
 ---
@@ -286,15 +288,25 @@ De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar un
 #### 📋 Registro de Auditorías Ejecutadas
 - **Auditoría Técnica #1 (20 de Octubre de 2026):**
   - **Dictamen:** *Requiere Validación Técnica* (5 hallazgos prioritarios identificados).
-  - **Estado:** **100% RESUELTO & BLINDADO** (ver detalle en [`.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md`](.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md)):
-    - **H-01 (Proxy Overlay Routing):** Datapath real de túnel PQ-QUIC integrado en `ipvn7/gateway/proxy.py` y telemetría honesta con huella criptográfica de clave de sesión en `/api/internet/fetch`.
-    - **H-02 (Criptografía Híbrida):** Transcript Binding formal con SHA-256 en HKDF salt y suite de pruebas negativas en `tests/test_ipvn7.py` ante manipulación de ciphertext y claves.
-    - **H-03 (Especificación PQ-QUIC):** Formalización de PQ-QUIC como protocolo soberano experimental con wire format compacto de 21 bytes para mallas P2P soberanas (independiente de CAs X.509 RFC 9001).
-    - **H-04 (Frontera de Seguridad API):** CORS restringido a lista blanca local, encabezados `nosniff`/`DENY`, límite DoS de 1MB en POST y mitigación SSRF completa.
-    - **H-05 (Reproducibilidad):** `requirements.txt` en UTF-8 estándar, `.github/workflows/ci.yml` configurado y 95/95 pruebas aprobadas al 100%.
+  - **Estado:** **100% RESUELTO & BLINDADO** (ver detalle en [`.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md`](.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md)).
+- **Auditoría Técnica #2 (20 de Octubre de 2026):**
+  - **Dictamen:** *Riesgo Medio/Alto por SSRF y Autenticación en Control Plane* (8 hallazgos identificados).
+  - **Estado:** **100% RESUELTO & BLINDADO** (ver detalle en [`.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md`](.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md)):
+    - EgressSecurityPolicy con resolución estricta anti-SSRF, SafeRedirectHandler, Host header validation y 63 herramientas MCP protegidas.
+- **Auditoría Técnica #3 (20 de Octubre de 2026):**
+  - **Dictamen:** *No Aprobar Todavía como Protocolo Seguro de Producción* (10 hallazgos identificados).
+  - **Estado:** **100% RESUELTO, VERIFICADO Y DOCUMENTADO** (ver detalle en [`.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md`](.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md) y [`engineering-knowledge/`](engineering-knowledge/README.md)):
+    - **H-01:** Token de control estático eliminado; generación aleatoria de 256 bits (`secrets.token_urlsafe(32)`).
+    - **H-02 & H-05:** SOCKS5 acotado con `BoundedSemaphore(64)` y enrutado por overlay real vía Exit Node (`IP7X`).
+    - **H-03 & H-04:** Fijación de IP en Exit Node contra DNS Rebinding y autenticación Bearer estricta con `Sec-Fetch-Site`.
+    - **H-06:** Deserializador BitNet blindado contra fuzzing con validación de límites y buffers.
+    - **H-07:** Censurada exposición de secretos en `/api/pqc/live_demo` (reemplazado por SHA-256 fingerprint).
+    - **H-09:** Handshake híbrido PQC autenticado contra MITM con firmas digitales de transcript (`ML-DSA-65`/`Ed25519`).
+    - **H-10:** Telemetría veraz en `/api/internet/fetch` (`LOCAL_EGRESS_WITH_OVERLAY_CONTROL_NOTIFICATION`).
 
 ---
 
-*Fin del Protocolo de Handover. IPVN 7 v7.7.0 se encuentra auditado, blindado, verificado con 97 pruebas al 100%, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
+*Fin del Protocolo de Handover. IPVN 7 v7.10.0 se encuentra auditado, blindado con el sistema permanente de ingeniería LAIA, verificado con 108 pruebas al 100%, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
+
 
 

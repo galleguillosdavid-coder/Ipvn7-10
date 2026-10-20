@@ -4019,3 +4019,179 @@ def test_sovereign_exit_relay_true_overlay_datapath():
     client_node.stop()
     exit_node.stop()
 
+
+def test_audit_3_h09_pqc_authenticated_handshake_and_mitm_rejection():
+    """Audit 3 H-09: Validates digital signature authentication in hybrid PQC handshake and MITM rejection."""
+    import pytest
+    from ipvn7.crypto.pqc import PQCKeyPair, PQCHybridKeyExchange
+
+    client_pqc = PQCKeyPair.generate()
+    server_pqc = PQCKeyPair.generate()
+    attacker_pqc = PQCKeyPair.generate()
+
+    # 1. Honest authenticated handshake
+    c_x_pub, c_k_pub, c_x_priv, c_k_priv = PQCHybridKeyExchange.client_init()
+    srv_x_pub, mlkem_ct, srv_derived, signatures = PQCHybridKeyExchange.server_respond_authenticated(
+        c_x_pub,
+        c_k_pub,
+        server_pqc,
+    )
+
+    client_derived = PQCHybridKeyExchange.client_finalize_authenticated(
+        c_x_priv,
+        c_k_priv,
+        srv_x_pub,
+        mlkem_ct,
+        signatures,
+        server_pqc.mldsa_pub.public_bytes_raw(),
+        server_pqc.ed25519_pub.public_bytes_raw(),
+    )
+
+    assert client_derived == srv_derived
+    assert len(client_derived) == 32
+    assert "mldsa_sig" in signatures and "ed25519_sig" in signatures
+
+    # 2. MITM Tampering Attack: Alter server X25519 ephemeral key in transit
+    c_x_pub2, c_k_pub2, c_x_priv2, c_k_priv2 = PQCHybridKeyExchange.client_init()
+    srv_x_pub2, mlkem_ct2, _, signatures2 = PQCHybridKeyExchange.server_respond_authenticated(
+        c_x_pub2,
+        c_k_pub2,
+        server_pqc,
+    )
+
+    # Corrupt one byte of server public key
+    corrupted_pub = bytearray(srv_x_pub2)
+    corrupted_pub[0] ^= 0xFF
+    bad_srv_x_pub2 = bytes(corrupted_pub)
+
+    # Client MUST abort and reject MITM
+    with pytest.raises(ValueError, match="Invalid server signature"):
+        PQCHybridKeyExchange.client_finalize_authenticated(
+            c_x_priv2,
+            c_k_priv2,
+            bad_srv_x_pub2,
+            mlkem_ct2,
+            signatures2,
+            server_pqc.mldsa_pub.public_bytes_raw(),
+            server_pqc.ed25519_pub.public_bytes_raw(),
+        )
+
+    # 3. Impersonation Attack: Sign with attacker key but present victim public key
+    c_x_pub3, c_k_pub3, c_x_priv3, c_k_priv3 = PQCHybridKeyExchange.client_init()
+    srv_x_pub3, mlkem_ct3, _, signatures3 = PQCHybridKeyExchange.server_respond_authenticated(
+        c_x_pub3,
+        c_k_pub3,
+        attacker_pqc,  # Attacker signs
+    )
+
+    # Verification against genuine server expected pub MUST fail
+    with pytest.raises(ValueError, match="Invalid server signature"):
+        PQCHybridKeyExchange.client_finalize_authenticated(
+            c_x_priv3,
+            c_k_priv3,
+            srv_x_pub3,
+            mlkem_ct3,
+            signatures3,
+            server_pqc.mldsa_pub.public_bytes_raw(),  # Genuine server pub expected
+            server_pqc.ed25519_pub.public_bytes_raw(),
+        )
+
+
+def test_audit_3_h06_bitnet_deserialize_bounds_and_fuzz_resilience():
+    """Audit 3 H-06: Validates BitNetQuantizer.deserialize_model defensive checks against malformed/fuzzed containers."""
+    import struct
+    import pytest
+    from ipvn7.crypto.bitnet import BitNetQuantizer, PackedTernaryWeights, MAGIC_BITNET
+
+    # 1. Valid baseline roundtrip
+    valid_packed = PackedTernaryWeights(rows=2, cols=4, scale=1.5, packed_data=b"\x00\x00")
+    valid_buf = BitNetQuantizer.serialize_model(valid_packed, model_name="valid-net")
+    name, des = BitNetQuantizer.deserialize_model(valid_buf)
+    assert name == "valid-net"
+    assert des.rows == 2 and des.cols == 4 and des.scale == 1.5
+
+    # 2. Truncated buffer (< 20 bytes)
+    with pytest.raises(ValueError, match="Truncated BitNet container"):
+        BitNetQuantizer.deserialize_model(b"IP7B\x00\x05")
+
+    # 3. Bad magic bytes
+    with pytest.raises(ValueError, match="Invalid BitNet container magic"):
+        BitNetQuantizer.deserialize_model(b"XXXX" + valid_buf[4:])
+
+    # 4. Out-of-bounds name length (> 256)
+    bad_name_hdr = struct.pack("!4sHHdf", MAGIC_BITNET, 500, 2, 4.0, 1.0)
+    with pytest.raises(ValueError, match="Invalid model name length"):
+        BitNetQuantizer.deserialize_model(bad_name_hdr + b"A" * 10)
+
+    # 5. Out-of-bounds dimensions (> 4096)
+    bad_dim_hdr = struct.pack("!4sHHdf", MAGIC_BITNET, 4, 5000, 4.0, 1.0)
+    with pytest.raises(ValueError, match="Invalid rows dimension"):
+        BitNetQuantizer.deserialize_model(bad_dim_hdr + b"test" + b"\x00" * 5000)
+
+    # 6. Invalid scale factor (<= 0 or non-finite)
+    bad_scale_hdr = struct.pack("!4sHHdf", MAGIC_BITNET, 4, 2, 4.0, -2.5)
+    with pytest.raises(ValueError, match="Invalid scale factor"):
+        BitNetQuantizer.deserialize_model(bad_scale_hdr + b"test" + b"\x00\x00")
+
+    # 7. Packed weight buffer length mismatch
+    with pytest.raises(ValueError, match="Packed weight buffer mismatch"):
+        # Expecting 2 bytes for (2, 4), give 10 bytes
+        BitNetQuantizer.deserialize_model(struct.pack("!4sHHdf", MAGIC_BITNET, 4, 2, 4.0, 1.0) + b"test" + b"\x00" * 10)
+
+
+def test_audit_3_h07_api_pqc_live_demo_censors_raw_shared_secret():
+    """Audit 3 H-07: Validates that live demo endpoint never exposes raw shared secret hex."""
+    import urllib.request
+    import json
+
+    # Read server.py source to verify absence of shared_secret_hex
+    with open("app/server.py", "r", encoding="utf-8") as f:
+        src = f.read()
+
+    assert "shared_secret_hex" not in src, "Security violation: raw shared_secret_hex found in server.py"
+    assert "shared_secret_fingerprint" in src, "shared_secret_fingerprint must be present instead"
+
+
+def test_audit_3_h02_h05_socks5_concurrency_and_mode_accounting():
+    """Audit 3 H-02/H-05: Validates SOCKS5 concurrency semaphore and transparent mode accounting."""
+    import socket
+    from ipvn7.gateway.socks5 import IPVN7SOCKS5Gateway, SOCKS5_REP_SERVER_FAILURE
+
+    node = IPVN7Node(alias="Socks5-Concurrency-Test", bind_host="127.0.0.1")
+    node.start_background_listener()
+
+    # Limit to 1 concurrent connection
+    gw = IPVN7SOCKS5Gateway(
+        local_node=node,
+        listen_host="127.0.0.1",
+        listen_port=0,
+        mode="DIRECT_EGRESS",
+        max_connections=1,
+    )
+    bound_port = gw.start()
+
+    # Connect client 1 and hold socket open
+    cli1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    cli1.connect(("127.0.0.1", bound_port))
+    cli1.sendall(b"\x05\x01\x00")
+    resp1 = cli1.recv(2)
+    assert resp1 == b"\x05\x00"
+
+    # Connect client 2 concurrently: semaphore must reject or reject connection
+    cli2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    cli2.settimeout(2.0)
+    try:
+        cli2.connect(("127.0.0.1", bound_port))
+        cli2.sendall(b"\x05\x01\x00")
+        resp2 = cli2.recv(2)
+        # Either socket immediately closed or received SOCKS5_REP_SERVER_FAILURE
+        if resp2:
+            assert resp2[1] in (SOCKS5_REP_SERVER_FAILURE, 0xFF) or len(resp2) == 0
+    except (socket.timeout, ConnectionResetError, BrokenPipeError, OSError):
+        pass  # Rejection by socket closed is valid DoS defense
+
+    cli1.close()
+    cli2.close()
+    gw.stop()
+    node.stop()
+

@@ -9,6 +9,7 @@ import os
 import sys
 import threading
 import secrets
+import hashlib
 
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -40,8 +41,21 @@ from ipvn7.security.egress_policy import EgressSecurityPolicy, SafeRedirectHandl
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
-# Audit H-03 & H-05: Security Governance and Concurrency Control
-CONTROL_AUTH_TOKEN = os.environ.get("IPVN7_CONTROL_TOKEN", "ipvn7-sovereign-control-token-2026")
+# Audit 3 H-01: Zero Static Credentials - Dynamic Cryptographic Token Generation
+_env_token = os.environ.get("IPVN7_CONTROL_TOKEN")
+if _env_token and _env_token.strip():
+    CONTROL_AUTH_TOKEN = _env_token.strip()
+else:
+    # High-entropy random token generated on startup; never hardcoded publicly
+    CONTROL_AUTH_TOKEN = secrets.token_urlsafe(32)
+    try:
+        _runtime_dir = os.path.join(os.path.dirname(__file__), "..", ".nexus", "runtime")
+        os.makedirs(_runtime_dir, exist_ok=True)
+        with open(os.path.join(_runtime_dir, "control.token"), "w", encoding="utf-8") as _tf:
+            _tf.write(CONTROL_AUTH_TOKEN)
+    except Exception:
+        pass
+
 REQUEST_SEMAPHORE = threading.BoundedSemaphore(32)
 
 # History of packets/messages
@@ -126,30 +140,33 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
         host = self.headers.get("Host", "").split(":")[0].lower()
         return host in ("127.0.0.1", "localhost", "[::1]", "")
 
-    def _validate_control_auth(self) -> Tuple[bool, str]:
+    def _validate_control_auth(self, require_explicit_token: bool = False) -> Tuple[bool, str]:
         """
-        H-03: Mandatory authentication for MCP control plane and sensitive operations.
-        Validates Bearer token or trusted local browser origin.
+        H-03/H-04: Mandatory authentication for MCP control plane and sensitive operations.
+        Requires high-entropy Bearer token or trusted same-origin local session.
         """
-        # 1. Allow trusted local dashboard origin with valid Host
-        origin = self.headers.get("Origin", "")
-        trusted_origins = {"http://127.0.0.1:7070", "http://localhost:7070"}
-        if origin in trusted_origins and self._validate_host_header():
-            return True, "Authorized (Local Dashboard Origin)"
-
-        # 2. Check Authorization Bearer header
+        # 1. Check Authorization Bearer header
         auth_hdr = self.headers.get("Authorization", "")
         if auth_hdr.startswith("Bearer "):
             token = auth_hdr[7:].strip()
             if secrets.compare_digest(token, CONTROL_AUTH_TOKEN):
                 return True, "Authorized (Bearer Token)"
 
-        # 3. Check custom header X-IPVN7-Auth
+        # 2. Check custom header X-IPVN7-Auth
         x_auth = self.headers.get("X-IPVN7-Auth", "").strip()
         if x_auth and secrets.compare_digest(x_auth, CONTROL_AUTH_TOKEN):
             return True, "Authorized (X-IPVN7-Auth)"
 
-        return False, "Unauthorized: MCP Control Plane requires valid Bearer token or trusted local origin"
+        # 3. Allow trusted local dashboard origin ONLY if not explicitly requiring token and Sec-Fetch-Site is same-origin
+        if not require_explicit_token:
+            origin = self.headers.get("Origin", "")
+            sec_site = self.headers.get("Sec-Fetch-Site", "")
+            trusted_origins = {"http://127.0.0.1:7070", "http://localhost:7070"}
+            if origin in trusted_origins and self._validate_host_header():
+                if sec_site in ("same-origin", "none", ""):
+                    return True, "Authorized (Local Dashboard Same-Origin)"
+
+        return False, "Unauthorized: MCP Control Plane requires valid cryptographic Bearer token"
 
     def _send_json(self, data: Any, status: int = 200):
         body = json.dumps(data).encode("utf-8")
@@ -266,7 +283,7 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                     "ciphertext_len": len(ct),
                     "ciphertext_hex_sample": ct[:32].hex() + "...",
                     "shared_secret_len": len(ss1),
-                    "shared_secret_hex": ss1.hex(),
+                    "shared_secret_fingerprint": hashlib.sha256(ss1).hexdigest()[:16] + "...",
                     "decapsulated_matches": ss1 == ss2,
                     "keygen_time_ms": round(t_kem_keygen, 3),
                     "encap_time_ms": round(t_kem_encap, 3),
@@ -655,6 +672,7 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                     f"{PRIMARY_NODE.did[:16]}... -> [CONTROL_NOTIFIED_DIRECT_EGRESS] -> Target"
                 )
 
+                # Audit 3 H-10: Transparent and honest datapath reporting
                 self._send_json({
                     "success": True,
                     "url": target_url,
@@ -664,10 +682,13 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                     "body_preview": resp_data.decode("utf-8", errors="replace")[:1000],
                     "headers": {k: v for k, v in list(headers_dict.items())[:6]},
                     "overlay_path": overlay_path_desc,
-                    "overlay_verified": bool(has_active_pqc and control_sent),
+                    "datapath_mode": "LOCAL_EGRESS_WITH_OVERLAY_CONTROL_NOTIFICATION",
+                    "data_tunneled_over_overlay": False,
+                    "control_plane_notified_over_overlay": bool(control_sent),
+                    "overlay_verified": False,
                     "control_delivered": control_sent,
                     "session_key_fp": session_key_fp,
-                    "pqc_hardening": "ML-KEM-768 Hybrid 1-RTT Protection Active" if has_active_pqc else "NONE_DIRECT_LOCAL",
+                    "pqc_hardening": "CONTROL_PLANE_NOTIFICATION_ONLY (LOCAL_DATA_PLANE)",
                 })
             except Exception as e:
                 self._send_json({
