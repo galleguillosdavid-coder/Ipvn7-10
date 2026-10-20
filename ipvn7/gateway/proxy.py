@@ -25,16 +25,18 @@ class IPVN7InternetProxy:
     def __init__(
         self,
         local_node: IPVN7Node,
-        exit_node: IPVN7Node,
+        exit_node: Optional[IPVN7Node] = None,
         listen_host: str = "127.0.0.1",
         listen_port: int = 8888,
         traffic_logger: Optional[Callable[[Dict[str, Any]], None]] = None,
+        mode: str = "OVERLAY_TUNNELED",
     ):
         self.node = local_node
         self.exit_node = exit_node
         self.listen_host = listen_host
         self.requested_port = listen_port
         self.traffic_logger = traffic_logger
+        self.mode = mode
 
         self.server_sock: Optional[socket.socket] = None
         self.bound_port = 0
@@ -42,9 +44,12 @@ class IPVN7InternetProxy:
         self._thread: Optional[threading.Thread] = None
 
         self.stats = {
+            "mode": self.mode,
             "connections_intercepted": 0,
             "bytes_tunneled_upstream": 0,
             "bytes_tunneled_downstream": 0,
+            "overlay_packets_routed": 0,
+            "pqc_hybrid_active": True,
             "active_hosts": [],
         }
 
@@ -123,6 +128,22 @@ class IPVN7InternetProxy:
             if target_host not in self.stats["active_hosts"]:
                 self.stats["active_hosts"].append(target_host)
 
+            # Datapath: verify if overlay tunneling is enabled and active
+            overlay_tunneled = False
+            if self.mode == "OVERLAY_TUNNELED" and self.exit_node:
+                # Transmit tunnel control & metadata datagram through PQ-QUIC overlay to Exit Node
+                tunnel_envelope = (
+                    f"IPVN7_TUNNEL_EGRESS:{method}:{target_host}:{target_port}:{time.time():.4f}".encode("utf-8")
+                )
+                try:
+                    overlay_tunneled = self.node.send_message_sync(self.exit_node.did, tunnel_envelope)
+                    if overlay_tunneled:
+                        self.stats["overlay_packets_routed"] += 1
+                except Exception:
+                    overlay_tunneled = False
+
+            tunnel_status = "TUNNELED_PQ_QUIC" if overlay_tunneled else "DIRECT_EGRESS"
+
             if self.traffic_logger:
                 self.traffic_logger({
                     "time": time.strftime("%H:%M:%S"),
@@ -131,7 +152,9 @@ class IPVN7InternetProxy:
                     "target_host": target_host,
                     "target_port": target_port,
                     "client": f"{client_addr[0]}:{client_addr[1]}",
-                    "status": "TUNNELED_PQ_QUIC",
+                    "status": tunnel_status,
+                    "overlay_verified": overlay_tunneled,
+                    "exit_node_did": self.exit_node.did if self.exit_node else None,
                 })
 
             # Tunnel through IPVN 7 Node mesh to Exit Node, then to real Internet

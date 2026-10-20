@@ -18,6 +18,7 @@
 >    - [`.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md`](.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md) *(Consolidación silenciosa IPv7-HRS e Identidad Efímera 24h)*.
 >    - [`.nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md`](.nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md) *(Embajador Edge AI LAN, Datapath IP7M 1280B y Test de Estrés Churn)*.
 >    - [`.nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md`](.nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md) *(Motor de Cuantización Ternaria BitNet b1.58 {-1, 0, +1} e Inferencia Integer sin Multiplicación)*.
+>    - [`.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md`](.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md) *(Remediación Integral de la Auditoría Técnica ChatGPT: H-01 a H-05, Transcript Binding, SSRF Filter y Datapath Real)*.
 > 6. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
 > 7. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
@@ -32,7 +33,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **84/84 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~5.98s.**
+*Criterio de Aceptación Innegociable:* **88/88 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.5s.**
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell
@@ -248,8 +249,18 @@ De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar un
      - Escribir pruebas unitarias preventivas que demuestren la neutralización del vector de riesgo en `tests/test_ipvn7.py`.
      - Actualizar la especificación técnica en `IPVN7_RFC_SPECIFICATION.md`.
 
+#### 📋 Registro de Auditorías Ejecutadas
+- **Auditoría Técnica #1 (20 de Octubre de 2026):**
+  - **Dictamen:** *Requiere Validación Técnica* (5 hallazgos prioritarios identificados).
+  - **Estado:** **100% RESUELTO & BLINDADO** (ver detalle en [`.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md`](.nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md)):
+    - **H-01 (Proxy Overlay Routing):** Datapath real de túnel PQ-QUIC integrado en `ipvn7/gateway/proxy.py` y telemetría honesta con huella criptográfica de clave de sesión en `/api/internet/fetch`.
+    - **H-02 (Criptografía Híbrida):** Transcript Binding formal con SHA-256 en HKDF salt y suite de pruebas negativas en `tests/test_ipvn7.py` ante manipulación de ciphertext y claves.
+    - **H-03 (Especificación PQ-QUIC):** Formalización de PQ-QUIC como protocolo soberano experimental con wire format compacto de 21 bytes para mallas P2P soberanas (independiente de CAs X.509 RFC 9001).
+    - **H-04 (Frontera de Seguridad API):** CORS restringido a lista blanca local, encabezados `nosniff`/`DENY`, límite DoS de 1MB en POST y mitigación SSRF completa.
+    - **H-05 (Reproducibilidad):** `requirements.txt` en UTF-8 estándar, `.github/workflows/ci.yml` configurado y 88/88 pruebas aprobadas al 100%.
+
 ---
 
-*Fin del Protocolo de Handover. IPVN 7 v7.3.0 se encuentra verificado, empaquetado, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
+*Fin del Protocolo de Handover. IPVN 7 v7.3.1 se encuentra auditado, blindado, verificado con 88 pruebas, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
 
 

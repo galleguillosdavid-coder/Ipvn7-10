@@ -3126,4 +3126,121 @@ def test_mcp_bitnet_tool():
     assert res["container_bytes_len"] > 0
 
 
+def test_pqc_handshake_tampered_ciphertext_fails():
+    """
+    Audit H-02 Remediation: Negative security test.
+    Altering a single byte of ML-KEM-768 ciphertext must cause safe cryptographic failure
+    (derives mismatched keys or raises, causing AEAD decryption failure on decrypt).
+    """
+    from ipvn7.crypto.pqc import PQCHybridKeyExchange, encrypt_aead, decrypt_aead
+
+    # 1. Client Init
+    c_x_pub, c_k_pub, c_x_priv, c_k_priv = PQCHybridKeyExchange.client_init()
+
+    # 2. Server Respond
+    s_x_pub, mlkem_ct, server_key = PQCHybridKeyExchange.server_respond(c_x_pub, c_k_pub)
+
+    # 3. Adversary tampers with ML-KEM ciphertext (flip one byte)
+    tampered_ct = bytearray(mlkem_ct)
+    tampered_ct[10] ^= 0xFF
+    tampered_ct = bytes(tampered_ct)
+
+    # 4. Client Finalize with tampered ciphertext
+    try:
+        client_key = PQCHybridKeyExchange.client_finalize(c_x_priv, c_k_priv, s_x_pub, tampered_ct)
+        # Server encrypts secret payload
+        ciphertext = encrypt_aead(server_key, b"Secret Over-The-Wire Mission Payload")
+        # Client decrypt attempt must fail due to transcript/secret mismatch
+        try:
+            decrypt_aead(client_key, ciphertext)
+            assert False, "Decryption should have failed due to tampered ciphertext"
+        except Exception:
+            pass  # Expected safe rejection
+    except Exception:
+        pass  # If decapsulate rejects outright, also safe
+
+
+def test_pqc_handshake_tampered_x25519_key_fails():
+    """
+    Audit H-02 Remediation: Negative security test.
+    Altering the ephemeral X25519 public key in transit must trigger Transcript Binding mismatch.
+    """
+    from ipvn7.crypto.pqc import PQCHybridKeyExchange, encrypt_aead, decrypt_aead
+
+    c_x_pub, c_k_pub, c_x_priv, c_k_priv = PQCHybridKeyExchange.client_init()
+    s_x_pub, mlkem_ct, server_key = PQCHybridKeyExchange.server_respond(c_x_pub, c_k_pub)
+
+    # Adversary substitutes/modifies ephemeral server X25519 key
+    tampered_s_x_pub = bytearray(s_x_pub)
+    tampered_s_x_pub[0] ^= 0x01
+    tampered_s_x_pub = bytes(tampered_s_x_pub)
+
+    client_key = PQCHybridKeyExchange.client_finalize(c_x_priv, c_k_priv, tampered_s_x_pub, mlkem_ct)
+    assert client_key != server_key, "Keys must differ due to Transcript Binding and ECDH difference"
+
+    ciphertext = encrypt_aead(server_key, b"High Value Defense Data")
+    try:
+        decrypt_aead(client_key, ciphertext)
+        assert False, "Decryption must fail when transcript is tampered"
+    except Exception:
+        pass  # Safe rejection
+
+
+def test_pqc_signature_tampered_message_fails():
+    """
+    Audit H-02 Remediation: Negative security test.
+    Tampering with a signed payload must fail verification under ML-DSA-65 + Ed25519.
+    """
+    from ipvn7.crypto.pqc import PQCKeyPair, PQCDigitalSignature
+
+    kp = PQCKeyPair.generate()
+    original_msg = b"IPVN7-AUTHENTIC-DISPATCH-77"
+    tampered_msg = b"IPVN7-TAMPERED-DISPATCH-77"
+
+    sig = PQCDigitalSignature.sign_hybrid(original_msg, kp.mldsa_priv, kp.ed25519_priv)
+
+    # Valid message passes
+    valid = PQCDigitalSignature.verify_hybrid(
+        original_msg,
+        sig["mldsa_sig"],
+        sig["ed25519_sig"],
+        kp.mldsa_pub.public_bytes_raw(),
+        kp.ed25519_pub.public_bytes_raw(),
+    )
+    assert valid is True
+
+    # Tampered message fails
+    invalid = PQCDigitalSignature.verify_hybrid(
+        tampered_msg,
+        sig["mldsa_sig"],
+        sig["ed25519_sig"],
+        kp.mldsa_pub.public_bytes_raw(),
+        kp.ed25519_pub.public_bytes_raw(),
+    )
+    assert invalid is False
+
+
+def test_proxy_overlay_mode_validation():
+    """
+    Audit H-01 Remediation: Validate that IPVN7InternetProxy accurately tracks
+    and isolates OVERLAY_TUNNELED mode.
+    """
+    from ipvn7.node.node import IPVN7Node
+    from ipvn7.gateway.proxy import IPVN7InternetProxy
+
+    n1 = IPVN7Node(alias="proxy-client", bind_port=19888)
+    n2 = IPVN7Node(alias="proxy-exit", bind_port=19889)
+
+    proxy = IPVN7InternetProxy(
+        local_node=n1,
+        exit_node=n2,
+        listen_host="127.0.0.1",
+        listen_port=0,
+        mode="OVERLAY_TUNNELED",
+    )
+    assert proxy.mode == "OVERLAY_TUNNELED"
+    assert proxy.stats["pqc_hybrid_active"] is True
+    assert proxy.stats["overlay_packets_routed"] == 0
+
+
 

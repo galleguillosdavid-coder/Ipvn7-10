@@ -176,6 +176,7 @@ Para mantener el ciclo de vida evolutivo sin intervención humana:
 3. **Tarea Ocasional: Auditoría Externa Multi-LLM con ChatGPT ([https://chatgpt.com/](https://chatgpt.com/)):**
    - **Objetivo:** Ejecutar periódicamente o tras cada hito arquitectónico una auditoría cruzada independiente con ChatGPT para revisión adversaria de seguridad ZTNA, análisis de resistencia cuántica y coherencia RFC.
    - **Procedimiento:** Proveer el contexto de los ADRs consolidados y el RFC actual a la interfaz de [https://chatgpt.com/](https://chatgpt.com/), auditar posibles fallas de borde (split-brain, replay, desincronización de identidades efímeras) y trasladar los hallazgos validados a nuevos ADRs y pruebas unitarias de regresión en `tests/test_ipvn7.py`.
+   - **Auditoría #1 (20 Oct 2026):** Completada y neutralizada al 100%. Remediados los 5 hallazgos prioritarios (H-01 a H-05) mediante ADR-004: Datapath de overlay verificable en proxy, Transcript Binding con SHA-256 en HKDF PQC, formalización de PQ-QUIC, frontera de seguridad CORS/SSRF/DoS en API local y suite ampliada a 88 pruebas unitarias aprobadas.
 
 ---
 

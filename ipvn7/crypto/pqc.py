@@ -91,11 +91,11 @@ class PQCHybridKeyExchange:
     """
 
     @staticmethod
-    def client_init() -> Tuple[bytes, bytes, x25519.X25519PrivateKey]:
+    def client_init() -> Tuple[bytes, bytes, x25519.X25519PrivateKey, mlkem.MLKEM768PrivateKey]:
         """
         Generates ephemeral hybrid key share for ClientHello.
         Returns:
-            (x25519_pub_bytes, mlkem_pub_bytes, x25519_priv)
+            (x25519_pub_bytes, mlkem_pub_bytes, x25519_priv, mlkem_priv)
         """
         x_priv = x25519.X25519PrivateKey.generate()
         x_pub_bytes = x_priv.public_key().public_bytes_raw()
@@ -104,7 +104,6 @@ class PQCHybridKeyExchange:
         k_priv = mlkem.MLKEM768PrivateKey.generate()
         k_pub_bytes = k_priv.public_key().public_bytes_raw()
 
-        # We return k_priv bundled into context or handle via direct encapsulation
         return x_pub_bytes, k_pub_bytes, x_priv, k_priv
 
     @staticmethod
@@ -128,9 +127,14 @@ class PQCHybridKeyExchange:
         peer_k_pub = mlkem.MLKEM768PublicKey.from_public_bytes(peer_mlkem_pub_bytes)
         pqc_secret, mlkem_ct = peer_k_pub.encapsulate()
 
-        # 3. Hybrid Key Derivation via HKDF-SHA3-256
+        # 3. Hybrid Key Derivation with Transcript Binding (prevents tampering / replay)
         combined_secret = classical_secret + pqc_secret
-        derived_key = derive_shared_secret(combined_secret, info=b"IPVN7-PQ-QUIC-HANDSHAKE-V1")
+        transcript_hash = hashlib.sha256(peer_x25519_pub_bytes + srv_x_pub_bytes + mlkem_ct).digest()
+        derived_key = derive_shared_secret(
+            combined_secret,
+            salt=transcript_hash,
+            info=b"IPVN7-PQ-QUIC-HANDSHAKE-V1-AUTH",
+        )
 
         return srv_x_pub_bytes, mlkem_ct, derived_key
 
@@ -153,9 +157,15 @@ class PQCHybridKeyExchange:
         # 2. PQC Decapsulation
         pqc_secret = client_k_priv.decapsulate(mlkem_ciphertext)
 
-        # 3. Hybrid Key Derivation
+        # 3. Hybrid Key Derivation with matching Transcript Binding
         combined_secret = classical_secret + pqc_secret
-        return derive_shared_secret(combined_secret, info=b"IPVN7-PQ-QUIC-HANDSHAKE-V1")
+        client_x_pub_bytes = client_x_priv.public_key().public_bytes_raw()
+        transcript_hash = hashlib.sha256(client_x_pub_bytes + server_x25519_pub_bytes + mlkem_ciphertext).digest()
+        return derive_shared_secret(
+            combined_secret,
+            salt=transcript_hash,
+            info=b"IPVN7-PQ-QUIC-HANDSHAKE-V1-AUTH",
+        )
 
 
 class PQCDigitalSignature:
