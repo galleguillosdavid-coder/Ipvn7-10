@@ -16,7 +16,7 @@ El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red 
 2. **Identidad Descentralizada Soberana (DID):** Espacio de direccionamiento de 256 bits (`did:ipvn7:<hex>`), eliminando la dependencia de servidores DNS o entidades certificadoras (CA) centrales.
 3. **Privacidad & Evasión de DPI por Defecto:** Enrutamiento cebolla Sphinx de 3 saltos, camuflaje TLS 1.3 RFC 8446 (`0x17 0x03 0x03`), detección activa de envenenamiento DNS e inyecciones TCP RST.
 4. **Resiliencia Extrema & Auto-Reparación:** Red de mundo pequeño de Kleinberg ($r=2$), detector de fallos SWIM $O(1)$, protocolo de recuperación post-apagón en 5 fases, y copiloto IA de red con auto-reparación en bucle cerrado.
-5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con 51 herramientas nativas para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
+5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con 57 herramientas nativas para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
 
 ---
 
