@@ -1,15 +1,39 @@
 {
   "system": "IPVN 7 Autonomous Network Operating System",
   "version": "7.1.0",
-  "last_consolidated_epoch": 1792499400,
+  "git": {
+    "branch": "main",
+    "remote_origin": "https://github.com/galleguillosdavid-coder/Ipvn7-10.git",
+    "tags": ["v7.0.0", "v7.1.0"],
+    "clean_working_tree": true
+  },
+  "runtime_environment": {
+    "os": "Windows 11 AMD64 (PowerShell)",
+    "python": ".\\.venv\\Scripts\\python.exe (Python 3.14.6)",
+    "pytest_command": ".\\.venv\\Scripts\\pytest.exe -q",
+    "test_suite_status": "78/78 passing (100% pass rate, 0 regressions)",
+    "ports": {
+      "web_ui": 7070,
+      "mcp_server": "7070/mcp",
+      "transparent_proxy": 8888,
+      "socks5_rfc1928": 10807,
+      "overlay_udp": 9443
+    }
+  },
   "invariants": {
     "zero_external_dependencies": true,
-    "allowed_crypto_suite": ["FIPS 203 ML-KEM-768", "FIPS 204 ML-DSA-65", "Ed25519", "ChaCha20-Poly1305"],
+    "allowed_crypto_suite": [
+      "FIPS 203 ML-KEM-768",
+      "FIPS 204 ML-DSA-65",
+      "Ed25519",
+      "ChaCha20-Poly1305"
+    ],
     "quiet_wire_protocol": "IP7H_HRS_5_FRAME",
     "ephemeral_rotation_hours": 24,
     "max_acceptable_test_failures": 0
   },
   "subsystems": {
+    "total_active_subsystems": 54,
     "network_layers": 4,
     "mcp_tools_count": 53,
     "hrs_frame_opcodes": [
@@ -20,15 +44,25 @@
       "STATE_CHANGE (0x05)"
     ],
     "adaptive_slas": {
-      "iot": {"heartbeat": 3.0, "timeout": 10.0},
-      "laptop": {"heartbeat": 7.0, "timeout": 20.0},
-      "server": {"heartbeat": 10.0, "timeout": 30.0},
-      "satellite": {"heartbeat": 15.0, "timeout": 45.0}
+      "iot": {"heartbeat": 3.0, "timeout": 10.0, "retries": 2},
+      "laptop": {"heartbeat": 7.0, "timeout": 20.0, "retries": 3},
+      "server": {"heartbeat": 10.0, "timeout": 30.0, "retries": 4},
+      "satellite": {"heartbeat": 15.0, "timeout": 45.0, "retries": 5}
     }
   },
-  "historical_roots_salvaged": [
-    "C:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7 vX7 (L2/L3 overlay & telemetry)",
-    "D:/David/dvd/ipv7-hrs-final (HRS quiet wire protocol & 24h ephemeral IDs)",
-    "C:/Users/Frondabrick/Desktop/dvd/Ipv7/Nexus one/two/tree (22-step autonomous agent cycle & ADR memory)"
-  ]
+  "documentation_hierarchy": [
+    "README.md (Master Handover & Architecture Map)",
+    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 54 Subsystems)",
+    "IPVN7_RFC_SPECIFICATION.md (54 Technical RFC Sections)",
+    "genesis.md (Genesis Mandate v2.0)",
+    ".nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md (Consolidated Decisions)"
+  ],
+  "handover": {
+    "ready_for_clean_agent": true,
+    "next_priorities": [
+      "Línea A: Integración de Edge AI / Ollama en shadow_device.py",
+      "Línea B: WebRTC media streaming en remote_desktop.py",
+      "Línea C: Pruebas de estrés y resiliencia en churn.py (5-20% packet drop)"
+    ]
+  }
 }
