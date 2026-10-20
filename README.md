@@ -188,9 +188,9 @@ Todo agente que continúe el desarrollo debe respetar estos 5 mandatos estrictos
 
 ---
 
-## 🛠️ 4. Servidor MCP y Plano de Control Agéntico (57 Herramientas)
+## 🛠️ 4. Servidor MCP y Plano de Control Agéntico (66 Herramientas)
 
-El servidor MCP integrado en `http://127.0.0.1:7070/mcp` expone 57 herramientas operativas accesibles tanto por agentes locales como remotos:
+El servidor MCP integrado en `http://127.0.0.1:7070/mcp` expone 66 herramientas operativas accesibles tanto por agentes locales como remotos:
 
 ### 4.1. Invocación desde Agentes y Clientes Externos (JSON-RPC 2.0)
 ```powershell
@@ -214,7 +214,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://127.0.0.1:7070/mcp" -Method Post -Body $body -ContentType "application/json"
 ```
 
-### 4.2. Desglose de Capacidades de las 57 Herramientas
+### 4.2. Desglose de Capacidades de las 66 Herramientas
 - **Telemetría y Estado:** `get_node_status`, `resolve_did`, `explain_routing_decision`.
 - **Comunicaciones y Transporte:** `send_pq_datagram`, `broadcast_plumtree_gossip`, `route_sphinx_onion`, `probe_peer_swim`.
 - **Sustrato Silencioso IPv7-HRS (ADR-001):** `ipvn7_dispatch_hrs_frame` *(creación y decodificación de tramas canónicas IP7H con SLAs adaptativos)*.
@@ -233,25 +233,54 @@ Invoke-RestMethod -Uri "http://127.0.0.1:7070/mcp" -Method Post -Body $body -Con
   - `ipvn7_select_geopolicy_route`: Enrutamiento dinámico por políticas geodistribuidas, distancia geodésica 3D, geofencing y enclaves de soberanía.
   - `ipvn7_sync_interregion_dht`: Sincronización interregional DHT privada mediante filtros de Bloom criptográficos (512-bit) y tramas canónicas IP7S ($\le 1280$B MTU) sin fuga de metadatos.
   - `ipvn7_probe_tunnel_telemetry`: Monitoreo continuo de túneles (Wintun/WireGuard/UDP), cálculo Jitter RFC 3550, descubrimiento dinámico de Path MTU (PMTU) y conmutación bicast multipath ante degradación de enlace.
+- **Gobernanza Micro-Económica y Cuotas P2P (ADR-013):**
+  - `ipvn7_issue_reciprocity_token`: Emisión y firma de comprobantes canónicos de reciprocidad `IP7R` para recompensar ancho de banda de tránsito.
+  - `ipvn7_settle_reciprocity_token`: Validación, liquidación y acreditación de tokens con verificación de firmas Ed25519 y prevención de doble gasto.
+  - `ipvn7_get_settlement_ledger`: Consulta del libro mayor de liquidación económica, balances de créditos y auditoría contable.
 
 ---
 
-## 🚀 5. Protocolo de Handover: Hoja de Ruta para el Próximo Agente
+## 🤖 5. Tabla Completa de Comandos, Parámetros y Atajos de Antigravity (Plano de Control & CLI)
+
+Guía de referencia rápida y operacional de comandos nativos (*slash commands*), flags de CLI y modos de ejecución del entorno autónomo Antigravity:
+
+| Comando / Modo / Atajo | Uso Típico / Sintaxis | Explicación Funcional y Detalle de Uso |
+|---|---|---|
+| `/goal` | `/goal pasar todos los tests de CI` | **Modo de ejecución autónoma continua.** El agente trabajará sin detenerse e iterará de forma autónoma hasta verificar que la meta se ha cumplido. |
+| `/boost` | `/boost optimizar este algoritmo de grafos` | **Razonamiento profundo multi-agente.** Despliega un bucle jerárquico de subagentes para resolver problemas de alta complejidad algorítmica o bugs complejos. |
+| `/plan` | `/plan migrar la base de datos a PostgreSQL` | **Planificación previa obligatoria.** Fuerza al agente a analizar dependencias y generar un borrador técnico (artefacto de implementación) antes de tocar o editar una sola línea de código. |
+| `/grill-me` | `/grill-me` | **Entrevista interactiva de diseño.** El agente te interroga rigurosamente sobre casos extremos y requerimientos ambiguos para cuadrar el enfoque del código antes de empezar. |
+| `/btw` | `/btw ¿qué hace este comando Docker?` | **Consulta rápida en segundo plano.** Te permite hacer una pregunta lateral sin corromper ni desviar el contexto principal del hilo de conversación actual. |
+| `/browser` | `/browser verificar la API de Stripe` | **Subagente de navegación web.** Instancia un subagente de navegación sandbox (Chrome) para extraer documentación, validar endpoints o realizar auditorías visuales en vivo. |
+| `/automations` | `/automations` *(antes `/schedule`)* | **Gestor de automatizaciones recurrentes.** Abre el gestor de tareas automatizadas y scripts recurrentes (tipo cron) delegados al agente. |
+| `/plugin` | `/plugin list` | **Gestor de extensiones y skills.** Permite descubrir, instalar y gestionar plugins, habilidades externas (*skills*), hooks o servidores MCP asociados al entorno. |
+| `/mcp` | `/mcp` | **Diagnóstico de servidores MCP.** Inspecciona y verifica el estado de conexión de los servidores integrados bajo el Model Context Protocol (MCP). |
+| `/learn` | `/learn usar empaquetado pnpm en este repo` | **Destilación persistente de memoria.** Destila feedback del usuario y lo guarda permanentemente como reglas de estilo y restricciones contextuales para futuros prompts. |
+| `/diff` | `/diff` | **Inspector visual de diferencias.** Despliega una vista comparativa interactiva en la terminal (TUI) mostrando con precisión quirúrgica los cambios que el agente planea aplicar en tus archivos locales. |
+| `/voice` | `/voice` | **Dictado de voz Gemini nativo.** Activa la transcripción de voz en tiempo real mediante la API nativa de audio de Gemini para dictar instrucciones complejas directamente al micrófono. |
+| `/add-dir` | `/add-dir ./src/services` | **Inyección dinámica de contexto.** Incorpora dinámicamente un directorio o ruta específica de tu máquina al espacio de contexto activo del agente. |
+| `agy --mode=plan` | `agy --mode=plan` | **CLI - Modo Planificación:** Lanza Antigravity bloqueado en modo de planificación. Obliga al sistema a desglosar planes de arquitectura antes de abrir el modo interactivo. |
+| `agy --mode=accept-edits` | `agy --mode=accept-edits` | **CLI - Edición Fluida:** Inicializa el agente en modo de edición fluida. Aplica escrituras, parches y creación de archivos sin pausar la terminal para pedir tu confirmación. |
+| `--dangerously-skip-permissions` | `agy --dangerously-skip-permissions` | **CLI - Modo YOLO Absoluto:** Otorga auto-aprobación total para realizar ediciones de código y además ejecutar comandos de consola (ej. `rm`, `git`) sin supervisión manual. Usar con precaución en sandboxes. |
+
+---
+
+## 🚀 6. Protocolo de Handover: Hoja de Ruta para el Próximo Agente
 
 Cuando un agente limpio inicie su sesión desde cero:
 
-### 5.1. Verificación Inicial de Estado
+### 6.1. Verificación Inicial de Estado
 ```powershell
 git status                                  # Debe estar en 'main' limpio
-git log -n 5 --oneline                      # Debe mostrar los últimos tags v7.0.0 a v7.5.0
-.\.venv\Scripts\pytest.exe -q              # 95 pasados en ~7.07 segundos
+git log -n 5 --oneline                      # Debe mostrar los últimos tags v7.0.0 a v7.11.0
+.\.venv\Scripts\pytest.exe -q              # 115 pasados al 100% en ~6.7 segundos
 Invoke-RestMethod -Uri "http://127.0.0.1:7070/api/status" # Confirmar nodo primario activo
 ```
 
-### 5.2. Mantenimiento del Bucle Autónomo (`schedule`)
+### 6.2. Mantenimiento del Bucle Autónomo (`schedule`)
 Renueva o programa el temporizador con la herramienta `schedule` a 1800 segundos (30 minutos) con una directiva de auto-optimización evolutiva.
 
-### 5.3. Prioridades de Desarrollo Inmediatas (Backlog de Auto-Evolución)
+### 6.3. Prioridades de Desarrollo Inmediatas (Backlog de Auto-Evolución)
 1. **Línea G — Canvas Visual Reactivo en el Control Center:** *(✅ COMPLETADO v7.3.2)*
    - Visualizador de streaming de tramas `IP7M` a 60 FPS con tracking de cursor e inyección reactiva en `tab-wan-desktop`.
    - Visor Heatmap de pesos ternarios BitNet b1.58 ($\{-1, 0, +1\}$) con cuantización interactiva e inferencia entera pura sin multiplicaciones en `tab-bitnet`.
@@ -274,7 +303,7 @@ Renueva o programa el temporizador con la herramienta `schedule` a 1800 segundos
 10. **Línea P — Próxima Evolución (Backlog v7.12.0):**
    - Agente Orquestador de Enclaves Criptográficos TEE y Validación Formal de Propiedades de Protocolo en Tiempo de Ejecución.
 
-### 5.4. Tarea Ocasional: Auditoría Externa Cruzada con ChatGPT (Multi-LLM Peer Review)
+### 6.4. Tarea Ocasional: Auditoría Externa Cruzada con ChatGPT (Multi-LLM Peer Review)
 De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar una auditoría de revisión externa independiente mediante [ChatGPT](https://chatgpt.com/):
 
 - **Objetivo:** Obtener validación adversaria cruzada, auditoría de vectores de ataque Zero-Trust y revisión de coherencia de las especificaciones RFC con un modelo de IA externo.
