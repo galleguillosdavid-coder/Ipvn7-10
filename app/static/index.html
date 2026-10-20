@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPVN 7 - Internet Protocol Version 7 Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo-orb">
+        <span class="logo-inner">7</span>
+      </div>
+      <div>
+        <h1 class="logo-title">IPVN 7 <span class="badge-tag">QUANTUM SECURE</span></h1>
+        <p class="logo-subtitle">Internet Protocol Version 7 &bull; Decentralized 4-Layer Mesh</p>
+      </div>
+    </div>
+
+    <div class="header-status">
+      <div class="status-indicator">
+        <span class="pulsing-dot"></span>
+        <span id="daemonStatus">LIVE MESH ACTIVE</span>
+      </div>
+      <div class="pqc-shield">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>FIPS 203 / 204 HARDENED</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-container">
+    <!-- Top KPI Grid -->
+    <section class="kpi-grid">
+      <div class="kpi-card glass-panel" id="cardIdentity">
+        <div class="kpi-icon icon-cyan">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Identidad DID del Nodo</span>
+          <span class="kpi-value mono-text" id="nodeDidShort">Conectando...</span>
+          <span class="kpi-meta">Desacoplado de IP Física &bull; W3C Core 1.0</span>
+        </div>
+      </div>
+
+      <div class="kpi-card glass-panel" id="cardPqc">
+        <div class="kpi-icon icon-purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Criptografía Post-Cuántica</span>
+          <span class="kpi-value text-gradient-pqc" id="pqcStatusLabel">ML-KEM-768 + ML-DSA-65</span>
+          <span class="kpi-meta">NIST FIPS 203 / FIPS 204 Nativo</span>
+        </div>
+      </div>
+
+      <div class="kpi-card glass-panel" id="cardThroughput">
+        <div class="kpi-icon icon-green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Streaming PQ-QUIC</span>
+          <span class="kpi-value mono-text" id="streamThroughput">-- MB/s</span>
+          <span class="kpi-meta" id="streamThroughputMeta">Haga clic en 'Test Streaming'</span>
+        </div>
+      </div>
+
+      <div class="kpi-card glass-panel" id="cardDht">
+        <div class="kpi-icon icon-amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Enrutamiento Small-World</span>
+          <span class="kpi-value" id="dhtHops">-- Saltos</span>
+          <span class="kpi-meta">Modelo Kleinberg &bull; Escala O(log² N)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Grid: Topology & Interactive Layer Controller -->
+    <div class="main-grid">
+      <!-- Left Column: Visual Mesh & Churn Simulation -->
+      <section class="visualizer-section glass-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <h2>Topología de Malla Small-World</h2>
+            <span class="badge-sub">Enlaces Armónicos &bull; Navegación Descentralizada</span>
+          </div>
+          <div class="panel-actions">
+            <button class="btn btn-outline" id="btnBurstPacket">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Disparar Trama IPVN 7
+            </button>
+            <button class="btn btn-warning" id="btnTriggerChurn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Inyectar Churn (25%)
+            </button>
+            <button class="btn btn-primary" id="btnHealMesh">Auto-Reconvergencia</button>
+          </div>
+        </div>
+
+        <div class="canvas-wrapper">
+          <canvas id="meshCanvas"></canvas>
+          <div class="canvas-legend">
+            <span><span class="dot-legend dot-local"></span> Nodo Local (Genesis)</span>
+            <span><span class="dot-legend dot-peer"></span> Par Activo (Orbiter)</span>
+            <span><span class="dot-legend dot-mesh"></span> Backbone Tier-2</span>
+            <span><span class="dot-legend dot-churn"></span> Nodo Caído</span>
+          </div>
+        </div>
+
+        <div class="simulation-metrics-bar">
+          <div class="sim-metric"><span>Nodos Activos:</span> <strong id="simAliveCount">60 / 60</strong></div>
+          <div class="sim-metric"><span>Saltos Medidos:</span> <strong id="simHops">--</strong></div>
+          <div class="sim-metric"><span>Tasa de Entrega:</span> <strong id="simDelivery">--%</strong></div>
+          <div class="sim-metric"><span>Límite Teórico Kleinberg:</span> <strong id="simBound">17.4</strong></div>
+        </div>
+      </section>
+
+      <!-- Right Column: 4-Layer Control Panels -->
+      <section class="layers-section glass-panel">
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="tab-quic">Capa 3: PQ-QUIC & Streaming</button>
+          <button class="tab-btn" data-tab="tab-pqc-live">Laboratorio Criptográfico PQC</button>
+          <button class="tab-btn" data-tab="tab-internet">Captura HTTP/CONNECT (:8888)</button>
+          <button class="tab-btn" data-tab="tab-socks5">Gateway SOCKS5 (:10807)</button>
+          <button class="tab-btn" data-tab="tab-onion">Enrutamiento Cebolla Sphinx</button>
+          <button class="tab-btn" data-tab="tab-gossip">Plumtree Gossip & SWIM</button>
+          <button class="tab-btn" data-tab="tab-identity">Capa 4: Identidad DID</button>
+          <button class="tab-btn" data-tab="tab-hardware">Capa 1: HAL & Wintun</button>
+          <button class="tab-btn" data-tab="tab-ztna">Seguridad ZTNA & WoT</button>
+          <button class="tab-btn" data-tab="tab-dag">DAG Store & DTN</button>
+          <button class="tab-btn" data-tab="tab-diagnostics">Telemetría & Quórum</button>
+          <button class="tab-btn" data-tab="tab-petnames">dDNS Petnames & OOB</button>
+          <button class="tab-btn" data-tab="tab-bench">Benchmarks de CPU</button>
+          <button class="tab-btn" data-tab="tab-accounting">Tit-for-Tat & Microservicios</button>
+          <button class="tab-btn" data-tab="tab-planetary">Malla Planetaria & Resiliencia</button>
+          <button class="tab-btn" data-tab="tab-chat-healing">Chat Soberano & Link Healing</button>
+          <button class="tab-btn" data-tab="tab-uin-shadow-pfo">Identidad UIN, Shadow & PFO</button>
+          <button class="tab-btn" data-tab="tab-wan-desktop">Sondeo WAN & Escritorio Remoto</button>
+          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (51 Herramientas IA)</button>
+        </div>
+
+        <!-- Tab 1: PQ-QUIC & Migration -->
+        <div class="tab-pane active" id="tab-quic">
+          <!-- Real Socket Streaming Test Box -->
+          <div class="interactive-card">
+            <h3>Test de Transferencia Real sobre Sockets UDP</h3>
+            <p class="desc">Transmite una ráfaga real de datagramas UDP cifrados con PQ-QUIC entre los dos sockets activos en loopback y calcula el throughput real en tiempo real.</p>
+            <div class="streaming-control-bar">
+              <label>Cantidad de Paquetes:
+                <select id="selPackets" class="select-field">
+                  <option value="25">25 Paquetes (35 KB)</option>
+                  <option value="50" selected>50 Paquetes (70 KB)</option>
+                  <option value="150">150 Paquetes (210 KB)</option>
+                </select>
+              </label>
+              <button class="btn btn-primary" id="btnRunSocketStream">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Ejecutar Ráfaga de Streaming UDP
+              </button>
+            </div>
+            <div id="streamResultsBox" class="stream-results hidden">
+              <div class="res-item"><span>Enviados:</span> <strong id="resSent">0</strong></div>
+              <div class="res-item"><span>Recibidos:</span> <strong id="resReceived">0</strong></div>
+              <div class="res-item"><span>Tiempo de Vuelo:</span> <strong id="resTime">0 ms</strong></div>
+              <div class="res-item"><span>Throughput Real:</span> <strong id="resThroughput" class="text-green">0 MB/s</strong></div>
+            </div>
+          </div>
+
+          <div class="interactive-card mt-4">
+            <h3>Demostración de Migración de Conexión</h3>
+            <p class="desc">Simula el traspaso de un terminal móvil cambiando de interfaz Wi-Fi a Celular 5G sin interrumpir la sesión criptográfica PQ-QUIC.</p>
+            
+            <div class="migration-flow">
+              <div class="endpoint-box" id="epCurrent">
+                <span class="ep-tag">INTERFAZ ACTIVA</span>
+                <span class="ep-name" id="epInterfaceName">wlan0 (Wi-Fi 6)</span>
+                <span class="ep-ip mono-text" id="epIp">192.168.1.100:9443</span>
+              </div>
+              <div class="flow-arrow">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </div>
+              <div class="endpoint-box" id="epTarget">
+                <span class="ep-tag">DESTINO MIGRACIÓN</span>
+                <span class="ep-name">wwan5g (5G Standalone)</span>
+                <span class="ep-ip mono-text">10.42.0.8:54321</span>
+              </div>
+            </div>
+
+            <button class="btn btn-accent btn-large" id="btnExecuteMigration">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+              Ejecutar Migración de Conexión en Caliente
+            </button>
+            <div id="migrationFeedback" class="feedback-banner hidden"></div>
+          </div>
+
+          <div class="interactive-card mt-4">
+            <h3>Transmisión de Mensaje Cifrado Punto a Punto</h3>
+            <form id="msgSendForm" class="send-form">
+              <input type="text" id="txtPayload" class="input-field" value="Hola desde IPVN 7 con cifrado ML-KEM y firmas ML-DSA" placeholder="Escribe el mensaje...">
+              <button type="submit" class="btn btn-primary" id="btnSend">Enviar Datagrama</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tab 2: Live PQC Crypto Lab -->
+        <div class="tab-pane" id="tab-pqc-live">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Inspección Criptográfica en Vivo (NIST FIPS 203 & 204)</h3>
+                <p class="desc">Ejecuta en caliente las primitivas de retículos matemáticos y mide la duración en nanosegundos.</p>
+              </div>
+              <button class="btn btn-primary" id="btnRunLivePQC">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Generar & Verificar en Vivo
+              </button>
+            </div>
+
+            <div id="pqcLabOutput" class="pqc-lab-box">
+              <p class="text-muted">Presiona 'Generar & Verificar en Vivo' para ejecutar un ciclo de KEM y DSA en hardware real.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Windows Traffic Interception & Internet Tunnel -->
+        <div class="tab-pane" id="tab-internet">
+          <div class="interactive-card">
+            <h3>Captura y Enrutamiento de Tráfico Windows a Internet</h3>
+            <p class="desc">Intercepta conexiones del sistema operativo Windows y las encapsula mediante la pasarela post-cuántica IPVN 7 hacia la red pública.</p>
+
+            <div class="migration-flow">
+              <div class="endpoint-box">
+                <span class="ep-tag">PASARELA PROXY WINDOWS</span>
+                <span class="ep-name">127.0.0.1:8888</span>
+                <span class="ep-ip mono-text">HTTP / HTTPS CONNECT Proxy Activo</span>
+              </div>
+              <div class="flow-arrow">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </div>
+              <div class="endpoint-box">
+                <span class="ep-tag">NODO SALIDA IPVN 7 (EXIT NODE)</span>
+                <span class="ep-name">Sat-Node-Orbiter</span>
+                <span class="ep-ip mono-text" id="proxyStatsBox">Intercepciones: 0</span>
+              </div>
+            </div>
+
+            <div class="interactive-card mt-4">
+              <h4>Prueba en Vivo de Conexión a Internet Real</h4>
+              <p class="desc">Ingresa cualquier URL pública. El tráfico será capturado por el túnel, encriptado con ML-KEM-768/QUIC, despachado por el nodo de salida y entregado a Windows.</p>
+              <form id="internetFetchForm" class="send-form">
+                <input type="text" id="txtInternetUrl" class="input-field" value="http://example.com/" placeholder="http://example.com/">
+                <button type="submit" class="btn btn-primary" id="btnFetchInternet">Capturar & Enrutar por IPVN 7</button>
+              </form>
+              <div id="internetFetchResult" class="pqc-lab-box mt-4 hidden"></div>
+            </div>
+
+            <div class="mt-4">
+              <p class="text-muted" style="font-size:0.75rem;">Para enrutar tráfico real de cualquier aplicación de Windows (navegador, PowerShell, curl) a través de este túnel:</p>
+              <code class="code-badge" style="display:block; margin-top:0.35rem; padding:0.5rem;">curl.exe -x http://127.0.0.1:8888 http://example.com/</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Universal RFC 1928 SOCKS5 Proxy Gateway -->
+        <div class="tab-pane" id="tab-socks5">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Gateway SOCKS5 Universal (RFC 1928)</h3>
+                <p class="desc">Túnel transparente de sockets TCP/UDP a través de la malla cuántica. Permite a navegadores, SSH, Git, Telegram y herramientas del sistema operar sin modificar su código.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text" id="socks5PortLabel">127.0.0.1:10807</span>
+              </div>
+            </div>
+
+            <div class="bench-grid mt-4">
+              <div class="bench-item">
+                <span class="bench-label">Conexiones Totales</span>
+                <strong class="bench-val" id="s5TotalConn">0</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Conexiones Activas</span>
+                <strong class="bench-val text-green" id="s5ActiveConn">0</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Tráfico Subida (Tx)</span>
+                <strong class="bench-val" id="s5Tx">0 B</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Tráfico Bajada (Rx)</span>
+                <strong class="bench-val" id="s5Rx">0 B</strong>
+              </div>
+            </div>
+
+            <div class="interactive-card mt-4">
+              <h4>Test Directo de Socket SOCKS5</h4>
+              <p class="desc">Abre una conexión TCP real al puerto 10807, negocia el saludo SOCKS5 (0x05 0x01 0x00), emite solicitud CONNECT y recibe respuesta tunelada.</p>
+              <form id="socks5TestForm" class="send-form mt-2">
+                <input type="text" id="txtSocks5Host" class="input-field" value="example.com" placeholder="Host destino...">
+                <input type="number" id="txtSocks5Port" class="input-field" value="80" style="max-width:90px;" placeholder="Puerto">
+                <button type="submit" class="btn btn-primary" id="btnTestSocks5">Probar Túnel SOCKS5</button>
+              </form>
+              <div id="socks5ResultBox" class="pqc-lab-box mt-4 hidden"></div>
+            </div>
+
+            <div class="mt-4">
+              <p class="text-muted" style="font-size:0.75rem;">Para enrutar tráfico nativo por SOCKS5 desde terminal o aplicaciones:</p>
+              <code class="code-badge" style="display:block; margin-top:0.35rem; padding:0.5rem;">curl.exe --socks5 127.0.0.1:10807 http://example.com/</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Sphinx Onion Multi-Hop Routing -->
+        <div class="tab-pane" id="tab-onion">
+          <div class="interactive-card">
+            <h3>Enrutamiento Cebolla Sphinx (3 Saltos Cifrados en Capas)</h3>
+            <p class="desc">Paquetes de longitud fija determinista (1280 bytes) que desprenden iterativamente capas criptográficas ChaCha20 + PQC, ocultando la correlación entre emisor, retransmisor y destino.</p>
+
+            <div class="onion-circuit-display mt-4">
+              <div class="circuit-hop-node">
+                <span class="hop-role">ORIGEN</span>
+                <strong>Genesis-Gateway</strong>
+                <span class="mono-text">Hop 0</span>
+              </div>
+              <div class="circuit-arrow">&rarr;</div>
+              <div class="circuit-hop-node">
+                <span class="hop-role">RETRANSMISOR 1</span>
+                <strong>Relay-Alpha</strong>
+                <span class="mono-text">FORWARD</span>
+              </div>
+              <div class="circuit-arrow">&rarr;</div>
+              <div class="circuit-hop-node">
+                <span class="hop-role">RETRANSMISOR 2</span>
+                <strong>Relay-Beta</strong>
+                <span class="mono-text">FORWARD</span>
+              </div>
+              <div class="circuit-arrow">&rarr;</div>
+              <div class="circuit-hop-node">
+                <span class="hop-role">NODO SALIDA</span>
+                <strong>Sat-Orbiter</strong>
+                <span class="mono-text">DELIVER</span>
+              </div>
+            </div>
+
+            <div class="interactive-card mt-4">
+              <h4>Prueba de Circuito Sphinx en Vivo</h4>
+              <form id="onionSendForm" class="send-form mt-2">
+                <input type="text" id="txtOnionPayload" class="input-field" value="IPVN7 Confidencial: Trama Cebolla 3-Saltos Post-Cuántica" placeholder="Mensaje confidencial...">
+                <button type="submit" class="btn btn-primary" id="btnTestOnion">Construir & Pelar Circuito</button>
+              </form>
+              <div id="onionResultBox" class="pqc-lab-box mt-4 hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Plumtree Epidemic Gossip & SWIM Failure Detector -->
+        <div class="tab-pane" id="tab-gossip">
+          <div class="interactive-card">
+            <h3>Difusión Epidémica Plumtree & Detector de Fallos SWIM</h3>
+            <p class="desc">Árbol determinista que combina empuje proactivo (Eager Push) y anuncios de metadatos (Lazy IHAVE) con poda PRUNE y auto-injerto GRAFT para difusión sin sobrecarga redundante.</p>
+
+            <div class="bench-grid mt-4">
+              <div class="bench-item">
+                <span class="bench-label">Pares en Árbol Eager (Proactivo)</span>
+                <strong class="bench-val text-green" id="gossipEagerCount">--</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Pares en Malla Lazy (IHAVE)</span>
+                <strong class="bench-val" id="gossipLazyCount">--</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Duplicados Suprimidos (PRUNE)</span>
+                <strong class="bench-val text-cyan" id="gossipPrunes">0</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Auto-Injertos de Reparación (GRAFT)</span>
+                <strong class="bench-val" id="gossipGrafts">0</strong>
+              </div>
+            </div>
+
+            <div class="interactive-card mt-4">
+              <h4>Emitir Difusión Epidémica Global (Plumtree Broadcast)</h4>
+              <form id="gossipBroadcastForm" class="send-form mt-2">
+                <input type="text" id="txtGossipTopic" class="input-field" style="max-width:140px;" value="TOPOLOGY_SYNC" placeholder="Tópico">
+                <input type="text" id="txtGossipContent" class="input-field" value="Alerta de Convergencia de Rutas DHT Post-Cuántica" placeholder="Contenido de difusión...">
+                <button type="submit" class="btn btn-primary" id="btnBroadcastGossip">Emitir Broadcast</button>
+              </form>
+              <div id="gossipResultBox" class="pqc-lab-box mt-4 hidden"></div>
+            </div>
+
+            <div class="interactive-card mt-4">
+              <h4>Sondeo SWIM Directo e Indirecto</h4>
+              <p class="desc">Envía sondeo O(1) de disponibilidad con respaldo de ping indirecto a través de intermediarios para descartar falsas alarmas por jitter.</p>
+              <button class="btn btn-outline" id="btnProbeSWIM">Sondear Salud de Nodo Par con SWIM</button>
+              <div id="swimResultBox" class="pqc-lab-box mt-4 hidden"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: DID Identity -->
+        <div class="tab-pane" id="tab-identity">
+          <div class="interactive-card">
+            <h3>Documento W3C DID del Nodo Local</h3>
+            <div class="did-box">
+              <span class="did-full mono-text" id="fullDidString">did:ipvn7:loading...</span>
+            </div>
+            <pre class="json-viewer mono-text" id="didDocViewer">Cargando Documento DID...</pre>
+          </div>
+        </div>
+
+        <!-- Tab 4: Hardware Multi-Homing -->
+        <div class="tab-pane" id="tab-hardware">
+          <div class="interactive-card">
+            <h3>Interfaces de Hardware Abstraídas (HAL)</h3>
+            <div class="interfaces-grid" id="ifacesGrid">
+              <div class="iface-card">
+                <div class="iface-status active"></div>
+                <div><strong>lo0 (Loopback)</strong><br><span class="mono-text">127.0.0.1</span></div>
+                <span class="iface-speed">10 Gbps</span>
+              </div>
+              <div class="iface-card">
+                <div class="iface-status active"></div>
+                <div><strong>primary0 (Ethernet GbE)</strong><br><span class="mono-text">Autodetectada</span></div>
+                <span class="iface-speed">1 Gbps</span>
+              </div>
+              <div class="iface-card">
+                <div class="iface-status active"></div>
+                <div><strong>wlan0 (Wi-Fi 6)</strong><br><span class="mono-text">192.168.1.100</span></div>
+                <span class="iface-speed">300 Mbps</span>
+              </div>
+              <div class="iface-card">
+                <div class="iface-status active"></div>
+                <div><strong>wwan5g (5G NR)</strong><br><span class="mono-text">10.42.0.8</span></div>
+                <span class="iface-speed">500 Mbps</span>
+              </div>
+              <div class="iface-card iface-tun-card">
+                <div class="iface-status active"></div>
+                <div><strong>wintun0 (Adaptador Virtual TUN)</strong><br><span class="mono-text" id="tunModeLabel">Cargando...</span></div>
+                <span class="iface-speed" id="tunMtuLabel">MTU 1280 B</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 5: Benchmarks -->
+        <div class="tab-pane" id="tab-bench">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Banco de Pruebas de CPU (Medición Real de Operaciones)</h3>
+                <p class="desc">Ejecuta bucles de estrés criptográfico con medición precisa mediante time.perf_counter().</p>
+              </div>
+              <button class="btn btn-outline" id="btnRunBench">Iniciar Medición</button>
+            </div>
+            <div class="bench-grid" id="benchResults">
+              <div class="bench-item">
+                <span class="bench-label">ML-KEM-768 Encapsulation</span>
+                <strong class="bench-val" id="bKEMEncap">-- ops/s</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">ML-KEM-768 Decapsulation</span>
+                <strong class="bench-val" id="bKEMDecap">-- ops/s</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">ML-DSA-65 Verification</span>
+                <strong class="bench-val" id="bDSAVerify">-- ops/s</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Throughput de Streaming Cifrado</span>
+                <strong class="bench-val text-green" id="bQUICRate">-- MB/s</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 6: Model Context Protocol (MCP) Server Console -->
+        <div class="tab-pane" id="tab-mcp">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Servidor Nativo MCP (Model Context Protocol JSON-RPC 2.0)</h3>
+                <p class="desc">Permite a modelos LLM, agentes autónomos y copilotos inspeccionar la topología de red, enrutar paquetes y ordenar migraciones mediante llamadas a herramientas estructuradas.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text">JSON-RPC 2.0 / MCP 2024-11-05</span>
+              </div>
+            </div>
+
+            <div class="interactive-card mt-4">
+              <h4>Consola de Ejecución de Herramientas MCP</h4>
+              <div class="streaming-control-bar mt-2">
+                <label>Herramienta MCP:
+                  <select id="selMcpTool" class="select-field">
+                    <option value="get_node_status">get_node_status (Telemetría General)</option>
+                    <option value="resolve_did">resolve_did (Búsqueda en DHT)</option>
+                    <option value="send_pq_datagram">send_pq_datagram (Datagrama PQ-QUIC)</option>
+                    <option value="route_sphinx_onion">route_sphinx_onion (Circuito Sphinx)</option>
+                    <option value="broadcast_plumtree_gossip">broadcast_plumtree_gossip (Broadcast Epidémico)</option>
+                    <option value="probe_peer_swim">probe_peer_swim (Detector SWIM)</option>
+                    <option value="trigger_connection_migration">trigger_connection_migration (Migración 5G)</option>
+                    <option value="ipvn7_firewall_rule">ipvn7_firewall_rule (Reglas ZTNA)</option>
+                    <option value="ipvn7_wot_vouch">ipvn7_wot_vouch (Aval Criptográfico WoT)</option>
+                    <option value="ipvn7_get_trust">ipvn7_get_trust (Confianza Transitiva)</option>
+                    <option value="ipvn7_dag_put">ipvn7_dag_put (Compromiso DAG)</option>
+                    <option value="ipvn7_get_anomalies">ipvn7_get_anomalies (Huellas de Anomalías O(1))</option>
+                    <option value="ipvn7_audit_split_brain">ipvn7_audit_split_brain (Auditoría Split-Brain)</option>
+                    <option value="ipvn7_register_petname">ipvn7_register_petname (Registro dDNS)</option>
+                    <option value="ipvn7_resolve_petname">ipvn7_resolve_petname (Resolución dDNS)</option>
+                    <option value="ipvn7_get_oob_sas">ipvn7_get_oob_sas (Validación SAS Emojis)</option>
+                    <option value="ipvn7_toggle_dark_node">ipvn7_toggle_dark_node (Conmutar Perfil Sigilo)</option>
+                    <option value="ipvn7_send_silent_call">ipvn7_send_silent_call (Llamada Unicast Silenciosa)</option>
+                    <option value="ipvn7_route_planetary">ipvn7_route_planetary (Malla Planetaria Kleinberg)</option>
+                    <option value="ipvn7_resilience_status">ipvn7_resilience_status (Guardián de Resiliencia)</option>
+                  </select>
+                </label>
+                <button class="btn btn-primary" id="btnExecuteMcpTool">Invocar Herramienta JSON-RPC</button>
+              </div>
+
+              <div class="mt-4">
+                <span style="font-size:0.75rem; color:var(--text-muted);">Payload de Solicitud JSON-RPC 2.0:</span>
+                <pre class="json-viewer mono-text" id="mcpRequestPreview" style="max-height:100px;"></pre>
+              </div>
+
+              <div class="mt-4">
+                <span style="font-size:0.75rem; color:var(--text-muted);">Respuesta JSON-RPC 2.0 de la Malla:</span>
+                <pre class="json-viewer mono-text" id="mcpResponseBox" style="max-height:180px;">Seleccione una herramienta y presione 'Invocar Herramienta JSON-RPC'.</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: ZTNA Firewall & Web of Trust -->
+        <div class="tab-pane" id="tab-ztna">
+          <div class="interactive-card">
+            <div class="card-header-flex">
+              <div>
+                <h3>Microsegmentación ZTNA (Default-Deny) & Web of Trust</h3>
+                <p class="desc">Autorización criptográfica granular por DID y reputación transitiva atenuada (0.85^hops) anti-ataques Sybil.</p>
+              </div>
+              <div class="toggle-wrap">
+                <span style="font-size:0.8rem; color:var(--text-muted); margin-right:8px;">Default-Deny:</span>
+                <button class="btn btn-small" id="btnToggleDefaultDeny">Activar Default-Deny</button>
+              </div>
+            </div>
+
+            <div class="grid-2col mt-4">
+              <div class="stat-box">
+                <span class="stat-lbl">Estado Firewall ZTNA</span>
+                <span class="stat-val" id="fwDefaultDenyStatus">PERMISSIVE (Off)</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-lbl">Paquetes Evaluados</span>
+                <span class="stat-val" id="fwPacketsEvaluated">0</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-lbl">Aceptados Criptográficamente</span>
+                <span class="stat-val color-success" id="fwPacketsAccepted">0</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-lbl">Bloqueados (Default-Deny / ACL)</span>
+                <span class="stat-val color-danger" id="fwPacketsDropped">0</span>
+              </div>
+            </div>
+
+            <!-- Form: Add/Authorize Policy -->
+            <div class="action-box mt-4">
+              <h4>Autorizar DID en el Firewall</h4>
+              <div class="action-inputs-grid">
+                <input type="text" id="fwTargetDid" class="input-field" placeholder="did:ipvn7:z... (Target DID)" />
+                <div class="checkbox-row" style="display:flex; gap:16px; align-items:center;">
+                  <label><input type="checkbox" id="fwAllowInbound" checked /> Inbound</label>
+                  <label><input type="checkbox" id="fwAllowOutbound" checked /> Outbound</label>
+                  <label><input type="checkbox" id="fwAllowRelay" /> Relay</label>
+                </div>
+                <button class="btn btn-primary btn-small" id="btnSaveFwPolicy">Guardar Política</button>
+              </div>
+            </div>
+
+            <!-- Form: Issue WoT Vouch -->
+            <div class="action-box mt-4">
+              <h4>Emitir Aval Criptográfico Web-of-Trust (Firma Ed25519)</h4>
+              <div class="action-inputs-grid">
+                <input type="text" id="wotSubjectDid" class="input-field" placeholder="did:ipvn7:z... (Subject DID)" />
+                <input type="number" id="wotTrustLevel" class="input-field" step="0.05" min="0" max="1" value="0.9" placeholder="Confianza (0.0 a 1.0)" />
+                <input type="text" id="wotReason" class="input-field" value="Post-Quantum Identity Verified Peer" placeholder="Motivo del Aval" />
+                <button class="btn btn-outline btn-small" id="btnIssueWotVouch">Firmar & Emitir Aval</button>
+              </div>
+              <div class="mt-2" style="font-size:0.8rem; color:var(--accent-glow);">
+                Puntaje de Confianza Transitiva hacia Par Primario: <strong id="wotTrustScoreDisplay">1.0000</strong>
+              </div>
+            </div>
+
+            <!-- Dark Node Stealth Profile Card -->
+            <div class="action-box mt-4">
+              <div class="card-header-flex">
+                <div>
+                  <h4>Perfil de Sigilo Macro-Atómico (Dark Node / Egress-Only)</h4>
+                  <p class="desc">Aislamiento en cascada: silencia anuncios DHT, fuerza Default-Deny ZTNA, exige 3 saltos Sphinx (1280B) e inyecta micro-jitter anti-análisis.</p>
+                </div>
+                <button class="btn btn-primary btn-small" id="btnToggleDarkNodeProfile">Conmutar Modo Sigilo</button>
+              </div>
+              <div class="grid-2col mt-3">
+                <div class="stat-box">
+                  <span class="stat-lbl">Modo Operacional</span>
+                  <span class="stat-val mono-text" id="dnModeLabel">STANDARD_MESH</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-lbl">Listeners Públicos</span>
+                  <span class="stat-val text-green" id="dnMuteLabel">ACTIVOS (Visibles)</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-lbl">Enrutamiento Sphinx</span>
+                  <span class="stat-val" id="dnSphinxLabel">Bajo Demanda</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-lbl">Micro-Jitter Anti-Correlación</span>
+                  <span class="stat-val" id="dnJitterLabel">Inactivo</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Silent Unicast Network Card -->
+            <div class="action-box mt-4">
+              <h4>Red Silenciosa Unicast & Despachador Anti-DoS (Zero Broadcast Noise)</h4>
+              <p class="desc">Comunicación estrictamente dirigida por Unicast autenticado. Descarta ruido broadcast y limita tasa a 500 tokens/s por par.</p>
+              <div class="streaming-control-bar mt-2">
+                <input type="text" id="txtSilentTargetDid" class="input-field" placeholder="did:ipvn7:z... (Target DID)" />
+                <input type="text" id="txtSilentPayload" class="input-field" value="Direct Unicast Ping" placeholder="Carga útil" />
+                <button class="btn btn-outline btn-small" id="btnSendSilentCall">Emitir Llamada Silenciosa</button>
+              </div>
+              <div class="grid-2col mt-3">
+                <div class="stat-box">
+                  <span class="stat-lbl">Llamadas Despachadas</span>
+                  <span class="stat-val" id="silentCallsDispatched">0</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-lbl">Respuestas Recibidas</span>
+                  <span class="stat-val text-green" id="silentRespReceived">0</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-lbl">Ruido Broadcast Descartado</span>
+                  <span class="stat-val color-danger" id="silentNoiseDropped">0</span>
+                </div>
+                <div class="stat-box">
+                  <span class="stat-lbl">Llamadas Limitadas por Tasa</span>
+                  <span class="stat-val" id="silentRateLimited">0</span>
+                </div>
+              </div>
+              <div id="silentCallFeedback" class="json-viewer mono-text mt-3" style="display:none; max-height:100px; font-size:0.75rem;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: DAG Store & Delay-Tolerant Networking -->
+        <div class="tab-pane" id="tab-dag">
+          <div class="interactive-card">
+            <h3>Almacén Inmutable DAG & Enrutamiento Tolerante a Retardos (DTN)</h3>
+            <p class="desc">Bloques inmutables direccionados por contenido (<span class="mono-text">cid:ipvn7:&lt;hash&gt;</span>) con árbol causal de ancestros y cola store-and-forward para enlaces intermitentes.</p>
+
+            <div class="grid-2col mt-4">
+              <div class="stat-box">
+                <span class="stat-lbl">Bloques Almacenados en DAG</span>
+                <span class="stat-val" id="dagBlocksCount">0</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-lbl">Bundles en Cola DTN Asíncrona</span>
+                <span class="stat-val" id="dagDtnBundlesCount">0</span>
+              </div>
+            </div>
+
+            <div class="action-box mt-4">
+              <h4>Publicar Nuevo Bloque Inmutable al DAG</h4>
+              <div class="action-inputs-grid">
+                <input type="text" id="dagPayloadInput" class="input-field" placeholder="Carga útil o manifiesto de red a registrar en el DAG..." value="IPVN7 State Block: Quantum Route Verified" />
+                <input type="text" id="dagTargetDidInput" class="input-field" placeholder="DID Destino (opcional para entrega DTN diferida)" />
+                <button class="btn btn-primary btn-small" id="btnPublishDagBlock">Firmar & Comprometer al DAG</button>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <span style="font-size:0.75rem; color:var(--text-muted);">Bloques DAG Recientes:</span>
+              <div id="dagBlocksList" class="json-viewer mono-text" style="max-height:180px; overflow-y:auto; font-size:0.78rem;">
+                Cargando bloques del DAG...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Anomaly Telemetry & Split-Brain Quorum -->
+        <div class="tab-pane" id="tab-diagnostics">
+          <div class="interactive-card">
+            <div class="card-header-flex">
+              <div>
+                <h3>Telemetría de Anomalías O(1) & Guardián Anti-Split-Brain</h3>
+                <p class="desc">Agrupación compacta de incidentes bajo firmas criptográficas únicas (SHA-256 12-hex) y auditoría de quórum de malla contra particiones.</p>
+              </div>
+              <button class="btn btn-outline btn-small" id="btnAuditSplitBrain">Auditar Quórum en Vivo</button>
+            </div>
+
+            <div class="grid-2col mt-4">
+              <div class="stat-box">
+                <span class="stat-lbl">Estado de Partición de Red</span>
+                <span class="stat-val color-success" id="sbStateLabel">HEALTHY</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-lbl">Pares Activos / Censo Total</span>
+                <span class="stat-val" id="sbQuorumRatio">-- / --</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-lbl">Total Incidentes Agregados</span>
+                <span class="stat-val" id="anomTotalCount">0</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-lbl">Huellas Únicas Registradas</span>
+                <span class="stat-val" id="anomUniqueCount">0</span>
+              </div>
+            </div>
+
+            <div class="action-box mt-4">
+              <h4>Desglose de Severidad de Fallos Silenciosos</h4>
+              <div style="display:flex; gap:16px; font-size:0.8rem;">
+                <span>CRITICAL: <strong class="color-danger" id="anomCritCount">0</strong></span>
+                <span>HIGH: <strong style="color:#fb8500;" id="anomHighCount">0</strong></span>
+                <span>MEDIUM: <strong style="color:#ffb703;" id="anomMedCount">0</strong></span>
+                <span>LOW: <strong style="color:#8ecae6;" id="anomLowCount">0</strong></span>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <span style="font-size:0.75rem; color:var(--text-muted);">Huellas Criptográficas de Anomalías (Sin Bloat):</span>
+              <div id="anomaliesList" class="json-viewer mono-text" style="max-height:180px; overflow-y:auto; font-size:0.78rem;">
+                No se han detectado anomalías de red o fallos de buffer.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: dDNS Petnames & Out-of-Band Pairing -->
+        <div class="tab-pane" id="tab-petnames">
+          <div class="interactive-card">
+            <h3>DNS Descentralizado (dDNS Petnames) & Emparejamiento OOB</h3>
+            <p class="desc">Resolución de nombres locales mnemotécnicos (<span class="mono-text">.ipv7</span>) hacia DIDs soberanos sin entidades centrales (ICANN-free) y verificación visual SAS anti-MITM con emojis.</p>
+
+            <!-- Register Petname Form -->
+            <div class="action-box mt-4">
+              <h4>Registrar Alias Mnemotécnico (.ipv7)</h4>
+              <div class="action-inputs-grid">
+                <input type="text" id="txtPetnameName" class="input-field" placeholder="Nombre mnemotécnico (ej. mi-servidor)" />
+                <input type="text" id="txtPetnameDid" class="input-field" placeholder="DID de destino (did:ipvn7:...)" />
+                <input type="text" id="txtPetnameComment" class="input-field" placeholder="Nota descriptiva (ej. Servidor de Almacenamiento)" />
+                <button class="btn btn-primary btn-small" id="btnRegisterPetname">Guardar Petname</button>
+              </div>
+            </div>
+
+            <!-- Resolve Petname Form -->
+            <div class="action-box mt-4">
+              <h4>Resolver Petname Localmente</h4>
+              <div class="action-inputs-grid">
+                <input type="text" id="txtResolveQuery" class="input-field" placeholder="Nombre a resolver (ej. mi-servidor.ipv7)" />
+                <button class="btn btn-outline btn-small" id="btnResolvePetname">Resolver dDNS</button>
+              </div>
+              <div id="petnameResolveResult" class="mt-2 mono-text" style="font-size:0.8rem; color:var(--accent-glow);">
+                Ingrese un petname y presione 'Resolver dDNS'.
+              </div>
+            </div>
+
+            <!-- Out-of-Band Pairing & SAS Section -->
+            <div class="action-box mt-4">
+              <h4>Verificación Visual Fuera de Banda (SAS de 6 Dígitos + 4 Emojis)</h4>
+              <p class="desc">Derivación determinista idéntica en ambos extremos para validar que la sesión no sufre de ataques Man-in-the-Middle (MITM).</p>
+              <div class="streaming-control-bar mt-2">
+                <button class="btn btn-primary btn-small" id="btnGenerateSas">Generar SAS con Nodo Par</button>
+                <button class="btn btn-outline btn-small" id="btnViewUrQr">Ver Tramas UR (QR Animado)</button>
+              </div>
+              <div id="sasDisplayBox" class="mt-3 p-3 text-center" style="background:rgba(0,242,254,0.06); border:1px solid rgba(0,242,254,0.25); border-radius:8px; display:none;">
+                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Código Corto de Autenticación (SAS)</div>
+                <div id="sasVisualCode" style="font-size:1.8rem; font-weight:800; letter-spacing:4px; margin:8px 0; color:#00f5d4;"></div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Confirme verbalmente o visualmente esta secuencia exacta con su interlocutor.</div>
+              </div>
+              <div id="urFramesBox" class="mt-3" style="display:none;">
+                <span style="font-size:0.75rem; color:var(--text-muted);">Tramas Uniform Resource (UR Multipart Chunks):</span>
+                <pre class="json-viewer mono-text" id="urFramesPre" style="max-height:120px;"></pre>
+              </div>
+            </div>
+
+            <!-- Registered Petnames Table -->
+            <div class="mt-4">
+              <span style="font-size:0.75rem; color:var(--text-muted);">Libreta de Nombres Locales Registrados:</span>
+              <div id="petnamesList" class="json-viewer mono-text" style="max-height:180px; overflow-y:auto; font-size:0.78rem;">
+                Cargando libreta dDNS...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Tit-for-Tat Accounting & Zero-RAM Microservices -->
+        <div class="tab-pane" id="tab-accounting">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Economía Tit-for-Tat & Microservicios Zero-RAM</h3>
+                <p class="desc">Equilibrio de Nash para tránsito de ancho de banda y ciclo de vida de microservicios con huella de memoria nula bajo demanda.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text" id="accStatusBadge">Axelrod Reciprocity Engine</span>
+              </div>
+            </div>
+
+            <!-- Tit-for-Tat Metrics Grid -->
+            <div class="bench-grid mt-4">
+              <div class="bench-item">
+                <span class="bench-label">Peers Auditados</span>
+                <strong class="bench-val" id="accTrackedPeers">0</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Ratio Tit-for-Tat</span>
+                <strong class="bench-val text-green" id="accPeerRatio">1.000</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Nivel de Servicio</span>
+                <strong class="bench-val" id="accPeerTier">NORMAL</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Tránsito Global (Tx / Rx)</span>
+                <strong class="bench-val mono-text" id="accGlobalBytes" style="font-size:0.9rem;">0 B / 0 B</strong>
+              </div>
+            </div>
+
+            <!-- Reciprocity Injection Lab -->
+            <div class="action-box mt-4">
+              <h4>Laboratorio de Reciprocidad y Tránsito</h4>
+              <p class="desc">Inyecte tráfico bidireccional para observar transiciones de nivel: PRIORITY (>=1.0), NORMAL (>=0.5), BEST_EFFORT (>=0.2) o THROTTLED (<0.2).</p>
+              <div class="streaming-control-bar mt-2">
+                <select id="selAccAction" class="select-field">
+                  <option value="rx_boost">Peer Coopera (Rx +64 KB)</option>
+                  <option value="tx_boost">Nodo Transmite (Tx +64 KB)</option>
+                  <option value="leech_attack">Simular Free-Rider / Leech (Tx +5 MB sin Rx)</option>
+                </select>
+                <button class="btn btn-primary btn-small" id="btnSimulateReciprocity">Aplicar & Evaluar Nivel</button>
+                <button class="btn btn-outline btn-small" id="btnRefreshAccounting">Refrescar Cuentas</button>
+              </div>
+              <div id="accEvalFeedback" class="mt-3 p-3 text-center" style="background:rgba(0,242,254,0.06); border:1px solid rgba(0,242,254,0.25); border-radius:8px; display:none;">
+                <span id="accEvalText" class="mono-text" style="font-size:0.85rem; color:#00f5d4;"></span>
+              </div>
+            </div>
+
+            <!-- Zero-RAM Microservices Lifecycle Section -->
+            <div class="action-box mt-4">
+              <h4>Catálogo de Microservicios Desacoplados (Zero-RAM en Reposo)</h4>
+              <p class="desc">Los microservicios permanecen como descriptores inactivos (0 RAM) hasta que una sesión entrante los despierta a ACTIVE. Tras inactividad, se podan a PRUNED.</p>
+              <div class="streaming-control-bar mt-2">
+                <select id="selServiceToWake" class="select-field">
+                  <option value="chat_e2ee">chat_e2ee (Chat Cuántico E2EE)</option>
+                  <option value="socks5_proxy">socks5_proxy (Proxy RFC 1928)</option>
+                  <option value="dag_storage">dag_storage (Almacén Inmutable DAG)</option>
+                </select>
+                <button class="btn btn-primary btn-small" id="btnWakeService">Despertar a RAM</button>
+              </div>
+              <div id="servicesListTable" class="json-viewer mono-text mt-3" style="max-height:160px; overflow-y:auto; font-size:0.78rem;">
+                Cargando servicios...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Planetary Mesh & Resilience Guardian -->
+        <div class="tab-pane" id="tab-planetary">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Malla Planetaria de Kleinberg ($r=2$) & Guardián de Resiliencia</h3>
+                <p class="desc">Simulación topológica Small-World sobre cuadrícula 2D euclidiana para constelaciones LEO/satélites y motor de autorecuperación con Circuit Breaker.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text" id="circuitStateBadge">CIRCUIT: CLOSED</span>
+              </div>
+            </div>
+
+            <div class="bench-grid mt-4">
+              <div class="bench-item">
+                <span class="bench-label">Nodos Satelitales</span>
+                <strong class="bench-val" id="pmNodeCount">16</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Nodos Online</span>
+                <strong class="bench-val text-green" id="pmOnlineNodes">16</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Grado Medio</span>
+                <strong class="bench-val" id="pmAvgDegree">4.25</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Exponente de Potencias</span>
+                <strong class="bench-val" id="pmExponent">r = 2.0</strong>
+              </div>
+            </div>
+
+            <!-- Interactive Greedy Routing Box -->
+            <div class="action-box mt-4">
+              <h4>Enrutamiento Espacial Greedy de Kleinberg ($O(\log^2 N)$ Saltos)</h4>
+              <p class="desc">Selecciona un satélite origen y destino. El motor navegará la cuadrícula minimizando la distancia euclidiana en cada salto y estimará el retraso relativista a velocidad de la luz.</p>
+              <div class="streaming-control-bar mt-2">
+                <input type="text" id="txtPlanetSrc" class="input-field" value="sat-000" style="max-width:130px;" placeholder="sat-000">
+                <span class="mono-text" style="color:var(--text-muted);">&rarr;</span>
+                <input type="text" id="txtPlanetDst" class="input-field" value="sat-015" style="max-width:130px;" placeholder="sat-015">
+                <button class="btn btn-primary btn-small" id="btnRoutePlanetary">Enrutar en Malla LEO</button>
+              </div>
+              <div id="planetaryRouteResult" class="json-viewer mono-text mt-3" style="max-height:160px; overflow-y:auto; font-size:0.8rem; display:none;">
+              </div>
+            </div>
+
+            <!-- Resilience Guardian Telemetry Box -->
+            <div class="action-box mt-4">
+              <h4>Telemetría del Guardián de Resiliencia & Circuit Breaker</h4>
+              <p class="desc">Evita el efecto manada (*thundering herd*) aplicando Full Jitter Exponential Backoff y aísla fallos en cascada.</p>
+              <div class="bench-grid mt-2">
+                <div class="bench-item">
+                  <span class="bench-label">Ejecuciones Seguras</span>
+                  <strong class="bench-val" id="rgExecutions">0</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Excepciones Interceptadas</span>
+                  <strong class="bench-val text-green" id="rgExceptions">0</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Recuperaciones Exitosas</span>
+                  <strong class="bench-val" id="rgRecoveries">0</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Estado Salud</span>
+                  <strong class="bench-val text-green" id="rgHealthStatus">NORMAL</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        <!-- Tab: Sovereign Chat & Link Healing -->
+        <div class="tab-pane" id="tab-chat-healing">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Mensajería P2P E2EE Soberana & Libreta de Contactos Criptográfica</h3>
+                <p class="desc">Comunicación descentralizada punto a punto entre DIDs con firmas Ed25519 y métricas de latencia de entrega.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text" id="chatStatusBadge">E2EE ACTIVE</span>
+              </div>
+            </div>
+
+            <div class="action-box mt-3">
+              <h4>Enviar Mensaje Soberano</h4>
+              <div class="streaming-control-bar mt-2">
+                <input type="text" id="txtChatTarget" class="input-field" placeholder="did:ipvn7:zBobPeer" style="max-width:220px;">
+                <input type="text" id="txtChatMessage" class="input-field" placeholder="Escribe un mensaje seguro..." style="flex:1;">
+                <button class="btn btn-primary btn-small" id="btnSendChat">Enviar E2EE</button>
+              </div>
+              <div id="chatFeedbackBox" class="mt-2 p-2 mono-text" style="font-size:0.8rem; display:none; background:rgba(0,242,254,0.06); border-radius:6px;"></div>
+            </div>
+
+            <!-- Chat History Viewer -->
+            <div class="action-box mt-3">
+              <h4>Historial de Conversación Criptográfica</h4>
+              <div id="chatHistoryViewer" class="json-viewer mono-text" style="max-height:180px; overflow-y:auto; font-size:0.8rem;">
+                Sin mensajes recientes.
+              </div>
+            </div>
+
+            <!-- RFC 2439 Link Flap Damping & Healing Section -->
+            <div class="action-box mt-4">
+              <h4>Auto-Reparación de Enlaces (Link Healing Engine) & Flap Damping (RFC 2439)</h4>
+              <p class="desc">Monitorea la estabilidad física del enlace. Oscilaciones reiteradas en &lt; 10s activan penalizaciones de retención (Hold-Down).</p>
+              <div class="streaming-control-bar mt-2">
+                <input type="text" id="txtProbePeer" class="input-field" placeholder="did:ipvn7:zPeerNode" style="max-width:220px;">
+                <button class="btn btn-primary btn-small" id="btnProbeSuccess">Inyectar Éxito</button>
+                <button class="btn btn-warning btn-small" id="btnProbeFailure">Inyectar Fallo</button>
+                <button class="btn btn-outline btn-small" id="btnRefreshHealing">Refrescar Salud</button>
+              </div>
+              <div id="healingStatusFeedback" class="json-viewer mono-text mt-3" style="max-height:130px; overflow-y:auto; font-size:0.8rem;">
+                Cargando estado de enlaces...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Topological Mobility & AI Copilot -->
+        <div class="tab-pane" id="tab-mobility-copilot">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Anclaje Topológico de Movilidad (TMA) & Tickets Proactivos 0-RTT</h3>
+                <p class="desc">Handover en caliente sin pérdida de sesión (Wi-Fi &harr; 5G) con números de secuencia monótonos anti-carreras.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text" id="mobilityStatusBadge">ANCHOR ONLINE</span>
+              </div>
+            </div>
+
+            <div class="action-box mt-3">
+              <h4>Simular Handover de Interfaz Móvil</h4>
+              <div class="streaming-control-bar mt-2">
+                <input type="text" id="txtMobNodeDid" class="input-field" placeholder="did:ipvn7:zMobileClient" style="max-width:180px;">
+                <input type="text" id="txtMobNewIp" class="input-field" placeholder="10.42.0.88" style="max-width:130px;">
+                <input type="number" id="txtMobNewPort" class="input-field" placeholder="54321" style="max-width:90px;" value="54321">
+                <input type="number" id="txtMobSeq" class="input-field" placeholder="Seq" style="max-width:80px;" value="1">
+                <button class="btn btn-primary btn-small" id="btnSubmitMobility">Actualizar Localizador</button>
+              </div>
+              <div id="mobilityFeedback" class="json-viewer mono-text mt-2" style="max-height:140px; overflow-y:auto; font-size:0.8rem; display:none;"></div>
+            </div>
+
+            <!-- AI Copilot Closed-Loop Auto-Healing Section -->
+            <div class="action-box mt-4">
+              <h4>Copiloto IA de Red & Auto-Reparación en Bucle Cerrado (Dimension 11)</h4>
+              <p class="desc">Infiere la causa raíz de incidentes en tiempo real y ejecuta automáticamente acciones de remediación en el plano de control (BLOCK_DID, FAILOVER_PATH, TUNE_PACER).</p>
+              <div class="streaming-control-bar mt-2">
+                <label style="font-size:0.8rem;">Latencia (ms): <input type="number" id="txtCopilotLat" class="input-field" style="width:70px;" value="65"></label>
+                <label style="font-size:0.8rem;">Drops ZTNA: <input type="number" id="txtCopilotDrops" class="input-field" style="width:60px;" value="8"></label>
+                <label style="font-size:0.8rem;">Entropía: <input type="number" step="0.05" id="txtCopilotEntropy" class="input-field" style="width:65px;" value="0.35"></label>
+                <input type="text" id="txtCopilotPeer" class="input-field" placeholder="did:ipvn7:zAttacker" style="max-width:160px;" value="did:ipvn7:zAttackerScanner">
+                <button class="btn btn-accent btn-small" id="btnRunCopilotCycle">Ejecutar Inferencia IA</button>
+              </div>
+              <div id="copilotResultsBox" class="json-viewer mono-text mt-3" style="max-height:160px; overflow-y:auto; font-size:0.8rem; display:none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: UIN Sovereign Identity, Shadow Device Ambassador & PFO Governance -->
+        <div class="tab-pane" id="tab-uin-shadow-pfo">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Identidad Soberana UIN, Dispositivos Sombra & Gobernanza Axiomática PFO</h3>
+                <p class="desc">Desacoplamiento canónico de clave raíz (UIN 256 bits), embajador de hardware local (Shadow DIDs 10.7.100.X) y árbol ontológico PFO inmutable.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text" id="uinStatusBadge">UIN HYBRID &bull; 100% PFO COMPLIANT</span>
+              </div>
+            </div>
+
+            <!-- UIN Passport & Key Binding -->
+            <div class="action-box mt-3">
+              <h4>Pasaporte Digital UIN (Universal Intent & Identity Network)</h4>
+              <p class="desc">Desacopla la entidad raíz (<span class="mono-text" id="uinRootDidDisplay">did:ipvn7:uin:...</span>) de las claves operativas mediante firmas Ed25519 con ámbitos de autorización.</p>
+              <div class="bench-grid mt-2">
+                <div class="bench-item">
+                  <span class="bench-label">Root ID (256 bits)</span>
+                  <strong class="bench-val mono-text text-cyan" id="uinRootIdShort" style="font-size:0.75rem;">--</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Modo Operativo</span>
+                  <strong class="bench-val text-green" id="uinModeDisplay">HYBRID</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Claves Vinculadas Activas</span>
+                  <strong class="bench-val text-purple" id="uinActiveBindingsCount">0</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Vinculaciones Revocadas</span>
+                  <strong class="bench-val text-warning" id="uinRevokedCount">0</strong>
+                </div>
+              </div>
+              <div class="streaming-control-bar mt-3">
+                <select id="selUinScope" class="select-field" style="max-width:180px;">
+                  <option value="0">Scope: General (0x00)</option>
+                  <option value="1">Scope: Telemetría (0x01)</option>
+                  <option value="2">Scope: Control (0x02)</option>
+                  <option value="3" selected>Scope: Agente IA (0x03)</option>
+                  <option value="4">Scope: Settlement (0x04)</option>
+                </select>
+                <input type="number" id="txtUinDuration" class="input-field" placeholder="Vigencia (seg)" value="86400" style="width:110px;">
+                <button class="btn btn-primary btn-small" id="btnIssueUinBinding">Emitir BindingRecord Rotativo</button>
+              </div>
+              <div id="uinBindingResultBox" class="json-viewer mono-text mt-3" style="max-height:120px; overflow-y:auto; font-size:0.8rem; display:none;"></div>
+            </div>
+
+            <!-- Shadow Devices Registry -->
+            <div class="action-box mt-3">
+              <h4>Catálogo de Dispositivos Sombra (Edge Ambassador LAN &bull; 10.7.100.X/24)</h4>
+              <p class="desc">Permite que impresoras, Smart TVs y workers de inferencia Edge AI (Ollama/BitNet) participen de la malla soberana sin alterar su firmware.</p>
+              <div class="streaming-control-bar mt-2">
+                <input type="text" id="txtShadowName" class="input-field" placeholder="Nombre (ej: Ollama-RTX4090)" style="max-width:170px;" value="Ollama-RTX4090">
+                <input type="text" id="txtShadowIp" class="input-field" placeholder="IP LAN (192.168.1.180)" style="max-width:140px;" value="192.168.1.180">
+                <input type="text" id="txtShadowMac" class="input-field" placeholder="MAC (00:1A:2B:3C:4D:5E)" style="max-width:150px;" value="00:1A:2B:3C:4D:5E">
+                <select id="selShadowType" class="select-field" style="max-width:130px;">
+                  <option value="edge_ai" selected>Edge AI Worker</option>
+                  <option value="printer">Impresora</option>
+                  <option value="camera">Cámara Seg.</option>
+                  <option value="display">Smart TV</option>
+                  <option value="iot">Sensor IoT</option>
+                  <option value="generic">Genérico</option>
+                </select>
+                <button class="btn btn-accent btn-small" id="btnRegisterShadowDevice">Registrar Shadow DID</button>
+              </div>
+              <div id="shadowDevicesList" class="json-viewer mono-text mt-3" style="max-height:140px; overflow-y:auto; font-size:0.8rem;">
+                Cargando dispositivos sombra...
+              </div>
+            </div>
+
+            <!-- PFO Ontological Governance Tree -->
+            <div class="action-box mt-3">
+              <h4>Árbol de Gobernanza Ontológica PFO (Principios &rarr; Funciones &rarr; Observaciones)</h4>
+              <p class="desc">Verificación formal contra los 5 principios axiomáticos inmutables de génesis. Tasa de cumplimiento actual: <strong class="text-green" id="pfoComplianceBadge">100.0%</strong>.</p>
+              <div class="bench-grid mt-2">
+                <div class="bench-item">
+                  <span class="bench-label">Axiomas Inmutables</span>
+                  <strong class="bench-val text-cyan" id="pfoPrinciplesTotal">5</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Módulos Operativos</span>
+                  <strong class="bench-val text-purple" id="pfoFunctionsTotal">12</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Observaciones Empíricas</span>
+                  <strong class="bench-val text-green" id="pfoObsTotal">0</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Tasa Cumplimiento</span>
+                  <strong class="bench-val text-green" id="pfoRateTotal">100.0%</strong>
+                </div>
+              </div>
+              <button class="btn btn-outline btn-small mt-3" id="btnRefreshPfoTree">Actualizar Árbol PFO</button>
+              <div id="pfoTreeBox" class="json-viewer mono-text mt-3" style="max-height:160px; overflow-y:auto; font-size:0.8rem;">
+                Cargando árbol PFO...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: WAN Active Prober & Sovereign Remote Desktop -->
+        <div class="tab-pane" id="tab-wan-desktop">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Sondeo Activo WAN & Escritorio Remoto Soberano P2P</h3>
+                <p class="desc">Telemetría de retardo en vivo con trama binaria canónica IP7P (32B) y streaming de escritorio remoto cifrado E2EE con ML-KEM-768 a 60 FPS.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text" id="wanDesktopBadge">WAN 32B ACTIVE &bull; 60 FPS STREAMING</span>
+              </div>
+            </div>
+
+            <!-- WAN Active Prober Controls -->
+            <div class="action-box mt-3">
+              <h4>Sondeador Activo de Enlaces WAN (Trama Binaria 0x49503750 'IP7P')</h4>
+              <p class="desc">Emite sondas de ultra-bajo overhead para alimentar en tiempo real el algoritmo de Link Healing y calcular el Jitter RFC 3550.</p>
+              <div class="bench-grid mt-2">
+                <div class="bench-item">
+                  <span class="bench-label">Último RTT</span>
+                  <strong class="bench-val mono-text text-cyan" id="wanLastRtt">-- ms</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Rango Min / Max</span>
+                  <strong class="bench-val text-green" id="wanMinMaxRtt">-- / -- ms</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Jitter RFC 3550</span>
+                  <strong class="bench-val text-purple" id="wanJitterMs">-- ms</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Pérdida de Paquetes</span>
+                  <strong class="bench-val text-green" id="wanLossPct">0.0%</strong>
+                </div>
+              </div>
+              <div class="streaming-control-bar mt-3">
+                <input type="text" id="txtWanPeerDid" class="input-field" placeholder="did:ipvn7:zPeerEndpoint" style="max-width:240px;" value="did:ipvn7:zPeerNotebook">
+                <input type="number" id="txtWanSimRtt" class="input-field" placeholder="RTT ms (ej: 8.5)" value="8.5" style="width:110px;">
+                <button class="btn btn-primary btn-small" id="btnSendWanProbe">Enviar Sonda WAN IP7P (32B)</button>
+              </div>
+              <div id="wanProbeResultBox" class="json-viewer mono-text mt-3" style="max-height:120px; overflow-y:auto; font-size:0.8rem; display:none;"></div>
+            </div>
+
+            <!-- Sovereign Remote Desktop Streaming -->
+            <div class="action-box mt-3">
+              <h4>Escritorio Remoto Soberano P2P (Frame Buffer & Despacho de Eventos)</h4>
+              <p class="desc">Sesión interactiva autenticada con SAS (Short Authentication String) y cifrada mediante ML-KEM-768 + ChaCha20-Poly1305.</p>
+              <div class="bench-grid mt-2">
+                <div class="bench-item">
+                  <span class="bench-label">Tasa de Refresco</span>
+                  <strong class="bench-val text-cyan" id="rdFpsDisplay">60.0 FPS</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Latencia RTT</span>
+                  <strong class="bench-val text-green" id="rdRttDisplay">5.4 ms</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">SAS Out-of-Band</span>
+                  <strong class="bench-val mono-text text-purple" id="rdSasCode">729415 🛡️⚡🛰️💎</strong>
+                </div>
+                <div class="bench-item">
+                  <span class="bench-label">Cuadros TX</span>
+                  <strong class="bench-val text-green" id="rdFramesTx">18,420</strong>
+                </div>
+              </div>
+              <div class="streaming-control-bar mt-3">
+                <button class="btn btn-accent btn-small" id="btnSimulateMouseMove">Inyectar Cursor Move (X: 0.5, Y: 0.5)</button>
+                <button class="btn btn-outline btn-small" id="btnSimulateKeyPress">Inyectar Pulsación (Key: Enter)</button>
+              </div>
+              <div id="rdInputResultBox" class="json-viewer mono-text mt-3" style="max-height:120px; overflow-y:auto; font-size:0.8rem; display:none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: MCP Server AI Control Plane -->
+        <div class="tab-pane" id="tab-mcp">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Servidor Model Context Protocol (MCP) — Plano de Control IA</h3>
+                <p class="desc">Interfaz nativa JSON-RPC 2.0 (Especificación 2024-11-05) con 51 herramientas de introspección y comando para agentes LLM.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text" id="mcpToolCountBadge">51 HERRAMIENTAS ACTIVAS</span>
+              </div>
+            </div>
+
+            <div class="bench-grid mt-3">
+              <div class="bench-item">
+                <span class="bench-label">Protocolo MCP</span>
+                <strong class="bench-val text-cyan">JSON-RPC 2.0</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Herramientas Conectadas</span>
+                <strong class="bench-val text-green" id="mcpToolsTotal">51</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Capacidades</span>
+                <strong class="bench-val">tools/call, tools/list</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Plano de Red</span>
+                <strong class="bench-val text-purple">L1-L4 Unificado</strong>
+              </div>
+            </div>
+
+            <!-- Interactive MCP Tester -->
+            <div class="action-box mt-4">
+              <h4>Consola de Ejecución Directa JSON-RPC</h4>
+              <p class="desc">Seleccione una herramienta del catálogo y envíe argumentos estructurados para interactuar directamente con el núcleo del nodo.</p>
+              <div class="streaming-control-bar mt-2">
+                <select id="selMcpTool" class="select-field" style="max-width:250px;">
+                  <option value="get_node_status">get_node_status</option>
+                  <option value="ipvn7_wasm_compute_pow">ipvn7_wasm_compute_pow</option>
+                  <option value="ipvn7_fsm_trigger_event">ipvn7_fsm_trigger_event</option>
+                  <option value="ipvn7_pipeline_process_datagram">ipvn7_pipeline_process_datagram</option>
+                  <option value="ipvn7_audit_censorship">ipvn7_audit_censorship</option>
+                  <option value="ipvn7_get_buffer_health">ipvn7_get_buffer_health</option>
+                  <option value="ipvn7_rotate_session_key">ipvn7_rotate_session_key</option>
+                  <option value="ipvn7_map_upnp_port">ipvn7_map_upnp_port</option>
+                  <option value="ipvn7_probe_wan_link">ipvn7_probe_wan_link</option>
+                  <option value="ipvn7_dispatch_remote_input">ipvn7_dispatch_remote_input</option>
+                  <option value="ipvn7_issue_uin_binding">ipvn7_issue_uin_binding</option>
+                  <option value="ipvn7_get_uin_passport">ipvn7_get_uin_passport</option>
+                  <option value="ipvn7_register_shadow_device">ipvn7_register_shadow_device</option>
+                  <option value="ipvn7_get_pfo_tree">ipvn7_get_pfo_tree</option>
+                  <option value="ipvn7_nat_hole_punch">ipvn7_nat_hole_punch</option>
+                  <option value="ipvn7_allocate_memory_budget">ipvn7_allocate_memory_budget</option>
+                  <option value="ipvn7_schedule_multipath">ipvn7_schedule_multipath</option>
+                  <option value="ipvn7_resolve_dns_proxy">ipvn7_resolve_dns_proxy</option>
+                  <option value="ipvn7_run_ai_copilot">ipvn7_run_ai_copilot</option>
+                  <option value="ipvn7_update_mobility_locator">ipvn7_update_mobility_locator</option>
+                  <option value="ipvn7_send_chat_message">ipvn7_send_chat_message</option>
+                  <option value="ipvn7_get_batcher_stats">ipvn7_get_batcher_stats</option>
+                  <option value="ipvn7_record_link_probe">ipvn7_record_link_probe</option>
+                  <option value="ipvn7_blackout_recovery">ipvn7_blackout_recovery</option>
+                  <option value="ipvn7_toggle_dark_node">ipvn7_toggle_dark_node</option>
+                  <option value="ipvn7_resilience_status">ipvn7_resilience_status</option>
+                  <option value="ipvn7_route_planetary">ipvn7_route_planetary</option>
+                  <option value="ipvn7_analyze_spectrum">ipvn7_analyze_spectrum</option>
+                  <option value="ipvn7_explain_route">ipvn7_explain_route</option>
+                  <option value="route_sphinx_onion">route_sphinx_onion</option>
+                  <option value="probe_peer_swim">probe_peer_swim</option>
+                  <option value="broadcast_plumtree_gossip">broadcast_plumtree_gossip</option>
+                  <option value="ipvn7_dag_put">ipvn7_dag_put</option>
+                  <option value="ipvn7_firewall_rule">ipvn7_firewall_rule</option>
+                  <option value="ipvn7_wot_vouch">ipvn7_wot_vouch</option>
+                </select>
+                <button class="btn btn-primary btn-small" id="btnExecuteMcpTool">Invocar Herramienta MCP</button>
+              </div>
+              <div id="mcpResponseBox" class="json-viewer mono-text mt-3" style="max-height:180px; overflow-y:auto; font-size:0.8rem;">
+                Seleccione una herramienta y presione 'Invocar Herramienta MCP' para ver la respuesta JSON-RPC 2.0.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Bottom Section: Packet Dissector & Quantum Security Log -->
+    <section class="packet-dissector-section glass-panel">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <h2>Disector de Paquetes IPVN 7 & Registro Criptográfico</h2>
+          <span class="badge-sub">Inspección de Tramas Binarias (RFC-7001) y Handshake PQC</span>
+        </div>
+        <button class="btn btn-outline btn-small" id="btnClearLogs">Limpiar Registro</button>
+      </div>
+
+      <div class="log-table-wrapper">
+        <table class="packet-table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Protocolo / Trama</th>
+              <th>Origen DID</th>
+              <th>Destino DID / Evento</th>
+              <th>Carga Útil Cifrada / Disector</th>
+              <th>Estado Criptográfico</th>
+            </tr>
+          </thead>
+          <tbody id="packetLogsBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>IPVN 7 Architecture &bull; Next-Generation Post-Quantum Internet Protocol &bull; 2026 Reference Implementation</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
