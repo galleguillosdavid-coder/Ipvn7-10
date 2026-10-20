@@ -1017,6 +1017,30 @@ class IPVN7Node:
         )
         return stats.to_dict()
 
+    def execute_bitnet_forward(
+        self,
+        x: List[float],
+        weights: List[List[float]],
+        bias: Optional[List[float]] = None,
+        model_name: str = "bitnet-tiny",
+    ) -> Dict[str, Any]:
+        """Quantizes floating-point weights to BitNet b1.58 ternary format and executes integer forward pass."""
+        from ..crypto.bitnet import BitNetQuantizer
+        packed = BitNetQuantizer.quantize_weights(weights)
+        output = BitNetQuantizer.forward(x, packed, bias=bias)
+        container_bytes = BitNetQuantizer.serialize_model(packed, model_name=model_name)
+        return {
+            "model_name": model_name,
+            "rows": packed.rows,
+            "cols": packed.cols,
+            "scale": round(packed.scale, 6),
+            "compression_ratio": packed.compression_ratio,
+            "container_bytes_len": len(container_bytes),
+            "container_hex": container_bytes[:32].hex(),
+            "input_len": len(x),
+            "output": output,
+        }
+
     def rotate_session_key(self) -> Dict[str, Any]:
         """Triggers immediate forward-secrecy session key rotation and generates new epoch."""
         epoch, key_prefix = self.key_rotation.rotate()

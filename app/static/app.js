@@ -886,6 +886,7 @@ document.addEventListener("DOMContentLoaded", () => {
     else if (tool === "ipvn7_record_link_probe") sampleArgs = { peer_did: "did:ipvn7:zPeerNode", success: true, latency_ms: 12.0 };
     else if (tool === "ipvn7_blackout_recovery") sampleArgs = { action: "status" };
     else if (tool === "ipvn7_dispatch_edge_ai_prompt") sampleArgs = { prompt: "¿Cuál es el principio ontológico de IPVN 7?", model: "llama3" };
+    else if (tool === "ipvn7_bitnet_quantize_and_infer") sampleArgs = { x: [0.5, -0.2, 0.8, -0.9], weights: [[0.4, -0.1, 0.7, -0.8], [-0.5, 0.2, -0.3, 0.9]], model_name: "iot-bitnet-demo" };
     else if (tool === "ipvn7_dispatch_remote_media_frame") sampleArgs = { frame_type: "video_delta", codec: "av1" };
     else if (tool === "ipvn7_run_churn_stress_test") sampleArgs = { node_count: 50, churn_rate: 0.20, packet_loss_rate: 0.10 };
     else if (tool === "ipvn7_get_daily_ephemeral_id") sampleArgs = {};

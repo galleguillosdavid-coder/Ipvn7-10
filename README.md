@@ -1,5 +1,5 @@
 # IPVN 7 — Internet Protocol Version 7
-> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.1.0)**  
+> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.3.0)**  
 > *Implementación Canónica en Python 3.14 con Criptografía Híbrida NIST FIPS 203 & 204*  
 > **Repositorio Oficial:** [https://github.com/galleguillosdavid-coder/Ipvn7-10](https://github.com/galleguillosdavid-coder/Ipvn7-10)
 
@@ -11,8 +11,8 @@
 > Este documento es tu **punto de entrada canónico**. Léelo de principio a fin antes de ejecutar o modificar código.  
 > Tu orden de lectura obligatorio para comprender el ecosistema completo es:
 > 1. Este archivo [`README.md`](README.md) *(Visión ejecutiva, estructura global y mapa del repo)*.
-> 2. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(Procedimiento autónomo de desarrollo, catálogo de los 54 subsistemas y directivas operativas)*.
-> 3. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 54 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
+> 2. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(Procedimiento autónomo de desarrollo, catálogo de los 58 subsistemas y directivas operativas)*.
+> 3. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 58 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
 > 4. [`genesis.md`](genesis.md) *(Mandato Génesis v2.0, principios ontológicos, gobernanza evolutiva y multi-agente)*.
 > 5. [`.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md`](.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md) *(Registro inmutable de decisiones consolidadas y rescate de proyectos históricos)*.
 > 6. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema y metadatos de memoria de Nivel 1)*.
@@ -29,7 +29,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **82/82 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.30s.**
+*Criterio de Aceptación Innegociable:* **84/84 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.61s.**
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell
@@ -40,14 +40,14 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 | Servicio / Protocolo | Dirección / Puerto | Propósito |
 |---|---|---|
 | **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con consola de herramientas MCP |
-| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **56 herramientas nativas** para asistentes y agentes de inteligencia artificial |
+| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **57 herramientas nativas** para asistentes y agentes de inteligencia artificial |
 | **Proxy HTTP/HTTPS Interceptor** | `http://127.0.0.1:8888` | Pasarela transparente de intercepción y tunelización cuántica |
 | **Proxy SOCKS5 RFC 1928** | `127.0.0.1:10807` | Proxy anónimo para enrutamiento transparente de aplicaciones TCP |
 | **Socket Overlay UDP (QUIC)** | `127.0.0.1:9443` | Datapath de alta velocidad punto a punto cifrado con ML-KEM-768 |
 
 ---
 
-## 🏛️ 2. Arquitectura de Capas y Catálogo de Archivos (57 Subsistemas)
+## 🏛️ 2. Arquitectura de Capas y Catálogo de Archivos (58 Subsistemas)
 
 El árbol del repositorio está diseñado para una navegación directa y modular:
 
@@ -81,8 +81,9 @@ ipvn7-10/
 │   │   ├── chat.py                     # Chat P2P cifrado E2EE con firmas Ed25519
 │   │   ├── remote_desktop.py           # Escritorio remoto P2P a 60 FPS (<100µs wire dispatch)
 │   │   └── shadow_device.py            # Embajador LAN para dispositivos sombra (Edge AI/IoT)
-│   ├── crypto/                         # Criptografía Post-Cuántica (PQC)
-│   │   └── pqc.py                      # NIST FIPS 203 ML-KEM-768 & FIPS 204 ML-DSA-65
+│   ├── crypto/                         # Criptografía Post-Cuántica (PQC) & Cuantización
+│   │   ├── pqc.py                      # NIST FIPS 203 ML-KEM-768 & FIPS 204 ML-DSA-65
+│   │   └── bitnet.py                   # Motor de Cuantización Ternaria BitNet b1.58 (IP7B)
 │   ├── identity/                       # Capa L1: Identidad Soberana Descentralizada
 │   │   ├── did.py                      # Identificadores W3C DID Core 1.0 (did:ipvn7:...)
 │   │   ├── ephemeral.py                # Rotación de Identidad Efímera de 24h anti-tracking
@@ -157,20 +158,20 @@ Todo agente que continúe el desarrollo debe respetar estos 5 mandatos estrictos
 4. **Rotación Efímera de Identidad (24 Horas):**
    - Los nodos rotan diariamente su DID de capa física (`did:ipvn7:ephemeral:...`) mediante HMAC-SHA256 para impedir el rastreo físico, manteniendo inmutables los petnames `.ipv7` y el DID raíz en la capa de aplicación.
 5. **Cero Regresiones (100% Tests Passing):**
-   - Antes de cada commit, la suite completa debe aprobarse: `.\.venv\Scripts\pytest.exe -q` (**82/82 OK**). Si un cambio rompe un test existente, el cambio es defectuoso y debe corregirse antes de proceder.
+   - Antes de cada commit, la suite completa debe aprobarse: `.\.venv\Scripts\pytest.exe -q` (**84/84 OK**). Si un cambio rompe un test existente, el cambio es defectuoso y debe corregirse antes de proceder.
 
 ---
 
-## 🛠️ 4. Servidor MCP y Plano de Control Agéntico (56 Herramientas)
+## 🛠️ 4. Servidor MCP y Plano de Control Agéntico (57 Herramientas)
 
-El servidor MCP integrado en `http://127.0.0.1:7070/mcp` expone 56 herramientas operativas agrupadas en:
+El servidor MCP integrado en `http://127.0.0.1:7070/mcp` expone 57 herramientas operativas agrupadas en:
 - **Telemetría y Estado:** `get_node_status`, `resolve_did`, `explain_routing_decision`.
 - **Comunicaciones y Transporte:** `send_pq_datagram`, `broadcast_plumtree_gossip`, `route_sphinx_onion`, `probe_peer_swim`.
 - **Sustrato Silencioso IPv7-HRS:** `ipvn7_dispatch_hrs_frame` *(creación y decodificación de tramas IP7H)*.
 - **Identidad Soberana:** `ipvn7_get_daily_ephemeral_id` *(rotación y verificación efímera 24h)*, `register_petname`, `resolve_petname`, `ipvn7_manage_uin_identity`, `ipvn7_delegate_uin_subkey`.
 - **Seguridad ZTNA y Criptografía:** `add_firewall_policy`, `add_wot_vouch`, `ipvn7_rotate_session_key`, `ipvn7_wasm_compute_pow`.
 - **Diagnósticos y Auto-Reparación:** `ipvn7_run_ai_copilot`, `ipvn7_audit_censorship`, `ipvn7_probe_wan_link`, `ipvn7_fsm_trigger_event`, `ipvn7_pipeline_process_datagram`.
-- **Aplicaciones & Edge AI:** `ipvn7_send_chat_message`, `ipvn7_dispatch_remote_input`, `ipvn7_register_shadow_device`, `ipvn7_dispatch_edge_ai_prompt`.
+- **Aplicaciones & Edge AI:** `ipvn7_send_chat_message`, `ipvn7_dispatch_remote_input`, `ipvn7_register_shadow_device`, `ipvn7_dispatch_edge_ai_prompt`, `ipvn7_bitnet_quantize_and_infer`.
 - **Multimedia & Resiliencia:** `ipvn7_dispatch_remote_media_frame` *(streaming IP7M de 1280B)*, `ipvn7_run_churn_stress_test` *(estrés de churn, pérdida 5-20% y jitter)*.
 
 ---

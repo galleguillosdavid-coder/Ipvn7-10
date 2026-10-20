@@ -1,17 +1,17 @@
 {
   "system": "IPVN 7 Autonomous Network Operating System",
-  "version": "7.2.0",
+  "version": "7.3.0",
   "git": {
     "branch": "main",
     "remote_origin": "https://github.com/galleguillosdavid-coder/Ipvn7-10.git",
-    "tags": ["v7.0.0", "v7.1.0", "v7.2.0"],
+    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0"],
     "clean_working_tree": true
   },
   "runtime_environment": {
     "os": "Windows 11 AMD64 (PowerShell)",
     "python": ".\\.venv\\Scripts\\python.exe (Python 3.14.6)",
     "pytest_command": ".\\.venv\\Scripts\\pytest.exe -q",
-    "test_suite_status": "82/82 passing (100% pass rate, 0 regressions)",
+    "test_suite_status": "84/84 passing (100% pass rate, 0 regressions)",
     "ports": {
       "web_ui": 7070,
       "mcp_server": "7070/mcp",
@@ -30,13 +30,14 @@
     ],
     "quiet_wire_protocol": "IP7H_HRS_5_FRAME",
     "media_wire_protocol": "IP7M_1280B_CHUNKS",
+    "bitnet_quantization": "BITNET_B158_IP7B",
     "ephemeral_rotation_hours": 24,
     "max_acceptable_test_failures": 0
   },
   "subsystems": {
-    "total_active_subsystems": 57,
+    "total_active_subsystems": 58,
     "network_layers": 4,
-    "mcp_tools_count": 56,
+    "mcp_tools_count": 57,
     "hrs_frame_opcodes": [
       "ANNOUNCE (0x01)",
       "QUERY (0x02)",
@@ -58,18 +59,19 @@
   },
   "documentation_hierarchy": [
     "README.md (Master Handover & Architecture Map)",
-    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 57 Subsystems)",
-    "IPVN7_RFC_SPECIFICATION.md (57 Technical RFC Sections)",
+    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 58 Subsystems)",
+    "IPVN7_RFC_SPECIFICATION.md (58 Technical RFC Sections)",
     "genesis.md (Genesis Mandate v2.0)",
     ".nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md (Consolidated Decisions)",
-    ".nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md (Edge AI & Media Datapath)"
+    ".nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md (Edge AI & Media Datapath)",
+    ".nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md (BitNet b1.58 Ternary Quantization)"
   ],
   "handover": {
     "ready_for_clean_agent": true,
     "next_priorities": [
       "Línea E: Integración visual reactiva del streaming multimedia IP7M en el canvas HTML5 de app/static/app.js",
-      "Línea F: Cuantización local ultra-ligera BitNet de 1-bit para nodos Edge IoT de baja potencia",
-      "Línea G: Malla Planetaria con render 3D WebGL de órbitas y retardo relativista"
+      "Línea G: Malla Planetaria con render 3D WebGL de órbitas y retardo relativista",
+      "Línea H: Pipeline de benchmarking de throughput sostenido (Gbps) bajo simulación de datapath saturado"
     ]
   }
 }

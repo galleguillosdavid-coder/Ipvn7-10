@@ -704,11 +704,20 @@ La arquitectura cuenta con una suite integral de 42 pruebas de integración y re
 
 ---
 
+## 58. Motor de Cuantización Ternaria BitNet b1.58 & Contenedores Binarios IP7B
+
+- **Cuantización Ternaria Discreta:** Mapeo determinista de tensores densos flotantes hacia el espacio ternario $\{-1, 0, 1\}$ mediante escalamiento por la media absoluta $\gamma = \frac{1}{MN}\sum |W_{ij}|$.
+- **Empaquetamiento Compacto de 2 Bits:** Almacenamiento de 4 pesos por byte (`00`=0, `01`=+1, `11`=-1) reduciendo el uso de memoria en un 75% sin descompresión flotante.
+- **Inferencia Zero-Multiply para IoT:** Activaciones escaladas a enteros `int8` (-128 a 127) ejecutando multiplicaciones de matriz mediante sumas y restas con cero consumo en ramas dispersas.
+- **Contenedores Serializados IP7B:** Número mágico `0x49503742` (`IP7B`) con cabecera canónica de 20 bytes (nombre de modelo, dimensiones y factor de escala).
+
+---
+
 ## Resumen de Verificación y Suites de Prueba
 
-- **Suites de Prueba Ejecutadas:** 82 pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados.
-- **Resultado:** 100% aprobado (82/82) en ~6.30 segundos en hardware de producción Windows 11.
-- **Herramientas MCP Activas:** 56 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+- **Suites de Prueba Ejecutadas:** 84 pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados.
+- **Resultado:** 100% aprobado (84/84) en ~6.61 segundos en hardware de producción Windows 11.
+- **Herramientas MCP Activas:** 57 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
 
 
 

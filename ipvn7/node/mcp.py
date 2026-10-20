@@ -1071,6 +1071,35 @@ class IPVN7MCPServer:
                     },
                 },
             },
+            {
+                "name": "ipvn7_bitnet_quantize_and_infer",
+                "description": "Cuantiza tensores de pesos a formato ternario BitNet b1.58 (-1, 0, +1) y ejecuta inferencia entera para nodos Edge IoT de bajo consumo con cero multiplicaciones de punto flotante.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "x": {
+                            "type": "array",
+                            "items": {"type": "number"},
+                            "description": "Vector de activaciones o entrada flotante",
+                        },
+                        "weights": {
+                            "type": "array",
+                            "items": {"type": "array", "items": {"type": "number"}},
+                            "description": "Matriz 2D de pesos flotantes a cuantizar",
+                        },
+                        "bias": {
+                            "type": "array",
+                            "items": {"type": "number"},
+                            "description": "Vector de sesgo opcional",
+                        },
+                        "model_name": {
+                            "type": "string",
+                            "description": "Nombre de identificación del contenedor BitNet",
+                        },
+                    },
+                    "required": ["x", "weights"],
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1678,6 +1707,14 @@ class IPVN7MCPServer:
                     min_latency_ms=min_lat,
                     max_latency_ms=max_lat,
                 )
+                return True, res
+
+            elif name == "ipvn7_bitnet_quantize_and_infer":
+                x = arguments.get("x", [0.5, -0.2, 0.8, -0.9])
+                weights = arguments.get("weights", [[0.4, -0.1, 0.7, -0.8], [-0.5, 0.2, -0.3, 0.9]])
+                bias = arguments.get("bias")
+                model_name = arguments.get("model_name", "bitnet-edge-worker")
+                res = self.node.execute_bitnet_forward(x, weights, bias=bias, model_name=model_name)
                 return True, res
 
             else:

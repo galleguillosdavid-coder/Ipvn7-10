@@ -12,6 +12,11 @@ from .pqc import (
     decrypt_aead,
 )
 
+from .bitnet import (
+    BitNetQuantizer,
+    PackedTernaryWeights,
+)
+
 __all__ = [
     "PQCHybridKeyExchange",
     "PQCDigitalSignature",
@@ -20,4 +25,6 @@ __all__ = [
     "derive_shared_secret",
     "encrypt_aead",
     "decrypt_aead",
+    "BitNetQuantizer",
+    "PackedTernaryWeights",
 ]

@@ -1797,13 +1797,13 @@ def test_packet_batcher_density_and_flush():
     assert stats["average_batch_density"] == 2.5
 
 
-def test_mcp_tools_catalog_56_tools():
-    """Validates 56 native tools in the MCP tools catalog and execution of chat, batcher, mobility, copilot, multipath, DNS, NAT, GMA, UIN, Shadow Device, PFO, WAN Prober, Remote Desktop, Key Rotation, UPnP, Censorship, Buffer Health, WASM PoW, FSM Lifecycle, Pipeline Datagrams, Ephemeral Identity, HRS Frames, Edge AI prompts, Media streaming, and Churn stress tests."""
-    node = IPVN7Node(alias="MCP-56-Tools", bind_host="127.0.0.1")
+def test_mcp_tools_catalog_57_tools():
+    """Validates 57 native tools in the MCP tools catalog and execution of chat, batcher, mobility, copilot, multipath, DNS, NAT, GMA, UIN, Shadow Device, PFO, WAN Prober, Remote Desktop, Key Rotation, UPnP, Censorship, Buffer Health, WASM PoW, FSM Lifecycle, Pipeline Datagrams, Ephemeral Identity, HRS Frames, Edge AI prompts, Media streaming, Churn stress tests, and BitNet quantization."""
+    node = IPVN7Node(alias="MCP-57-Tools", bind_host="127.0.0.1")
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 56, f"Expected 56 MCP tools, found {len(tools)}"
+    assert len(tools) == 57, f"Expected 57 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -3052,6 +3052,78 @@ def test_mcp_edge_ai_media_and_stress_tools():
     assert ok is True
     assert stress_res["total_nodes"] == 20
     assert stress_res["delivery_success_under_stress"] > 0.0
+
+
+def test_bitnet_quantization_and_forward():
+    """Validates BitNet b1.58 ternary weight quantization, packing, activation scaling, and integer inference."""
+    from ipvn7.crypto.bitnet import BitNetQuantizer, PackedTernaryWeights
+
+    # 1. Floating-point weight matrix: 2 rows x 4 cols
+    raw_weights = [
+        [0.85, -0.42, 0.02, -0.91],
+        [-0.77, 0.12, 0.65, -0.05],
+    ]
+    packed = BitNetQuantizer.quantize_weights(raw_weights)
+    assert packed.rows == 2
+    assert packed.cols == 4
+    assert packed.scale > 0.0
+    assert len(packed.packed_data) == 2  # 8 weights / 4 per byte = 2 bytes
+    assert packed.compression_ratio > 1.0
+
+    # 2. Unpack and verify ternary values {-1, 0, 1}
+    unpacked = BitNetQuantizer.unpack_weights(packed)
+    assert len(unpacked) == 2
+    assert len(unpacked[0]) == 4
+    for r in unpacked:
+        for val in r:
+            assert val in (-1, 0, 1)
+
+    # 3. Activation quantization
+    x = [1.2, -0.5, 0.8, -1.0]
+    x_int, scale_x = BitNetQuantizer.quantize_activations(x)
+    assert len(x_int) == 4
+    for v in x_int:
+        assert -128 <= v <= 127
+    assert scale_x > 0.0
+
+    # 4. Integer forward pass
+    y = BitNetQuantizer.forward(x, packed, bias=[0.1, -0.1])
+    assert len(y) == 2
+    assert all(isinstance(val, float) for val in y)
+
+    # 5. Serialization & Deserialization
+    serialized = BitNetQuantizer.serialize_model(packed, model_name="test-tiny-bitnet")
+    assert serialized.startswith(b"IP7B")
+    name, des_packed = BitNetQuantizer.deserialize_model(serialized)
+    assert name == "test-tiny-bitnet"
+    assert des_packed.rows == 2
+    assert des_packed.cols == 4
+    assert des_packed.packed_data == packed.packed_data
+
+
+def test_mcp_bitnet_tool():
+    """Validates execution of ipvn7_bitnet_quantize_and_infer MCP tool."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="mcp-bitnet-node", bind_port=19877)
+    mcp = node.mcp_server
+
+    ok, res = mcp.execute_tool("ipvn7_bitnet_quantize_and_infer", {
+        "x": [0.6, -0.3, 0.9, -1.1],
+        "weights": [
+            [0.5, -0.2, 0.7, -0.8],
+            [-0.4, 0.3, -0.2, 0.9],
+        ],
+        "bias": [0.05, -0.05],
+        "model_name": "iot-edge-gate",
+    })
+    assert ok is True
+    assert res["model_name"] == "iot-edge-gate"
+    assert res["rows"] == 2
+    assert res["cols"] == 4
+    assert "output" in res
+    assert len(res["output"]) == 2
+    assert res["container_bytes_len"] > 0
 
 
 

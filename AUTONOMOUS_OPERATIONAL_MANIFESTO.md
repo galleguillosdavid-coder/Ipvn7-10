@@ -22,7 +22,7 @@ El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red 
 
 ## 2. Catálogo de Subsistemas Activos (Capas L0 a L4)
 
-Actualmente, el repositorio cuenta con **54 subsistemas de protocolo integrados** y probados al 100%:
+Actualmente, el repositorio cuenta con **58 subsistemas de protocolo integrados** y probados al 100%:
 
 ### Capa L0: Acceso al Medio & Aceleración Datapath
 - [`ipvn7/access/hal.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/hal.py): Capa de abstracción de hardware y driver de sockets UDP overlay.
@@ -33,6 +33,7 @@ Actualmente, el repositorio cuenta con **54 subsistemas de protocolo integrados*
 - [`ipvn7/access/wasm_bridge.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/wasm_bridge.py): Puente criptográfico para WebAssembly y navegadores con resolución de Micro-PoW anti-Sybil.
 
 ### Capa L1: Transporte Cifrado Post-Cuántico & Evasión Perimetral
+- [`ipvn7/crypto/bitnet.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/crypto/bitnet.py): Motor de cuantización ternaria BitNet b1.58 (-1, 0, 1) y contenedores IP7B para edge IoT ultra-económico sin multiplicación de punto flotante.
 - [`ipvn7/transport/quic.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/transport/quic.py): Transporte seguro PQ-QUIC (RFC 9000) con handshake 1-RTT post-cuántico y migración de conexión sin pérdida de sesión.
 - [`ipvn7/network/tls_obfuscation.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/tls_obfuscation.py): Disfraz de paquetes TLS 1.3 con cabeceras legítimas ClientHello/SNI y ApplicationData.
 - [`ipvn7/network/wan_prober.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/wan_prober.py): Sonda WAN activa de 32 bytes binarios (`0x49503750` 'IP7P') con cálculo de Jitter RFC 3550 y RTT instantáneo/mínimo/máximo.
@@ -85,7 +86,7 @@ Actualmente, el repositorio cuenta con **54 subsistemas de protocolo integrados*
 - [`ipvn7/network/dns_proxy.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/dns_proxy.py): Proxy DNS anti-fugas con caché local y resolución petname nativa.
 
 ### Plano de Control IA (MCP Server JSON-RPC 2.0)
-- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **56 herramientas nativas de introspección, streaming y comando** expuestas según la especificación Model Context Protocol (2024-11-05).
+- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **57 herramientas nativas de introspección, streaming, BitNet y comando** expuestas según la especificación Model Context Protocol (2024-11-05).
 
 ---
 
@@ -101,11 +102,11 @@ Cualquier agente o usuario puede verificar y ejecutar el sistema de forma comple
 
 ### 3.2. Ejecución de la Suite de Pruebas (Zero Regressions)
 ```powershell
-# Ejecutar la suite completa de 82 tests unitarios
+# Ejecutar la suite completa de 84 tests unitarios
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (82/82) con código de salida 0.**
+*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (84/84) con código de salida 0.**
 
 ### 3.3. Lanzamiento del Servidor y Control Center Web
 ```powershell
@@ -118,7 +119,7 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 | Servicio | Endpoint | Protocolo / Propósito |
 |---|---|---|
 | **Control Center SPA** | `http://127.0.0.1:7070/` | Dashboard interactivo con telemetría en tiempo real y consola MCP |
-| **Servidor MCP** | `http://127.0.0.1:7070/mcp` | API JSON-RPC 2.0 con 56 herramientas para agentes LLM |
+| **Servidor MCP** | `http://127.0.0.1:7070/mcp` | API JSON-RPC 2.0 con 57 herramientas para agentes LLM |
 | **Proxy HTTP/HTTPS** | `http://127.0.0.1:8888/` | Pasarela de intercepción transparente para tráfico de aplicaciones |
 | **Proxy SOCKS5** | `127.0.0.1:10807` | Proxy RFC 1928 para tráfico TCP anónimo sobre la malla cuántica |
 | **Overlay UDP** | `127.0.0.1:9443` (primario) | Datapath QUIC cifrado punto a punto |
