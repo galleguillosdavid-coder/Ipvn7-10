@@ -396,6 +396,14 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
         elif path == "/api/buffer/health":
             self._send_json(PRIMARY_NODE.buffer_monitor.summary())
 
+        elif path in ("/api/mcp", "/mcp"):
+            self._send_json({
+                "protocolVersion": "2024-11-05",
+                "serverInfo": {"name": "ipvn7-mcp-engine", "version": "7.3.0"},
+                "tools_count": len(PRIMARY_NODE.mcp_server.get_supported_tools()),
+                "tools": PRIMARY_NODE.mcp_server.get_supported_tools(),
+            })
+
         else:
             super().do_GET()
 
@@ -1037,6 +1045,32 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 "incident": inc.to_dict() if inc else None,
                 "summary": PRIMARY_NODE.censorship_detector.get_summary(),
             })
+
+        elif path == "/api/remote_desktop/media_frame":
+            frame_type = body.get("frame_type", "video_delta")
+            raw_hex = body.get("raw_data_hex")
+            codec = body.get("codec", "av1")
+            res = PRIMARY_NODE.dispatch_remote_media_frame(frame_type=frame_type, raw_data_hex=raw_hex, codec=codec)
+            self._send_json({"success": True, "result": res})
+
+        elif path == "/api/edge_ai/prompt":
+            prompt = body.get("prompt", "¿Cuál es el principio ontológico de IPVN 7?")
+            did_or_vip = body.get("did_or_vip", "")
+            model = body.get("model", "llama3")
+            res = PRIMARY_NODE.dispatch_edge_ai_prompt(did_or_vip=did_or_vip, prompt=prompt, model=model)
+            self._send_json({"success": True, "result": res})
+
+        elif path == "/api/bitnet/infer":
+            x = body.get("x", [0.5, -0.2, 0.8, -0.9])
+            weights = body.get("weights", [[0.4, -0.1, 0.7, -0.8], [-0.5, 0.2, -0.3, 0.9]])
+            bias = body.get("bias")
+            model_name = body.get("model_name", "iot-edge-worker")
+            res = PRIMARY_NODE.execute_bitnet_forward(x, weights, bias=bias, model_name=model_name)
+            self._send_json({"success": True, "result": res})
+
+        elif path in ("/api/mcp", "/mcp"):
+            rpc_response = PRIMARY_NODE.mcp_server.handle_jsonrpc(body)
+            self._send_json(rpc_response)
 
         else:
             self._send_json({"error": "Endpoint not found"}, status=404)
