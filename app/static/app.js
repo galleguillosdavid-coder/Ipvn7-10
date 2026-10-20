@@ -885,6 +885,11 @@ document.addEventListener("DOMContentLoaded", () => {
     else if (tool === "ipvn7_get_batcher_stats") sampleArgs = {};
     else if (tool === "ipvn7_record_link_probe") sampleArgs = { peer_did: "did:ipvn7:zPeerNode", success: true, latency_ms: 12.0 };
     else if (tool === "ipvn7_blackout_recovery") sampleArgs = { action: "status" };
+    else if (tool === "ipvn7_dispatch_edge_ai_prompt") sampleArgs = { prompt: "¿Cuál es el principio ontológico de IPVN 7?", model: "llama3" };
+    else if (tool === "ipvn7_dispatch_remote_media_frame") sampleArgs = { frame_type: "video_delta", codec: "av1" };
+    else if (tool === "ipvn7_run_churn_stress_test") sampleArgs = { node_count: 50, churn_rate: 0.20, packet_loss_rate: 0.10 };
+    else if (tool === "ipvn7_get_daily_ephemeral_id") sampleArgs = {};
+    else if (tool === "ipvn7_dispatch_hrs_frame") sampleArgs = { action: "create", frame_type: "QUERY", target_did: "did:ipvn7:zGateway123", payload_text: "PING" };
 
     const sampleRpc = {
       jsonrpc: "2.0",

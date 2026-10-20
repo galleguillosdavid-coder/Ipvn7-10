@@ -999,6 +999,78 @@ class IPVN7MCPServer:
                     "required": ["action"],
                 },
             },
+            {
+                "name": "ipvn7_dispatch_edge_ai_prompt",
+                "description": "Enruta transparentemente una consulta o prompt hacia un nodo de cómputo Edge AI local (Ollama/BitNet/Exo) con fallback sintético soberano sobre la malla IPVN 7.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "prompt": {
+                            "type": "string",
+                            "description": "Texto del prompt o consulta de inferencia",
+                        },
+                        "did_or_vip": {
+                            "type": "string",
+                            "description": "DID soberano o VIP 10.7.100.X del nodo Edge AI (opcional, selecciona el primer worker activo si se omite)",
+                        },
+                        "model": {
+                            "type": "string",
+                            "description": "Modelo de inferencia (por defecto 'llama3')",
+                        },
+                    },
+                    "required": ["prompt"],
+                },
+            },
+            {
+                "name": "ipvn7_dispatch_remote_media_frame",
+                "description": "Fragmenta y despacha tramas multimedia de audio/video bidireccional (AV1/H.265/Opus) empaquetadas en datagramas canónicos IP7M de 1280B con verificación CRC32.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "frame_type": {
+                            "type": "string",
+                            "description": "Tipo de trama ('video_delta', 'video_keyframe', 'audio_opus')",
+                        },
+                        "raw_data_hex": {
+                            "type": "string",
+                            "description": "Datos binarios de la trama en hexadecimal (opcional)",
+                        },
+                        "codec": {
+                            "type": "string",
+                            "description": "Códec utilizado ('av1', 'h265', 'opus')",
+                        },
+                    },
+                },
+            },
+            {
+                "name": "ipvn7_run_churn_stress_test",
+                "description": "Ejecuta una prueba de estrés de resiliencia Small-World ante caídas masivas de nodos (churn), latencias fluctuantes (100ms-2000ms) y pérdidas de paquetes (5%-20%) con conmutación multipath.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "node_count": {
+                            "type": "integer",
+                            "description": "Número de nodos en la topología Small-World simulada (por defecto 50)",
+                        },
+                        "churn_rate": {
+                            "type": "number",
+                            "description": "Fracción de nodos caídos repentinamente (ej: 0.20 para 20%)",
+                        },
+                        "packet_loss_rate": {
+                            "type": "number",
+                            "description": "Probabilidad de pérdida estocástica de paquetes por salto (ej: 0.10 para 10%)",
+                        },
+                        "min_latency_ms": {
+                            "type": "number",
+                            "description": "Latencia mínima por salto en ms (por defecto 100.0)",
+                        },
+                        "max_latency_ms": {
+                            "type": "number",
+                            "description": "Latencia máxima por salto en ms (por defecto 2000.0)",
+                        },
+                    },
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1578,6 +1650,35 @@ class IPVN7MCPServer:
                         "crc32_valid": True,
                     }
                 return False, f"Acción inválida: {action}"
+
+            elif name == "ipvn7_dispatch_edge_ai_prompt":
+                prompt = arguments.get("prompt", "")
+                did_or_vip = arguments.get("did_or_vip", "")
+                model = arguments.get("model", "llama3")
+                res = self.node.dispatch_edge_ai_prompt(did_or_vip, prompt, model)
+                return True, res
+
+            elif name == "ipvn7_dispatch_remote_media_frame":
+                frame_type = arguments.get("frame_type", "video_delta")
+                raw_hex = arguments.get("raw_data_hex")
+                codec = arguments.get("codec", "av1")
+                res = self.node.dispatch_remote_media_frame(frame_type, raw_hex, codec)
+                return True, res
+
+            elif name == "ipvn7_run_churn_stress_test":
+                node_count = int(arguments.get("node_count", 50))
+                churn_rate = float(arguments.get("churn_rate", 0.20))
+                packet_loss_rate = float(arguments.get("packet_loss_rate", 0.10))
+                min_lat = float(arguments.get("min_latency_ms", 100.0))
+                max_lat = float(arguments.get("max_latency_ms", 2000.0))
+                res = self.node.run_churn_stress_test(
+                    node_count=node_count,
+                    churn_rate=churn_rate,
+                    packet_loss_rate=packet_loss_rate,
+                    min_latency_ms=min_lat,
+                    max_latency_ms=max_lat,
+                )
+                return True, res
 
             else:
                 return False, f"Herramienta desconocida: {name}"

@@ -1797,13 +1797,13 @@ def test_packet_batcher_density_and_flush():
     assert stats["average_batch_density"] == 2.5
 
 
-def test_mcp_tools_catalog_53_tools():
-    """Validates 53 native tools in the MCP tools catalog and execution of chat, batcher, mobility, copilot, multipath, DNS, NAT, GMA, UIN, Shadow Device, PFO, WAN Prober, Remote Desktop, Key Rotation, UPnP, Censorship, Buffer Health, WASM PoW, FSM Lifecycle, Pipeline Datagrams, Ephemeral Identity, and HRS Frames."""
-    node = IPVN7Node(alias="MCP-53-Tools", bind_host="127.0.0.1")
+def test_mcp_tools_catalog_56_tools():
+    """Validates 56 native tools in the MCP tools catalog and execution of chat, batcher, mobility, copilot, multipath, DNS, NAT, GMA, UIN, Shadow Device, PFO, WAN Prober, Remote Desktop, Key Rotation, UPnP, Censorship, Buffer Health, WASM PoW, FSM Lifecycle, Pipeline Datagrams, Ephemeral Identity, HRS Frames, Edge AI prompts, Media streaming, and Churn stress tests."""
+    node = IPVN7Node(alias="MCP-56-Tools", bind_host="127.0.0.1")
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 53, f"Expected 53 MCP tools, found {len(tools)}"
+    assert len(tools) == 56, f"Expected 56 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -2908,5 +2908,150 @@ def test_mcp_ephemeral_and_hrs_tools():
     assert decode_res["frame_type"] == "ANNOUNCE"
     assert decode_res["payload_text"] == "Node Alpha Online"
     assert decode_res["crc32_valid"] is True
+
+
+def test_edge_ai_prompt_routing():
+    """Validates Edge AI worker registration, prompt routing, and sovereign fallback."""
+    from ipvn7.access.shadow_device import ShadowDeviceRegistry, DeviceType
+
+    registry = ShadowDeviceRegistry(start_ip_index=20)
+    dev = registry.register_edge_ai_worker(
+        name="Ollama-Lab-GPU",
+        physical_ip="192.168.1.180",
+        mac="00:11:22:33:44:55",
+        port=11434,
+        models=["llama3", "mistral", "phi3"],
+    )
+
+    assert dev.device_type == DeviceType.EDGE_AI
+    assert dev.virtual_ipv4 == "10.7.100.20"
+    assert "llama3" in dev.models
+    assert registry.is_port_allowed(dev.did, 11434) is True
+
+    # Dispatch prompt through sovereign ambassador
+    res = registry.dispatch_prompt(
+        did_or_vip=dev.did,
+        prompt="Explain quantum entanglement in 1 sentence.",
+        model="llama3",
+        timeout_s=0.5,
+        simulated_fallback=True,
+    )
+    assert res["status"] == "SUCCESS"
+    assert res["did"] == dev.did
+    assert "llama3" in res["model"]
+    assert len(res["response"]) > 0
+    assert res["tokens_evaluated"] > 0
+
+
+def test_media_streaming_chunking_and_reassembly():
+    """Validates WebRTC / P2P media frame fragmentation into <=1280B datagrams and CRC32 assembly."""
+    from ipvn7.access.remote_desktop import RemoteDesktopManager
+
+    manager = RemoteDesktopManager(
+        local_did="did:ipvn7:local_test_did",
+        local_pubkey_bytes=b"\x01" * 32,
+    )
+
+    # 1. Dispatch 3000 bytes video frame (should split into 3 chunks < 1280B)
+    test_video_payload = b"TEST_VIDEO_PAYLOAD_CHUNK_DATA_" * 100  # 3000 bytes
+    res = manager.dispatch_media_frame(
+        frame_type="video_keyframe",
+        raw_data=test_video_payload,
+        codec="av1",
+    )
+    assert res["status"] == "DISPATCHED"
+    assert res["frame_type"] == "video_keyframe"
+    assert res["chunks_count"] == 3
+    for sz in res["wire_packet_sizes"]:
+        assert sz <= 1280
+
+    # 2. Reassemble manually by feeding the generated chunks back
+    import struct
+    import zlib
+    import time
+
+    frame_id = res["frame_id"]
+    now_us = res["timestamp_us"]
+    chunks = [test_video_payload[i:i + 1250] for i in range(0, len(test_video_payload), 1250)]
+    packets = []
+    for idx, chk in enumerate(chunks):
+        pfx = struct.pack("!4sB I H H Q", b"IP7M", 1, frame_id, idx, len(chunks), now_us)
+        c = zlib.crc32(pfx + chk) & 0xFFFFFFFF
+        packets.append(pfx + struct.pack("!I", c) + chk)
+
+    # Deliver chunk 0, 1 -> None yet
+    assert manager.assemble_media_chunk(packets[0]) is None
+    assert manager.assemble_media_chunk(packets[1]) is None
+    # Deliver chunk 2 -> Reassembled!
+    assembled = manager.assemble_media_chunk(packets[2])
+    assert assembled is not None
+    assert assembled["status"] == "REASSEMBLED"
+    assert assembled["payload_bytes"] == len(test_video_payload)
+    assert assembled["raw_data"] == test_video_payload
+
+
+def test_churn_stress_simulation():
+    """Validates Small-World network stress resilience under churn, loss, and latency jitter."""
+    from ipvn7.simulation.churn import SmallWorldChurnSimulator
+
+    sim = SmallWorldChurnSimulator(node_count=30, shortcuts_per_node=3, seed=123)
+    stress_stats = sim.run_stress_benchmark(
+        sample_pairs=25,
+        churn_rate=0.20,
+        packet_loss_rate=0.10,
+        min_latency_ms=100.0,
+        max_latency_ms=1500.0,
+    )
+
+    assert stress_stats.total_nodes == 30
+    assert stress_stats.churn_ratio == 0.20
+    assert stress_stats.packet_loss_rate == 0.10
+    assert stress_stats.delivery_success_under_stress > 0.0
+    assert stress_stats.avg_latency_ms > 0.0
+    assert stress_stats.resilience_score > 0.0
+
+
+def test_mcp_edge_ai_media_and_stress_tools():
+    """Validates MCP registration and execution of 3 new sovereign tools."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="mcp-expanded-node", bind_port=19876)
+    mcp = node.mcp_server
+
+    # Tool 1: ipvn7_dispatch_edge_ai_prompt
+    node.register_shadow_device(
+        name="Local-Ollama-Worker",
+        physical_ip="127.0.0.1",
+        mac="00:22:33:44:55:66",
+        device_type="edge_ai",
+        allowed_ports=[11434],
+    )
+    ok, ai_res = mcp.execute_tool("ipvn7_dispatch_edge_ai_prompt", {
+        "prompt": "Test prompt via sovereign MCP",
+        "model": "mistral",
+    })
+    assert ok is True
+    assert ai_res["status"] == "SUCCESS"
+    assert "mistral" in ai_res["model"]
+
+    # Tool 2: ipvn7_dispatch_remote_media_frame
+    ok, media_res = mcp.execute_tool("ipvn7_dispatch_remote_media_frame", {
+        "frame_type": "audio_opus",
+        "codec": "opus",
+    })
+    assert ok is True
+    assert media_res["status"] == "DISPATCHED"
+    assert media_res["frame_type"] == "audio_opus"
+
+    # Tool 3: ipvn7_run_churn_stress_test
+    ok, stress_res = mcp.execute_tool("ipvn7_run_churn_stress_test", {
+        "node_count": 20,
+        "churn_rate": 0.15,
+        "packet_loss_rate": 0.05,
+    })
+    assert ok is True
+    assert stress_res["total_nodes"] == 20
+    assert stress_res["delivery_success_under_stress"] > 0.0
+
 
 

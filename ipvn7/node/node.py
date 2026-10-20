@@ -970,6 +970,53 @@ class IPVN7Node:
         """Returns live frame buffer & streaming telemetry of P2P remote desktop."""
         return self.remote_desktop.get_status()
 
+    def dispatch_edge_ai_prompt(
+        self,
+        did_or_vip: str,
+        prompt: str,
+        model: str = "llama3",
+    ) -> Dict[str, Any]:
+        """Dispatches an LLM prompt transparently to an Edge AI worker on the sovereign LAN."""
+        return self.shadow_registry.dispatch_prompt(
+            did_or_vip=did_or_vip,
+            prompt=prompt,
+            model=model,
+        )
+
+    def dispatch_remote_media_frame(
+        self,
+        frame_type: str = "video_delta",
+        raw_data_hex: Optional[str] = None,
+        codec: str = "av1",
+    ) -> Dict[str, Any]:
+        """Dispatches chunked audio/video media frame aligned to MTU 1280B with CRC32."""
+        raw_data = bytes.fromhex(raw_data_hex) if raw_data_hex else None
+        return self.remote_desktop.dispatch_media_frame(
+            frame_type=frame_type,
+            raw_data=raw_data,
+            codec=codec,
+        )
+
+    def run_churn_stress_test(
+        self,
+        node_count: int = 50,
+        churn_rate: float = 0.20,
+        packet_loss_rate: float = 0.10,
+        min_latency_ms: float = 100.0,
+        max_latency_ms: float = 2000.0,
+    ) -> Dict[str, Any]:
+        """Executes full Small-World churn & packet loss/jitter stress benchmark."""
+        from ..simulation.churn import SmallWorldChurnSimulator
+        sim = SmallWorldChurnSimulator(node_count=node_count)
+        stats = sim.run_stress_benchmark(
+            sample_pairs=50,
+            churn_rate=churn_rate,
+            packet_loss_rate=packet_loss_rate,
+            min_latency_ms=min_latency_ms,
+            max_latency_ms=max_latency_ms,
+        )
+        return stats.to_dict()
+
     def rotate_session_key(self) -> Dict[str, Any]:
         """Triggers immediate forward-secrecy session key rotation and generates new epoch."""
         epoch, key_prefix = self.key_rotation.rotate()

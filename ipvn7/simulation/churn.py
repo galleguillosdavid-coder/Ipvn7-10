@@ -25,6 +25,34 @@ class SimulationStats:
     theoretical_kleinberg_bound: float
 
 
+@dataclass
+class StressSimulationStats:
+    total_nodes: int
+    churn_ratio: float
+    packet_loss_rate: float
+    min_latency_ms: float
+    max_latency_ms: float
+    avg_latency_ms: float
+    jitter_ms: float
+    delivery_success_under_stress: float
+    recovered_via_multipath: int
+    resilience_score: float
+
+    def to_dict(self) -> dict:
+        return {
+            "total_nodes": self.total_nodes,
+            "churn_ratio": self.churn_ratio,
+            "packet_loss_rate": self.packet_loss_rate,
+            "min_latency_ms": self.min_latency_ms,
+            "max_latency_ms": self.max_latency_ms,
+            "avg_latency_ms": self.avg_latency_ms,
+            "jitter_ms": self.jitter_ms,
+            "delivery_success_under_stress": self.delivery_success_under_stress,
+            "recovered_via_multipath": self.recovered_via_multipath,
+            "resilience_score": self.resilience_score,
+        }
+
+
 class SmallWorldChurnSimulator:
     """
     Simulates large-scale IPVN 7 DHT topologies with Kleinberg Small-World shortcuts.
@@ -174,4 +202,92 @@ class SmallWorldChurnSimulator:
             delivery_success_baseline=round(baseline_rate, 2),
             delivery_success_post_churn=round(post_churn_rate, 2),
             theoretical_kleinberg_bound=round(theoretical_bound, 2),
+        )
+
+    def run_stress_benchmark(
+        self,
+        sample_pairs: int = 100,
+        churn_rate: float = 0.20,
+        packet_loss_rate: float = 0.10,
+        min_latency_ms: float = 100.0,
+        max_latency_ms: float = 2000.0,
+    ) -> StressSimulationStats:
+        """
+        Executes stress benchmark simulating harsh adversarial network conditions:
+        massive node churn + 5%-20% stochastic packet loss + 100ms-2000ms latency jitter.
+        Evaluates multipath rerouting fallback to recover dropped packets.
+        """
+        all_dids = list(self.alive_nodes)
+        kill_count = int(len(all_dids) * churn_rate)
+        if kill_count > 0:
+            killed = set(self.rng.sample(all_dids, kill_count))
+            self.alive_nodes -= killed
+
+        remaining_dids = list(self.alive_nodes)
+        if len(remaining_dids) < 2:
+            return StressSimulationStats(
+                total_nodes=self.node_count,
+                churn_ratio=churn_rate,
+                packet_loss_rate=packet_loss_rate,
+                min_latency_ms=min_latency_ms,
+                max_latency_ms=max_latency_ms,
+                avg_latency_ms=0.0,
+                jitter_ms=0.0,
+                delivery_success_under_stress=0.0,
+                recovered_via_multipath=0,
+                resilience_score=0.0,
+            )
+
+        success_count = 0
+        multipath_recoveries = 0
+        latencies: List[float] = []
+
+        for _ in range(sample_pairs):
+            src, dst = self.rng.sample(remaining_dids, 2)
+            ok, hops = self.route_greedy(src, dst)
+            if not ok:
+                continue
+
+            # Simulate physical link loss and jitter along each hop
+            path_delivered = True
+            path_latency = 0.0
+
+            for _ in range(hops):
+                hop_delay = self.rng.uniform(min_latency_ms, max_latency_ms)
+                path_latency += hop_delay
+
+                # Stochastic packet drop
+                if self.rng.random() < packet_loss_rate:
+                    # Multipath reroute retry attempt (bicast / alternate path)
+                    if self.rng.random() > packet_loss_rate:
+                        multipath_recoveries += 1
+                        path_latency += hop_delay * 0.5  # reroute penalty
+                    else:
+                        path_delivered = False
+                        break
+
+            if path_delivered:
+                success_count += 1
+                latencies.append(path_latency)
+
+        delivery_rate = (success_count / sample_pairs) * 100.0
+        avg_lat = sum(latencies) / len(latencies) if latencies else 0.0
+        jitter = (
+            sum(abs(l - avg_lat) for l in latencies) / len(latencies)
+            if latencies
+            else 0.0
+        )
+        resilience = round(delivery_rate * (1.0 - (packet_loss_rate * 0.5)), 2)
+
+        return StressSimulationStats(
+            total_nodes=self.node_count,
+            churn_ratio=churn_rate,
+            packet_loss_rate=packet_loss_rate,
+            min_latency_ms=min_latency_ms,
+            max_latency_ms=max_latency_ms,
+            avg_latency_ms=round(avg_lat, 2),
+            jitter_ms=round(jitter, 2),
+            delivery_success_under_stress=round(delivery_rate, 2),
+            recovered_via_multipath=multipath_recoveries,
+            resilience_score=resilience,
         )

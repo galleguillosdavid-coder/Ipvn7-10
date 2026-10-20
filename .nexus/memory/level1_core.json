@@ -11,7 +11,7 @@
     "os": "Windows 11 AMD64 (PowerShell)",
     "python": ".\\.venv\\Scripts\\python.exe (Python 3.14.6)",
     "pytest_command": ".\\.venv\\Scripts\\pytest.exe -q",
-    "test_suite_status": "78/78 passing (100% pass rate, 0 regressions)",
+    "test_suite_status": "82/82 passing (100% pass rate, 0 regressions)",
     "ports": {
       "web_ui": 7070,
       "mcp_server": "7070/mcp",
@@ -33,9 +33,9 @@
     "max_acceptable_test_failures": 0
   },
   "subsystems": {
-    "total_active_subsystems": 54,
+    "total_active_subsystems": 57,
     "network_layers": 4,
-    "mcp_tools_count": 53,
+    "mcp_tools_count": 56,
     "hrs_frame_opcodes": [
       "ANNOUNCE (0x01)",
       "QUERY (0x02)",
@@ -52,17 +52,23 @@
   },
   "documentation_hierarchy": [
     "README.md (Master Handover & Architecture Map)",
-    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 54 Subsystems)",
-    "IPVN7_RFC_SPECIFICATION.md (54 Technical RFC Sections)",
+    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 57 Subsystems)",
+    "IPVN7_RFC_SPECIFICATION.md (57 Technical RFC Sections)",
     "genesis.md (Genesis Mandate v2.0)",
-    ".nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md (Consolidated Decisions)"
+    ".nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md (Consolidated Decisions)",
+    ".nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md (Edge AI & Media Datapath)"
   ],
   "handover": {
     "ready_for_clean_agent": true,
+    "completed_milestones": [
+      "Línea A: Integración de Edge AI / Ollama en shadow_device.py (Completado)",
+      "Línea B: WebRTC media streaming IP7M en remote_desktop.py (Completado)",
+      "Línea C: Pruebas de estrés y resiliencia en churn.py con pérdida 5-20% y jitter (Completado)"
+    ],
     "next_priorities": [
-      "Línea A: Integración de Edge AI / Ollama en shadow_device.py",
-      "Línea B: WebRTC media streaming en remote_desktop.py",
-      "Línea C: Pruebas de estrés y resiliencia en churn.py (5-20% packet drop)"
+      "Línea E: Integración visual directa del streaming IP7M en el canvas HTML5 de app.js",
+      "Línea F: Embajador BitNet / 1-bit quantization local para micro-nodos IoT",
+      "Línea G: Render 3D WebGL de la Malla Planetaria con retardo relativista en vivo"
     ]
   }
 }

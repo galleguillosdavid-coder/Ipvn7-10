@@ -85,7 +85,7 @@ Actualmente, el repositorio cuenta con **54 subsistemas de protocolo integrados*
 - [`ipvn7/network/dns_proxy.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/dns_proxy.py): Proxy DNS anti-fugas con caché local y resolución petname nativa.
 
 ### Plano de Control IA (MCP Server JSON-RPC 2.0)
-- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **53 herramientas nativas de introspección y comando** expuestas según la especificación Model Context Protocol (2024-11-05).
+- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **56 herramientas nativas de introspección, streaming y comando** expuestas según la especificación Model Context Protocol (2024-11-05).
 
 ---
 
@@ -101,11 +101,11 @@ Cualquier agente o usuario puede verificar y ejecutar el sistema de forma comple
 
 ### 3.2. Ejecución de la Suite de Pruebas (Zero Regressions)
 ```powershell
-# Ejecutar la suite completa de 78 tests unitarios
+# Ejecutar la suite completa de 82 tests unitarios
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (78/78) con código de salida 0.**
+*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (82/82) con código de salida 0.**
 
 ### 3.3. Lanzamiento del Servidor y Control Center Web
 ```powershell
@@ -118,7 +118,7 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 | Servicio | Endpoint | Protocolo / Propósito |
 |---|---|---|
 | **Control Center SPA** | `http://127.0.0.1:7070/` | Dashboard interactivo con telemetría en tiempo real y consola MCP |
-| **Servidor MCP** | `http://127.0.0.1:7070/mcp` | API JSON-RPC 2.0 con 53 herramientas para agentes LLM |
+| **Servidor MCP** | `http://127.0.0.1:7070/mcp` | API JSON-RPC 2.0 con 56 herramientas para agentes LLM |
 | **Proxy HTTP/HTTPS** | `http://127.0.0.1:8888/` | Pasarela de intercepción transparente para tráfico de aplicaciones |
 | **Proxy SOCKS5** | `127.0.0.1:10807` | Proxy RFC 1928 para tráfico TCP anónimo sobre la malla cuántica |
 | **Overlay UDP** | `127.0.0.1:9443` (primario) | Datapath QUIC cifrado punto a punto |

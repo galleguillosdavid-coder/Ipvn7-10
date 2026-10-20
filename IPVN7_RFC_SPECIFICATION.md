@@ -680,11 +680,36 @@ La arquitectura cuenta con una suite integral de 42 pruebas de integración y re
 
 ---
 
+## 55. Embajador LAN Edge AI & Enrutamiento de Prompts Soberanos
+
+- **Puenteo de Modelos Locales en la LAN:** Identificación de nodos de cómputo físico (Ollama, BitNet, Exo) asignados a DIDs deterministas (`did:ipvn7:shadow:<hex16>`) e IPs virtuales `10.7.100.X/24`.
+- **Despacho Transparente de Inferencias:** Enrutamiento HTTP/JSON con fallback automático a síntesis soberana emulada ante pérdida de conectividad física, garantizando alta disponibilidad sin dependencias de servicios cloud externos.
+- **Catálogo de Modelos por Dispositivo:** Manifiesto declarativo de modelos soportados (`llama3`, `mistral`, `phi3`, `qwen2.5`) con cuotas de memoria arbitradas.
+
+---
+
+## 56. Datapath de Streaming Multimedia Bidireccional (IP7M sobre 1280B)
+
+- **Formato Canónico de Fragmentación de Video/Audio:** Tramas binarias con número mágico `0x4950374D 'IP7M'`, cabecera de 25 bytes (Tipo, ID de Trama, Índice de Fragmento, Total de Fragmentos, Timestamp en microsegundos y suma CRC32).
+- **Alineación Estricta al MTU:** Carga útil máxima de 1250 bytes por fragmento, garantizando que el paquete completo nunca supere los 1280 bytes del MTU estándar de Internet.
+- **Ensamblado Determinista:** Reconstrucción en orden de frames AV1, H.265 y Opus con verificación de integridad CRC32 descartando frames incompletos o corruptos.
+
+---
+
+## 57. Simulación de Resiliencia bajo Churn Masivo y Degradación de Enlace
+
+- **Topología Small-World de Kleinberg:** Malla de anillo con atajos armónicos proporcionales a $1/d$ para convergencia de enrutamiento en $O(\log^2 N)$ saltos.
+- **Pruebas de Estrés Combinadas:** Evaluación bajo caída masiva repentina de nodos ($20\%-40\%$), pérdida estocástica de paquetes ($5\%-20\%$) y latencias fluctuantes ($100\text{ms}-2000\text{ms}$).
+- **Resiliencia Multipath:** Conmutación automática a caminos alternativos con métrica compuesta de resiliencia ante condiciones adversas extremas.
+
+---
+
 ## Resumen de Verificación y Suites de Prueba
 
-- **Suites de Prueba Ejecutadas:** 78 pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados.
-- **Resultado:** 100% aprobado (78/78) en ~4.50 segundos en hardware de producción Windows 11.
-- **Herramientas MCP Activas:** 53 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+- **Suites de Prueba Ejecutadas:** 82 pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados.
+- **Resultado:** 100% aprobado (82/82) en ~6.30 segundos en hardware de producción Windows 11.
+- **Herramientas MCP Activas:** 56 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+
 
 
 
