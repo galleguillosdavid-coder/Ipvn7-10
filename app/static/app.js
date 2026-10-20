@@ -2230,6 +2230,435 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // =============================================================
+  // 3D PLANETARY GLOBE CANVAS (Kleinberg Small-World LEO Mesh)
+  // =============================================================
+  let globeNodes = [];
+  let globeEdges = [];
+  let globeActivePath = [];
+  let globePhotons = [];
+  let globeRotY = 0.4;
+  let globeRotX = 0.25;
+  let isGlobeRotating = true;
+  let isGlobeDragging = false;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+
+  async function initPlanetaryGlobe() {
+    const canvas = document.getElementById("planetaryGlobeCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    // Fetch full 3D topology snapshot from IPVN 7 core
+    try {
+      const res = await fetch("/api/planetary/topology");
+      const data = await res.json();
+      if (data && data.nodes) {
+        globeNodes = data.nodes;
+        // Build edge list (unique pairs)
+        const edgeSet = new Set();
+        globeEdges = [];
+        globeNodes.forEach(src => {
+          const allLinks = [...(src.short_links || []), ...(src.long_links || [])];
+          allLinks.forEach(targetId => {
+            const pairKey = [src.id, targetId].sort().join("<->");
+            if (!edgeSet.has(pairKey)) {
+              edgeSet.add(pairKey);
+              globeEdges.push({ srcId: src.id, dstId: targetId });
+            }
+          });
+        });
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar la topología planetaria 3D:", e);
+    }
+
+    // Mouse drag interaction for 3D rotation
+    canvas.addEventListener("mousedown", (e) => {
+      isGlobeDragging = true;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isGlobeDragging) return;
+      const dx = e.clientX - lastMouseX;
+      const dy = e.clientY - lastMouseY;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      globeRotY += dx * 0.008;
+      globeRotX = Math.max(-1.1, Math.min(1.1, globeRotX + dy * 0.008));
+    });
+
+    window.addEventListener("mouseup", () => {
+      isGlobeDragging = false;
+    });
+
+    // Touch support for mobile / tablets
+    canvas.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 1) {
+        isGlobeDragging = true;
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    window.addEventListener("touchmove", (e) => {
+      if (!isGlobeDragging || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - lastMouseX;
+      const dy = e.touches[0].clientY - lastMouseY;
+      lastMouseX = e.touches[0].clientX;
+      lastMouseY = e.touches[0].clientY;
+      globeRotY += dx * 0.008;
+      globeRotX = Math.max(-1.1, Math.min(1.1, globeRotX + dy * 0.008));
+    }, { passive: true });
+
+    window.addEventListener("touchend", () => {
+      isGlobeDragging = false;
+    });
+
+    // Button controls
+    const btnToggleRot = document.getElementById("btnToggleGlobeRotation");
+    if (btnToggleRot) {
+      btnToggleRot.addEventListener("click", () => {
+        isGlobeRotating = !isGlobeRotating;
+        btnToggleRot.textContent = isGlobeRotating ? "Pausar Rotación" : "Reanudar Rotación";
+      });
+    }
+
+    const btnResetCam = document.getElementById("btnResetGlobeCamera");
+    if (btnResetCam) {
+      btnResetCam.addEventListener("click", () => {
+        globeRotY = 0.4;
+        globeRotX = 0.25;
+      });
+    }
+
+    const btnPulse = document.getElementById("btnPulsePhotons");
+    if (btnPulse) {
+      btnPulse.addEventListener("click", () => {
+        emitPhotonsAcrossLEO();
+      });
+    }
+
+    // Main 3D Animation Render Loop (60 FPS)
+    function renderGlobe() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (isGlobeRotating && !isGlobeDragging) {
+        globeRotY += 0.005;
+      }
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const R_earth = 110;
+      const R_orbit = 142;
+
+      // Draw Atmospheric Glow
+      const glow = ctx.createRadialGradient(cx, cy, R_earth * 0.8, cx, cy, R_earth * 1.35);
+      glow.addColorStop(0, "rgba(0, 242, 254, 0.2)");
+      glow.addColorStop(0.6, "rgba(0, 150, 255, 0.08)");
+      glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R_earth * 1.35, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw Earth Sphere Body
+      const earthGrad = ctx.createRadialGradient(cx - 30, cy - 30, 10, cx, cy, R_earth);
+      earthGrad.addColorStop(0, "#102544");
+      earthGrad.addColorStop(0.7, "#081324");
+      earthGrad.addColorStop(1, "#040914");
+      ctx.fillStyle = earthGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R_earth, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0, 242, 254, 0.4)";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // 3D Projection Helpers
+      const cosY = Math.cos(globeRotY);
+      const sinY = Math.sin(globeRotY);
+      const cosX = Math.cos(globeRotX);
+      const sinX = Math.sin(globeRotX);
+
+      function project3D(x, y, z, radius) {
+        // Rotate Y
+        const x1 = x * cosY - z * sinY;
+        const z1 = x * sinY + z * cosY;
+        // Rotate X
+        const y2 = y * cosX - z1 * sinX;
+        const z2 = y * sinX + z1 * cosX;
+
+        // Orthographic projection with slight perspective
+        const scale = 1.0 + z2 * 0.15;
+        const px = cx + x1 * radius * scale;
+        const py = cy - y2 * radius * scale;
+        return { px, py, z: z2, visible: z2 > -0.2 };
+      }
+
+      // Draw Wireframe Latitude & Longitude lines
+      ctx.strokeStyle = "rgba(0, 242, 254, 0.12)";
+      ctx.lineWidth = 0.8;
+      for (let lat = -60; lat <= 60; lat += 30) {
+        const rad = (lat * Math.PI) / 180;
+        const rRing = Math.cos(rad);
+        const yRing = Math.sin(rad);
+        ctx.beginPath();
+        let first = true;
+        for (let lon = 0; lon <= 360; lon += 15) {
+          const lRad = (lon * Math.PI) / 180;
+          const pt = project3D(rRing * Math.cos(lRad), yRing, rRing * Math.sin(lRad), R_earth);
+          if (first) { ctx.moveTo(pt.px, pt.py); first = false; }
+          else { ctx.lineTo(pt.px, pt.py); }
+        }
+        ctx.stroke();
+      }
+
+      // Project Nodes
+      const nodePosMap = {};
+      const projectedNodes = globeNodes.map(n => {
+        const geo = n.geo || { x3d: 0, y3d: 0, z3d: 1 };
+        // Normalize vector
+        const mag = Math.sqrt(geo.x3d*geo.x3d + geo.y3d*geo.y3d + geo.z3d*geo.z3d) || 1;
+        const pt = project3D(geo.x3d / mag, geo.y3d / mag, geo.z3d / mag, R_orbit);
+        nodePosMap[n.id] = pt;
+        return { ...n, ...pt };
+      });
+
+      // Draw Edges (Kleinberg Links)
+      globeEdges.forEach(edge => {
+        const p1 = nodePosMap[edge.srcId];
+        const p2 = nodePosMap[edge.dstId];
+        if (!p1 || !p2) return;
+
+        // Determine if edge is part of the active Kleinberg routed path
+        const isActiveHop = globeActivePath.length > 1 &&
+          globeActivePath.some((id, i) =>
+            i < globeActivePath.length - 1 &&
+            ((id === edge.srcId && globeActivePath[i+1] === edge.dstId) ||
+             (id === edge.dstId && globeActivePath[i+1] === edge.srcId))
+          );
+
+        ctx.beginPath();
+        ctx.moveTo(p1.px, p1.py);
+
+        // Arc curve through 3D space
+        const midX = (p1.px + p2.px) / 2;
+        const midY = (p1.py + p2.py) / 2;
+        ctx.quadraticCurveTo(midX, midY, p2.px, p2.py);
+
+        if (isActiveHop) {
+          ctx.strokeStyle = "rgba(255, 0, 160, 0.9)";
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#ff00a0";
+          ctx.shadowBlur = 12;
+        } else {
+          const depthAlpha = Math.max(0.12, (p1.z + p2.z + 2) / 4);
+          ctx.strokeStyle = `rgba(0, 242, 254, ${depthAlpha * 0.35})`;
+          ctx.lineWidth = 1.0;
+          ctx.shadowBlur = 0;
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      });
+
+      // Update and Draw Traveling Photons
+      for (let i = globePhotons.length - 1; i >= 0; i--) {
+        const ph = globePhotons[i];
+        ph.progress += ph.speed;
+        if (ph.progress >= 1.0) {
+          globePhotons.splice(i, 1);
+          continue;
+        }
+        const p1 = nodePosMap[ph.srcId];
+        const p2 = nodePosMap[ph.dstId];
+        if (p1 && p2) {
+          const fx = p1.px + (p2.px - p1.px) * ph.progress;
+          const fy = p1.py + (p2.py - p1.py) * ph.progress;
+          ctx.fillStyle = ph.color || "#00ffa6";
+          ctx.shadowColor = ph.color || "#00ffa6";
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(fx, fy, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      // Draw Satellite Nodes
+      projectedNodes.sort((a, b) => a.z - b.z); // Z-sorting for correct depth
+      projectedNodes.forEach(n => {
+        const isTarget = globeActivePath.includes(n.id);
+        const radius = isTarget ? 6.5 : (n.z > 0 ? 5.0 : 3.5);
+        const alpha = n.z > 0 ? 1.0 : Math.max(0.3, 0.6 + n.z * 0.4);
+
+        ctx.beginPath();
+        ctx.arc(n.px, n.py, radius, 0, Math.PI * 2);
+
+        if (isTarget) {
+          ctx.fillStyle = `rgba(255, 0, 160, ${alpha})`;
+          ctx.shadowColor = "#ff00a0";
+          ctx.shadowBlur = 15;
+        } else {
+          ctx.fillStyle = `rgba(0, 255, 170, ${alpha})`;
+          ctx.shadowColor = "#00ffa6";
+          ctx.shadowBlur = 8;
+        }
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Label if front-facing
+        if (n.z > 0.1 || isTarget) {
+          ctx.font = "9px 'JetBrains Mono', monospace";
+          ctx.fillStyle = isTarget ? "#ff80df" : "rgba(255, 255, 255, 0.75)";
+          ctx.fillText(n.id, n.px + 8, n.py + 3);
+        }
+      });
+
+      requestAnimationFrame(renderGlobe);
+    }
+
+    renderGlobe();
+  }
+
+  function emitPhotonsAcrossLEO() {
+    if (!globeEdges.length) return;
+    for (let i = 0; i < 8; i++) {
+      const e = globeEdges[Math.floor(Math.random() * globeEdges.length)];
+      globePhotons.push({
+        srcId: e.srcId,
+        dstId: e.dstId,
+        progress: 0.0,
+        speed: 0.02 + Math.random() * 0.025,
+        color: Math.random() > 0.4 ? "#00ffa6" : "#00f2fe",
+      });
+    }
+  }
+
+  // Hook into existing Planetary Route button to illuminate path on 3D Globe
+  const origBtnRoutePlanetary = document.getElementById("btnRoutePlanetary");
+  if (origBtnRoutePlanetary) {
+    origBtnRoutePlanetary.addEventListener("click", () => {
+      setTimeout(() => {
+        const src = (document.getElementById("txtPlanetSrc")?.value || "sat-000").trim();
+        const dst = (document.getElementById("txtPlanetDst")?.value || "sat-015").trim();
+        fetch("/api/planetary/route", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ src_node: src, dst_node: dst }),
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.path) {
+            globeActivePath = data.path;
+            // Send photon sequence along path
+            data.path.forEach((nodeId, idx) => {
+              if (idx < data.path.length - 1) {
+                setTimeout(() => {
+                  globePhotons.push({
+                    srcId: nodeId,
+                    dstId: data.path[idx + 1],
+                    progress: 0.0,
+                    speed: 0.035,
+                    color: "#ff00a0",
+                  });
+                }, idx * 120);
+              }
+            });
+          }
+        }).catch(() => {});
+      }, 100);
+    });
+  }
+
+  // =============================================================
+  // BITNET B1.58 TERNARY AI ENGINE CONTROLLER
+  // =============================================================
+  async function loadBitNetDemo(rows = 16, cols = 16, seed = 42) {
+    const grid = document.getElementById("bitnetGrid");
+    const leg = document.getElementById("bitnetDistLegend");
+    const compBox = document.getElementById("bitnetComparisonBox");
+
+    try {
+      const res = await fetch(`/api/bitnet/demo?rows=${rows}&cols=${cols}&seed=${seed}`);
+      const data = await res.json();
+
+      // Update KPI Badges
+      const elComp = document.getElementById("bitnetCompressionRatio");
+      const elMem = document.getElementById("bitnetMemSaved");
+      const elInfer = document.getElementById("bitnetInferUs");
+      const elSparse = document.getElementById("bitnetSparsity");
+
+      if (elComp) elComp.textContent = `${data.compression_ratio}x`;
+      if (elMem) elMem.textContent = `${data.memory_saved_pct}%`;
+      if (elInfer) elInfer.textContent = `${data.integer_inference_time_us} µs`;
+      if (elSparse) elSparse.textContent = `${data.weight_distribution.sparsity_pct}%`;
+
+      // Render Dynamic Heatmap Grid
+      if (grid && data.ternary_weights) {
+        grid.style.gridTemplateColumns = `repeat(${cols}, 32px)`;
+        grid.innerHTML = "";
+
+        data.ternary_weights.forEach((row, rIdx) => {
+          row.forEach((val, cIdx) => {
+            const cell = document.createElement("div");
+            cell.className = "ternary-cell";
+            if (val === 1) {
+              cell.classList.add("cell-plus-one");
+              cell.textContent = "+1";
+            } else if (val === -1) {
+              cell.classList.add("cell-minus-one");
+              cell.textContent = "-1";
+            } else {
+              cell.classList.add("cell-zero");
+              cell.textContent = "0";
+            }
+            cell.title = `W[${rIdx},${cIdx}] = ${val}`;
+            grid.appendChild(cell);
+          });
+        });
+      }
+
+      // Legend of distribution
+      if (leg && data.weight_distribution) {
+        const d = data.weight_distribution;
+        leg.innerHTML = `Distribución: <strong style="color:#00ffa6;">${d.plus_ones} (+1)</strong> &bull; ` +
+          `<strong style="color:rgba(255,255,255,0.6);">${d.zeros} (0)</strong> &bull; ` +
+          `<strong style="color:#ff4060;">${d.minus_ones} (-1)</strong> &bull; ` +
+          `Total: ${rows * cols} pesos &bull; Escala $\\gamma$: ${data.scale_factor}`;
+      }
+
+      // Verification comparison
+      if (compBox) {
+        const sampleYInt = data.y_integer_output ? data.y_integer_output.slice(0, 6) : [];
+        const sampleYFloat = data.y_float_baseline ? data.y_float_baseline.slice(0, 6) : [];
+        compBox.textContent = JSON.stringify({
+          model: data.model_name,
+          first_6_integer_outputs: sampleYInt,
+          first_6_float32_baseline: sampleYFloat,
+          inner_product_operations: "100% Integer Additions & Subtractions (Zero Multiplications)",
+        }, null, 2);
+      }
+    } catch (e) {
+      console.warn("Error cargando demo BitNet:", e);
+    }
+  }
+
+  const btnRunBitnet = document.getElementById("btnRunBitnetDemo");
+  if (btnRunBitnet) {
+    btnRunBitnet.addEventListener("click", () => {
+      const dim = parseInt(document.getElementById("selBitnetDim")?.value || "16", 10);
+      const seed = parseInt(document.getElementById("txtBitnetSeed")?.value || "42", 10);
+      loadBitNetDemo(dim, dim, seed);
+    });
+  }
+
+  // Initializations
   fetchDagBlocks();
   fetchDiagnostics();
   fetchPetnames();
@@ -2246,5 +2675,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchPfoTree();
   fetchWanStats();
   fetchRemoteDesktopStatus();
+  initPlanetaryGlobe();
+  loadBitNetDemo(16, 16, 42);
 });
 

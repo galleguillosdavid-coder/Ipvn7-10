@@ -1243,6 +1243,82 @@
           </div>
         </div>
 
+        <!-- Tab: BitNet b1.58 Ternary AI Engine -->
+        <div class="tab-pane" id="tab-bitnet">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <div>
+                <h3>Motor de Cuantización Ternaria BitNet b1.58 $\{-1, 0, +1\}$</h3>
+                <p class="desc">Inferencia de Edge AI en microcontroladores y dispositivos IoT sin hardware de multiplicación (Zero FLOP Multiplications). Empaquetado binario 2-bit (4 pesos/byte) en tramas canónicas 'IP7B'.</p>
+              </div>
+              <div class="status-indicator">
+                <span class="pulsing-dot"></span>
+                <span class="mono-text" id="bitnetBadge" style="color:#00ffa6;">ZERO-MULTIPLICATION &bull; 8.0x COMPRESSION</span>
+              </div>
+            </div>
+
+            <!-- BitNet Math Banner -->
+            <div class="bitnet-math-banner mt-3">
+              <strong>📐 Principio de Cuantización Absoluta de BitNet:</strong><br>
+              Escala $\gamma = \frac{1}{R \cdot C} \sum |W_{ij}|$ &bull; Pesos $W_{\text{ternary}} = \text{clip}\left(\text{round}\left(\frac{W}{\gamma}\right), -1, +1\right) \in \{-1, 0, +1\}$.<br>
+              Inferencia entera sin multiplicación: $y_i = \gamma \cdot \text{scale}_x \cdot \left[ \sum_{W_{ij}=+1} x_j - \sum_{W_{ij}=-1} x_j \right]$ (Cero multiplicaciones de coma flotante en el loop interno).
+            </div>
+
+            <!-- KPI Metrics Grid -->
+            <div class="bench-grid mt-2">
+              <div class="bench-item">
+                <span class="bench-label">Tasa de Compresión</span>
+                <strong class="bench-val mono-text text-cyan" id="bitnetCompressionRatio">8.0x</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Ahorro de Memoria RAM</span>
+                <strong class="bench-val text-green" id="bitnetMemSaved">87.5%</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Latencia Inferencia Integer</span>
+                <strong class="bench-val mono-text text-purple" id="bitnetInferUs">-- µs</strong>
+              </div>
+              <div class="bench-item">
+                <span class="bench-label">Esparsidad (Pesos = 0)</span>
+                <strong class="bench-val text-cyan" id="bitnetSparsity">-- %</strong>
+              </div>
+            </div>
+
+            <!-- Interactive Control Bar -->
+            <div class="streaming-control-bar mt-3">
+              <label class="mono-text" style="font-size:0.8rem; color:var(--text-muted);">Dimensión Matriz:</label>
+              <select id="selBitnetDim" class="input-field" style="max-width:130px;">
+                <option value="8">8 x 8 (64 pesos)</option>
+                <option value="12">12 x 12 (144 pesos)</option>
+                <option value="16" selected>16 x 16 (256 pesos)</option>
+              </select>
+              <input type="number" id="txtBitnetSeed" class="input-field" value="42" style="max-width:90px;" placeholder="Semilla">
+              <button class="btn btn-primary btn-small" id="btnRunBitnetDemo">Cuantizar e Inferir en Vivo</button>
+            </div>
+
+            <!-- Heatmap Visualization of Ternary Weights -->
+            <div class="action-box mt-4" style="text-align: center;">
+              <h4>Heatmap de Pesos Ternarios $\{-1, 0, +1\}$ en Tiempo Real</h4>
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 8px;">
+                <span style="color:#00ffa6; font-weight:700;">■ +1 (Suma Entera)</span> &nbsp;&bull;&nbsp;
+                <span style="color:rgba(255,255,255,0.4); font-weight:700;">■ 0 (Zero-Op / Poda)</span> &nbsp;&bull;&nbsp;
+                <span style="color:#ff4060; font-weight:700;">■ -1 (Resta Entera)</span>
+              </div>
+              <div id="bitnetHeatmapWrap" style="overflow-x: auto; padding: 6px;">
+                <div id="bitnetGrid" class="bitnet-grid-container"></div>
+              </div>
+              <div id="bitnetDistLegend" class="mono-text mt-2" style="font-size:0.78rem; color:var(--text-dim);"></div>
+            </div>
+
+            <!-- Output Comparison Box -->
+            <div class="action-box mt-3">
+              <h4>Verificación de Salida: Integer vs Float32 Baseline</h4>
+              <p class="desc">Comparación entre la inferencia integer $y_{\text{integer}}$ (sumas/restas cuantizadas) frente a $y_{\text{float32}}$ con multiplicación convencional.</p>
+              <div id="bitnetComparisonBox" class="json-viewer mono-text mt-2" style="max-height:140px; overflow-y:auto; font-size:0.8rem;"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Tab: MCP Server AI Control Plane -->
         <div class="tab-pane" id="tab-mcp">
           <div class="interactive-card">

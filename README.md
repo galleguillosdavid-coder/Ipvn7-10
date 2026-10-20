@@ -228,12 +228,15 @@ Invoke-RestMethod -Uri "http://127.0.0.1:7070/api/status" # Confirmar nodo prima
 Renueva o programa el temporizador con la herramienta `schedule` a 1800 segundos (30 minutos) con una directiva de auto-optimización evolutiva.
 
 ### 5.3. Prioridades de Desarrollo Inmediatas (Backlog de Auto-Evolución)
-1. **Línea G — Canvas Visual Reactivo en el Control Center:**
-   - Incorporar en el SPA (`app/static/index.html` y `app/static/app.js`) un visualizador interactivo en tiempo real para el streaming de tramas `IP7M` (video/audio) y el visor de pesos ternarios BitNet ($\{-1, 0, +1\}$).
-2. **Línea H — Malla Planetaria con Render 3D WebGL:**
-   - Aprovechar `ipvn7/network/planetary.py` para proyectar en el dashboard una esfera 3D interactiva (mediante Canvas/WebGL nativo sin frameworks pesados) con órbitas de satélites y retardo relativista $d / c$.
+1. **Línea G — Canvas Visual Reactivo en el Control Center:** *(✅ COMPLETADO v7.3.2)*
+   - Visualizador de streaming de tramas `IP7M` a 60 FPS con tracking de cursor e inyección reactiva en `tab-wan-desktop`.
+   - Visor Heatmap de pesos ternarios BitNet b1.58 ($\{-1, 0, +1\}$) con cuantización interactiva e inferencia entera pura sin multiplicaciones en `tab-bitnet`.
+2. **Línea H — Malla Planetaria con Render 3D en Canvas:** *(✅ COMPLETADO v7.3.2)*
+   - Globo terráqueo orbital 3D interactivo en `tab-planetary` con los 16 satélites LEO, rotación tridimensional con ratón/touch, arcos de Kleinberg ($r=2$) y pulsos de fotones relativistas a la velocidad de la luz $c = 299,792 \text{ km/s}$.
 3. **Línea I — Benchmark de Throughput Saturado en Datapath Local:**
    - Diseñar un módulo de benchmarking de saturación continua para medir el throughput máximo en Gbps del pipeline de fragmentación y ensamblado de 1280 bytes en Windows Wintun / UDP loopback.
+4. **Línea J — Compresor de Tráfico Huffman/Zstandard en Encabezados IPVN 7:**
+   - Incorporar compresión dinámica de diccionario estático para datagramas de control y telemetría de menos de 256 bytes.
 
 ### 5.4. Tarea Ocasional: Auditoría Externa Cruzada con ChatGPT (Multi-LLM Peer Review)
 De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar una auditoría de revisión externa independiente mediante [ChatGPT](https://chatgpt.com/):
