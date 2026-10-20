@@ -1,17 +1,17 @@
 {
   "system": "IPVN 7 Autonomous Network Operating System",
-  "version": "7.3.0",
+  "version": "7.8.0",
   "git": {
     "branch": "main",
     "remote_origin": "https://github.com/galleguillosdavid-coder/Ipvn7-10.git",
-    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0"],
+    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0", "v7.4.0", "v7.5.0", "v7.6.0", "v7.7.0", "v7.8.0"],
     "clean_working_tree": true
   },
   "runtime_environment": {
     "os": "Windows 11 AMD64 (PowerShell)",
     "python": ".\\.venv\\Scripts\\python.exe (Python 3.14.6)",
     "pytest_command": ".\\.venv\\Scripts\\pytest.exe -q",
-    "test_suite_status": "90/90 passing (100% pass rate, 0 regressions)",
+    "test_suite_status": "103/103 passing (100% pass rate, 0 regressions)",
     "ports": {
       "web_ui": 7070,
       "mcp_server": "7070/mcp",
@@ -32,12 +32,13 @@
     "media_wire_protocol": "IP7M_1280B_CHUNKS",
     "bitnet_quantization": "BITNET_B158_IP7B",
     "ephemeral_rotation_hours": 24,
-    "max_acceptable_test_failures": 0
+    "max_acceptable_test_failures": 0,
+    "security_governance_policy": ".nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md"
   },
   "subsystems": {
-    "total_active_subsystems": 58,
+    "total_active_subsystems": 64,
     "network_layers": 4,
-    "mcp_tools_count": 57,
+    "mcp_tools_count": 63,
     "hrs_frame_opcodes": [
       "ANNOUNCE (0x01)",
       "QUERY (0x02)",
@@ -59,19 +60,23 @@
   },
   "documentation_hierarchy": [
     "README.md (Master Handover & Architecture Map)",
-    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 58 Subsystems)",
+    ".nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md (Immutable Anti-Failure & Security Policy)",
+    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 64 Subsystems)",
     "IPVN7_RFC_SPECIFICATION.md (58 Technical RFC Sections)",
     "genesis.md (Genesis Mandate v2.0)",
     ".nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md (Consolidated Decisions)",
     ".nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md (Edge AI & Media Datapath)",
-    ".nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md (BitNet b1.58 Ternary Quantization)"
+    ".nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md (BitNet b1.58 Ternary Quantization)",
+    ".nexus/decisions/ADR-004-SECURITY-AUDIT-REMEDIATION.md (First Audit Remediation)",
+    ".nexus/decisions/ADR-005-DATAPATH-SATURATION-AND-COMPRESSION.md (Saturation Benchmark & Compression)",
+    ".nexus/decisions/ADR-006-SILENT-PQC-REKEYING-AND-FORWARD-SECRECY.md (Silent PQC Rekeying)",
+    ".nexus/decisions/ADR-007-GEOPOLICY-ROUTING-AND-DATA-SOVEREIGNTY.md (Geopolicy Routing)",
+    ".nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md (Private DHT Interregion Sync)",
+    ".nexus/decisions/ADR-009-SOVEREIGN-TUNNEL-TELEMETRY-AND-PMTU.md (Sovereign Tunnel Telemetry)",
+    ".nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md (Second Audit Remediation H-01 to H-08)"
   ],
   "handover": {
     "ready_for_clean_agent": true,
-    "next_priorities": [
-      "Línea E: Integración visual reactiva del streaming multimedia IP7M en el canvas HTML5 de app/static/app.js",
-      "Línea G: Malla Planetaria con render 3D WebGL de órbitas y retardo relativista",
-      "Línea H: Pipeline de benchmarking de throughput sostenido (Gbps) bajo simulación de datapath saturado"
-    ]
+    "audit_status": "AUDIT_2_FULLY_REMEDIATED_VERIFIED"
   }
 }

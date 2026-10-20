@@ -13,6 +13,7 @@ import time
 from typing import Optional, Callable, Dict, Any, Tuple
 
 from ..node.node import IPVN7Node
+from ..security.egress_policy import EgressSecurityPolicy
 
 
 # SOCKS5 Constants (RFC 1928)
@@ -203,9 +204,25 @@ class IPVN7SOCKS5Gateway:
                     "exit_node": self.exit_node.did,
                 })
 
-            # 3. Connect to Target via Destination
+            # 3. Security Boundary: Enforce EgressSecurityPolicy (Anti-SSRF & DNS Rebinding)
+            is_allowed, reason, valid_ips = EgressSecurityPolicy.resolve_and_validate_host(dest_host, dest_port)
+            if not is_allowed:
+                if self.traffic_logger:
+                    self.traffic_logger({
+                        "time": time.strftime("%H:%M:%S"),
+                        "protocol": "SOCKS5",
+                        "client": f"{addr[0]}:{addr[1]}",
+                        "target_host": dest_host,
+                        "target_port": dest_port,
+                        "status": f"BLOCKED_SSRF: {reason}",
+                    })
+                self._send_reply(client, SOCKS5_REP_CONN_NOT_ALLOWED)
+                return
+
+            # Connect directly to the validated IP to prevent DNS rebinding attacks
+            target_ip = valid_ips[0]
             try:
-                remote = socket.create_connection((dest_host, dest_port), timeout=6.0)
+                remote = socket.create_connection((target_ip, dest_port), timeout=6.0)
             except Exception:
                 self._send_reply(client, SOCKS5_REP_HOST_UNREACHABLE)
                 return

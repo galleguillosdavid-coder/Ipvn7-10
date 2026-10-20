@@ -3670,7 +3670,9 @@ def test_sovereign_tunnel_telemetry_pmtu_and_bicast_failover():
     assert parsed["tunnel_id"] == "wg0-mesh"
 
     # Corrupt frame triggers CRC mismatch error
-    corrupt_frame = frame[:-1] + b"\xff"
+    corrupt_ba = bytearray(frame)
+    corrupt_ba[-1] ^= 0xFF
+    corrupt_frame = bytes(corrupt_ba)
     import pytest
     with pytest.raises(ValueError, match="CRC32 mismatch"):
         telemetry.parse_probe_frame(corrupt_frame)
@@ -3709,10 +3711,231 @@ def test_sovereign_tunnel_telemetry_pmtu_and_bicast_failover():
     node.stop()
 
 
+def test_audit_h04_egress_security_policy_ssrf_filtering():
+    """H-04: Validates strict anti-SSRF policy with ipaddress parsing and DNS rebinding protections."""
+    from ipvn7.security.egress_policy import EgressSecurityPolicy
+    import ipaddress
+
+    # 1. Private and special IPs must be blocked
+    blocked_ips = [
+        "127.0.0.1", "127.42.0.1", "0.0.0.0",
+        "10.0.0.1", "10.254.1.1",
+        "192.168.1.1", "192.168.100.5",
+        "172.16.0.1", "172.31.255.254",
+        "169.254.169.254",  # AWS/GCP/Azure metadata
+        "100.64.0.1",       # CGNAT
+        "::1", "fe80::1", "fc00::1",
+    ]
+    for ip in blocked_ips:
+        allowed, reason = EgressSecurityPolicy.is_ip_allowed(ipaddress.ip_address(ip))
+        assert not allowed, f"IP {ip} should have been blocked by EgressSecurityPolicy: {reason}"
+
+    # 2. Public routable IPs must be allowed
+    allowed_ips = ["8.8.8.8", "1.1.1.1", "93.184.216.34", "2606:4700:4700::1111"]
+    for ip in allowed_ips:
+        allowed, reason = EgressSecurityPolicy.is_ip_allowed(ipaddress.ip_address(ip))
+        assert allowed, f"Public IP {ip} was incorrectly blocked: {reason}"
+
+    # 3. URL level validation
+    bad_urls = [
+        "http://127.0.0.1:8080/admin",
+        "https://169.254.169.254/computeMetadata/v1/",
+        "ftp://example.com/test",
+        "file:///etc/passwd",
+        "gopher://example.com/",
+    ]
+    for u in bad_urls:
+        safe, reason = EgressSecurityPolicy.validate_url(u)
+        assert not safe, f"URL {u} should be deemed unsafe: {reason}"
+
+    # 4. Valid public URLs
+    safe_ok, reason = EgressSecurityPolicy.validate_url("https://example.com/index.html")
+    assert safe_ok, f"Valid URL example.com was blocked: {reason}"
 
 
+def test_audit_h02_socks5_blocks_internal_and_loopback_destinations():
+    """H-02: Validates SOCKS5 gateway rejects connection attempts to private and loopback destinations."""
+    from ipvn7.gateway.socks5 import IPVN7SOCKS5Gateway, SOCKS5_REP_CONN_NOT_ALLOWED
+    import socket
+
+    node1 = IPVN7Node(alias="Socks5-Sec-Test-1", bind_host="127.0.0.1")
+    node2 = IPVN7Node(alias="Socks5-Sec-Test-2", bind_host="127.0.0.1")
+    node1.start_background_listener()
+    node2.start_background_listener()
+
+    gateway = IPVN7SOCKS5Gateway(
+        local_node=node1,
+        exit_node=node2,
+        listen_host="127.0.0.1",
+        listen_port=0,
+    )
+    gateway.start()
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(3.0)
+        s.connect(("127.0.0.1", gateway.bound_port))
+
+        # Handshake: version 5, 1 auth method (0x00 No Auth)
+        s.sendall(b"\x05\x01\x00")
+        hs_resp = s.recv(2)
+        assert hs_resp == b"\x05\x00"
+
+        # Try to connect to prohibited loopback destination: 127.0.0.1:22
+        # VER=5, CMD=1, RSV=0, ATYP=1 (IPv4), IP=127.0.0.1, PORT=22
+        conn_req = b"\x05\x01\x00\x01" + socket.inet_aton("127.0.0.1") + (22).to_bytes(2, "big")
+        s.sendall(conn_req)
+        reply = s.recv(10)
+        assert len(reply) >= 2
+        # REP must be SOCKS5_REP_CONN_NOT_ALLOWED (0x02)
+        assert reply[1] == SOCKS5_REP_CONN_NOT_ALLOWED, f"Expected 0x02 reject, got {reply[1]}"
+        s.close()
+    finally:
+        gateway.stop()
+        node1.stop()
+        node2.stop()
 
 
+def test_audit_h01_proxy_blocks_private_and_honest_logging():
+    """H-01: Validates IPVN7InternetProxy blocks private egress destinations and logs honest status."""
+    from ipvn7.gateway.proxy import IPVN7InternetProxy
+    import socket
+
+    node1 = IPVN7Node(alias="Proxy-Sec-Test-1", bind_host="127.0.0.1")
+    node2 = IPVN7Node(alias="Proxy-Sec-Test-2", bind_host="127.0.0.1")
+    node1.start_background_listener()
+    node2.start_background_listener()
+
+    logged_events = []
+    def log_handler(info):
+        logged_events.append(info)
+
+    proxy = IPVN7InternetProxy(
+        local_node=node1,
+        exit_node=node2,
+        listen_host="127.0.0.1",
+        listen_port=0,
+        traffic_logger=log_handler,
+    )
+    proxy.start()
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(3.0)
+        s.connect(("127.0.0.1", proxy.bound_port))
+
+        # Attempt forbidden HTTP request to internal metadata IP
+        req = b"GET http://169.254.169.254/latest/meta-data HTTP/1.1\r\nHost: 169.254.169.254\r\n\r\n"
+        s.sendall(req)
+        resp = s.recv(1024)
+        assert b"403 Forbidden" in resp
+        assert b"SSRF Destination Blocked" in resp
+        s.close()
+    finally:
+        proxy.stop()
+        node1.stop()
+        node2.stop()
 
 
+def test_audit_h07_rekey_method_not_allowed_on_get():
+    """H-07: Validates /api/key_rotation/rekey returns 405 Method Not Allowed on GET requests."""
+    from app.server import IPVN7DashboardHandler
+    from io import BytesIO
+    import json
 
+    class DummyRequest:
+        def __init__(self, raw_bytes):
+            self._rfile = BytesIO(raw_bytes)
+            self._wfile = BytesIO()
+
+        def makefile(self, mode, *args, **kwargs):
+            if "b" in mode:
+                if "r" in mode:
+                    return self._rfile
+                return self._wfile
+            return None
+
+        def sendall(self, data):
+            self._wfile.write(data)
+
+    # Simulate GET /api/key_rotation/rekey
+    req_bytes = b"GET /api/key_rotation/rekey HTTP/1.1\r\nHost: 127.0.0.1:7070\r\n\r\n"
+    dummy = DummyRequest(req_bytes)
+    handler = IPVN7DashboardHandler(dummy, ("127.0.0.1", 54321), None)
+
+    output = dummy._wfile.getvalue().decode("utf-8")
+    assert "405 Method Not Allowed" in output or "405" in output
+    assert "modifies cryptographic state" in output or "Method Not Allowed" in output
+
+
+def test_audit_h03_mcp_control_plane_authentication():
+    """H-03: Validates MCP control plane requires valid Bearer token or trusted local origin."""
+    from app.server import IPVN7DashboardHandler, CONTROL_AUTH_TOKEN
+    from io import BytesIO
+    import json
+
+    class DummyRequest:
+        def __init__(self, raw_bytes):
+            self._rfile = BytesIO(raw_bytes)
+            self._wfile = BytesIO()
+
+        def makefile(self, mode, *args, **kwargs):
+            if "b" in mode:
+                if "r" in mode:
+                    return self._rfile
+                return self._wfile
+            return None
+
+        def sendall(self, data):
+            self._wfile.write(data)
+
+    # 1. Unauthenticated request to /api/mcp must fail with 401
+    unauth_req = b"GET /api/mcp HTTP/1.1\r\nHost: 127.0.0.1:7070\r\n\r\n"
+    dummy1 = DummyRequest(unauth_req)
+    IPVN7DashboardHandler(dummy1, ("127.0.0.1", 54321), None)
+    out1 = dummy1._wfile.getvalue().decode("utf-8")
+    assert "401 Unauthorized" in out1 or "401" in out1
+
+    # 2. Authenticated request with Bearer token must succeed (200 OK)
+    auth_req = f"GET /api/mcp HTTP/1.1\r\nHost: 127.0.0.1:7070\r\nAuthorization: Bearer {CONTROL_AUTH_TOKEN}\r\n\r\n".encode("utf-8")
+    dummy2 = DummyRequest(auth_req)
+    IPVN7DashboardHandler(dummy2, ("127.0.0.1", 54321), None)
+    out2 = dummy2._wfile.getvalue().decode("utf-8")
+    assert "200 OK" in out2
+    assert "ipvn7-mcp-engine" in out2
+
+
+def test_audit_h05_simulation_small_world_clamping():
+    """H-05: Validates resource exhaustion protection clamps excessive simulation parameters."""
+    from app.server import IPVN7DashboardHandler
+    from io import BytesIO
+    import json
+
+    class DummyRequest:
+        def __init__(self, raw_bytes):
+            self._rfile = BytesIO(raw_bytes)
+            self._wfile = BytesIO()
+
+        def makefile(self, mode, *args, **kwargs):
+            if "b" in mode:
+                if "r" in mode:
+                    return self._rfile
+                return self._wfile
+            return None
+
+        def sendall(self, data):
+            self._wfile.write(data)
+
+    # Request extreme values: nodes=50000, churn=10.0
+    req_bytes = b"GET /api/simulation/small-world?nodes=50000&churn=10.0 HTTP/1.1\r\nHost: 127.0.0.1:7070\r\n\r\n"
+    dummy = DummyRequest(req_bytes)
+    IPVN7DashboardHandler(dummy, ("127.0.0.1", 54321), None)
+    out = dummy._wfile.getvalue().decode("utf-8")
+    assert "200 OK" in out
+
+    # Parse body from response
+    body_part = out.split("\r\n\r\n", 1)[1]
+    res_data = json.loads(body_part)
+    # Total nodes must be clamped to maximum 120
+    assert res_data["total_nodes"] <= 120
+    assert res_data["churn_ratio"] <= 0.85

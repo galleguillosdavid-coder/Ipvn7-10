@@ -1,5 +1,5 @@
 # IPVN 7 — Internet Protocol Version 7
-> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.7.0)**  
+> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.8.0)**  
 > *Implementación Canónica en Python 3.14 con Criptografía Híbrida NIST FIPS 203 & 204*  
 > **Repositorio Oficial:** [https://github.com/galleguillosdavid-coder/Ipvn7-10](https://github.com/galleguillosdavid-coder/Ipvn7-10)
 
@@ -11,10 +11,11 @@
 > Este documento es tu **punto de entrada canónico**. Léelo de principio a fin antes de ejecutar o modificar código.  
 > Tu orden de lectura obligatorio para comprender el ecosistema completo es:
 > 1. Este archivo [`README.md`](README.md) *(Visión ejecutiva, estructura global, mapa del repo y protocolo de handover)*.
-> 2. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(Procedimiento autónomo de desarrollo, catálogo de los 61 subsistemas y directivas operativas de auto-evolución)*.
-> 3. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 58 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
-> 4. [`genesis.md`](genesis.md) *(Mandato Génesis v2.0, principios ontológicos, gobernanza evolutiva y multi-agente)*.
-> 5. **Architecture Decision Records (ADRs Inmutables):**
+> 2. [`.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md`](.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md) *(Política inmutable anti-fallos, gobernanza SSRF, autenticación de control y honestidad de datapath)*.
+> 3. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(Procedimiento autónomo de desarrollo, catálogo de subsistemas y directivas operativas de auto-evolución)*.
+> 4. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 58 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
+> 5. [`genesis.md`](genesis.md) *(Mandato Génesis v2.0, principios ontológicos, gobernanza evolutiva y multi-agente)*.
+> 6. **Architecture Decision Records (ADRs Inmutables):**
 >    - [`.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md`](.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md) *(Consolidación silenciosa IPv7-HRS e Identidad Efímera 24h)*.
 >    - [`.nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md`](.nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md) *(Embajador Edge AI LAN, Datapath IP7M 1280B y Test de Estrés Churn)*.
 >    - [`.nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md`](.nexus/decisions/ADR-003-BITNET-1BIT-QUANTIZATION.md) *(Motor de Cuantización Ternaria BitNet b1.58 {-1, 0, +1} e Inferencia Integer sin Multiplicación)*.
@@ -24,8 +25,9 @@
 >    - [`.nexus/decisions/ADR-007-GEOPOLICY-ROUTING-AND-DATA-SOVEREIGNTY.md`](.nexus/decisions/ADR-007-GEOPOLICY-ROUTING-AND-DATA-SOVEREIGNTY.md) *(Enrutador de Políticas Geodistribuidas, Geofencing y Enclaves de Soberanía de Datos)*.
 >    - [`.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md`](.nexus/decisions/ADR-008-PRIVATE-DHT-INTERREGION-SYNC.md) *(Sincronización Privada Interregional de DHT mediante Filtros de Bloom y Tramas Canónicas IP7S)*.
 >    - [`.nexus/decisions/ADR-009-SOVEREIGN-TUNNEL-TELEMETRY-AND-PMTU.md`](.nexus/decisions/ADR-009-SOVEREIGN-TUNNEL-TELEMETRY-AND-PMTU.md) *(Telemetría de Túneles Soberanos, Descubrimiento Dinámico de Path MTU y Failover Bicast)*.
-> 6. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
-> 7. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
+>    - [`.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md`](.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md) *(Remediación Integral de la Segunda Auditoría ChatGPT: H-01 a H-08, EgressSecurityPolicy, MCP Auth y Blindaje de Salida)*.
+> 7. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
+> 8. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
 ---
 
@@ -38,7 +40,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **97/97 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.81s.**
+*Criterio de Aceptación Innegociable:* **103/103 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~6.81s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell

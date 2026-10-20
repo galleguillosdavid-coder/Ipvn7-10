@@ -1,8 +1,9 @@
 # MANIFIESTO OPERACIONAL AUTÓNOMO IPVN 7
 ## Protocolo Soberano Post-Cuántico & Guía de Auto-Evolución para Agentes e Ingenieros
 
-> **Versión Canónica de Referencia:** IPVN 7.7.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
-> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (97/97 pasadas).  
+> **Versión Canónica de Referencia:** IPVN 7.8.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
+> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (103/103 pasadas en CI Python 3.12, 3.13 y 3.14).  
+> **Política de Gobernanza y Anti-Fallos:** Cumplimiento obligatorio de [SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md) y [ADR-010](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md).  
 > **Fecha de Sincronización:** Octubre 2026
 
 ---
@@ -17,14 +18,16 @@ El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red 
 3. **Privacidad & Evasión de DPI por Defecto:** Enrutamiento cebolla Sphinx de 3 saltos, camuflaje TLS 1.3 RFC 8446 (`0x17 0x03 0x03`), detección activa de envenenamiento DNS e inyecciones TCP RST.
 4. **Resiliencia Extrema & Auto-Reparación:** Red de mundo pequeño de Kleinberg ($r=2$), detector de fallos SWIM $O(1)$, protocolo de recuperación post-apagón en 5 fases, y copiloto IA de red con auto-reparación en bucle cerrado.
 5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con **63 herramientas nativas** para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
+6. **Gobernanza de Seguridad Inmutable:** Aislamiento universal de salida anti-SSRF (`ipaddress`), autenticación obligatoria del plano de control MCP, mitigación anti-DNS Rebinding y datapath 100% honesto y verificable.
 
 ---
 
 ## 2. Catálogo de Subsistemas Activos (Capas L0 a L4)
 
-Actualmente, el repositorio cuenta con **63 subsistemas de protocolo integrados** y probados al 100% (97 pruebas unitarias):
+Actualmente, el repositorio cuenta con **64 subsistemas de protocolo integrados** y probados al 100% (103 pruebas unitarias):
 
 ### Capa L0: Acceso al Medio & Aceleración Datapath
+- [`ipvn7/security/egress_policy.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/security/egress_policy.py): Política de aislamiento de salida y defensa centralizada anti-SSRF universal con inspección canónica RFC y fijación de DNS.
 - [`ipvn7/access/hal.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/hal.py): Capa de abstracción de hardware y driver de sockets UDP overlay.
 - [`ipvn7/access/tun_wintun.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/tun_wintun.py): Adaptador virtual TUN Wintun de kernel con fallback transparente a userspace.
 - [`ipvn7/access/batcher.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/batcher.py): Agrupador de datagramas (Batcher) de 1280B para reducción drástica de llamadas al sistema.

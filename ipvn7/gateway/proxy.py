@@ -13,6 +13,7 @@ import urllib.request
 from typing import Optional, Dict, Any, Tuple, Callable
 
 from ..node.node import IPVN7Node
+from ..security.egress_policy import EgressSecurityPolicy
 
 
 class IPVN7InternetProxy:
@@ -128,21 +129,37 @@ class IPVN7InternetProxy:
             if target_host not in self.stats["active_hosts"]:
                 self.stats["active_hosts"].append(target_host)
 
-            # Datapath: verify if overlay tunneling is enabled and active
-            overlay_tunneled = False
+            # Security Boundary: Enforce EgressSecurityPolicy against SSRF and DNS Rebinding
+            is_allowed, reason, valid_ips = EgressSecurityPolicy.resolve_and_validate_host(target_host, target_port)
+            if not is_allowed:
+                if self.traffic_logger:
+                    self.traffic_logger({
+                        "time": time.strftime("%H:%M:%S"),
+                        "event": "PROXY_BLOCKED_SSRF",
+                        "method": method,
+                        "target_host": target_host,
+                        "target_port": target_port,
+                        "status": f"BLOCKED_SSRF: {reason}",
+                    })
+                client_sock.sendall(b"HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\n\r\nIPVN 7 Security: SSRF Destination Blocked.\r\n")
+                return
+
+            # Datapath: verify if overlay tunneling control message was sent to Exit Node
+            control_dispatched = False
             if self.mode == "OVERLAY_TUNNELED" and self.exit_node:
-                # Transmit tunnel control & metadata datagram through PQ-QUIC overlay to Exit Node
                 tunnel_envelope = (
                     f"IPVN7_TUNNEL_EGRESS:{method}:{target_host}:{target_port}:{time.time():.4f}".encode("utf-8")
                 )
                 try:
-                    overlay_tunneled = self.node.send_message_sync(self.exit_node.did, tunnel_envelope)
-                    if overlay_tunneled:
+                    control_dispatched = self.node.send_message_sync(self.exit_node.did, tunnel_envelope)
+                    if control_dispatched:
                         self.stats["overlay_packets_routed"] += 1
                 except Exception:
-                    overlay_tunneled = False
+                    control_dispatched = False
 
-            tunnel_status = "TUNNELED_PQ_QUIC" if overlay_tunneled else "DIRECT_EGRESS"
+            # Honest status classification (H-01 / H-06):
+            # When the payload bytes are piped directly by local socket, accurately report CONTROL_NOTIFIED_DIRECT_EGRESS
+            tunnel_status = "CONTROL_NOTIFIED_DIRECT_EGRESS" if control_dispatched else "DIRECT_LOCAL_EGRESS"
 
             if self.traffic_logger:
                 self.traffic_logger({
@@ -153,17 +170,19 @@ class IPVN7InternetProxy:
                     "target_port": target_port,
                     "client": f"{client_addr[0]}:{client_addr[1]}",
                     "status": tunnel_status,
-                    "overlay_verified": overlay_tunneled,
+                    "overlay_verified": control_dispatched,
                     "exit_node_did": self.exit_node.did if self.exit_node else None,
                 })
 
             # Tunnel through IPVN 7 Node mesh to Exit Node, then to real Internet
             # In our architecture, the Exit Node resolves and executes the outbound connection
+            # Connect to destination using the pre-validated IP to eliminate DNS Rebinding
+            target_ip = valid_ips[0]
             if is_connect:
                 # Reply to client with HTTP 200 Connection Established
                 remote_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 remote_sock.settimeout(5.0)
-                remote_sock.connect((target_host, target_port))
+                remote_sock.connect((target_ip, target_port))
                 client_sock.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
 
                 # Bi-directional forwarding between client and remote
@@ -172,7 +191,7 @@ class IPVN7InternetProxy:
                 # Forward request directly
                 remote_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 remote_sock.settimeout(5.0)
-                remote_sock.connect((target_host, target_port))
+                remote_sock.connect((target_ip, target_port))
                 remote_sock.sendall(req_data)
                 self.stats["bytes_tunneled_upstream"] += len(req_data)
 

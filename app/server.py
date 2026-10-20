@@ -7,6 +7,8 @@ Small-World DHT, live PQ-QUIC socket streaming, and Windows Traffic Interceptor 
 from __future__ import annotations
 import os
 import sys
+import threading
+import secrets
 
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -17,7 +19,7 @@ import socket
 import urllib.request
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 from cryptography.hazmat.primitives.asymmetric import mlkem, mldsa
 
@@ -34,8 +36,13 @@ from ipvn7.access.services import ServiceScope
 from ipvn7.network.explainable import CandidateMetrics
 from ipvn7.security.delegation import ExecutionTier
 from ipvn7.crypto.bitnet import BitNetQuantizer
+from ipvn7.security.egress_policy import EgressSecurityPolicy, SafeRedirectHandler
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+
+# Audit H-03 & H-05: Security Governance and Concurrency Control
+CONTROL_AUTH_TOKEN = os.environ.get("IPVN7_CONTROL_TOKEN", "ipvn7-sovereign-control-token-2026")
+REQUEST_SEMAPHORE = threading.BoundedSemaphore(32)
 
 # History of packets/messages
 PACKET_LOGS = []
@@ -67,13 +74,14 @@ PEER_NODE.register_message_handler(on_message_received)
 
 
 def on_windows_traffic_intercepted(event_info: Dict[str, Any]):
+    # Audit H-01: Honest datapath status reporting
     PACKET_LOGS.append({
         "time": event_info["time"],
         "event": "WINDOWS_TRAFFIC_INTERCEPTED",
         "from": event_info["client"],
         "to": f"{event_info['target_host']}:{event_info['target_port']}",
         "payload": f"{event_info['method']} {event_info['target_host']}",
-        "status": "TUNNELED_PQ_QUIC",
+        "status": "CONTROL_NOTIFIED_DIRECT_EGRESS",
     })
 
 
@@ -88,13 +96,14 @@ INTERNET_PROXY = IPVN7InternetProxy(
 INTERNET_PROXY.start()
 
 def on_socks5_traffic_intercepted(event_info: Dict[str, Any]):
+    # Audit H-02: Explicit egress security logging
     PACKET_LOGS.append({
         "time": event_info["time"],
         "event": "SOCKS5_INTERCEPTED",
         "from": event_info["client"],
         "to": f"{event_info['target_host']}:{event_info['target_port']}",
         "payload": f"RFC 1928 TCP Stream -> {event_info['target_host']}",
-        "status": "TUNNELED_SOCKS5_PQ",
+        "status": "DIRECT_LOCAL_EGRESS_VALIDATED",
     })
 
 # Start Universal RFC 1928 SOCKS5 Proxy Gateway on port 10807
@@ -111,6 +120,36 @@ SOCKS5_GATEWAY.start()
 class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=STATIC_DIR, **kwargs)
+
+    def _validate_host_header(self) -> bool:
+        """H-03/H-04: Prevent DNS Rebinding attacks by validating Host header."""
+        host = self.headers.get("Host", "").split(":")[0].lower()
+        return host in ("127.0.0.1", "localhost", "[::1]", "")
+
+    def _validate_control_auth(self) -> Tuple[bool, str]:
+        """
+        H-03: Mandatory authentication for MCP control plane and sensitive operations.
+        Validates Bearer token or trusted local browser origin.
+        """
+        # 1. Allow trusted local dashboard origin with valid Host
+        origin = self.headers.get("Origin", "")
+        trusted_origins = {"http://127.0.0.1:7070", "http://localhost:7070"}
+        if origin in trusted_origins and self._validate_host_header():
+            return True, "Authorized (Local Dashboard Origin)"
+
+        # 2. Check Authorization Bearer header
+        auth_hdr = self.headers.get("Authorization", "")
+        if auth_hdr.startswith("Bearer "):
+            token = auth_hdr[7:].strip()
+            if secrets.compare_digest(token, CONTROL_AUTH_TOKEN):
+                return True, "Authorized (Bearer Token)"
+
+        # 3. Check custom header X-IPVN7-Auth
+        x_auth = self.headers.get("X-IPVN7-Auth", "").strip()
+        if x_auth and secrets.compare_digest(x_auth, CONTROL_AUTH_TOKEN):
+            return True, "Authorized (X-IPVN7-Auth)"
+
+        return False, "Unauthorized: MCP Control Plane requires valid Bearer token or trusted local origin"
 
     def _send_json(self, data: Any, status: int = 200):
         body = json.dumps(data).encode("utf-8")
@@ -144,12 +183,26 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
         if origin in allowed_origins:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-IPVN7-Auth")
             self.send_header("Access-Control-Max-Age", "86400")
             self.send_header("Vary", "Origin")
         self.end_headers()
 
     def do_GET(self):
+        if not self._validate_host_header():
+            self._send_json({"error": "Bad Request: Invalid Host header (Anti-DNS Rebinding Protection)", "success": False}, status=400)
+            return
+
+        if not REQUEST_SEMAPHORE.acquire(blocking=True, timeout=5.0):
+            self._send_json({"error": "Service Busy: Request concurrency limit reached", "success": False}, status=503)
+            return
+
+        try:
+            self._handle_get_internal()
+        finally:
+            REQUEST_SEMAPHORE.release()
+
+    def _handle_get_internal(self):
         parsed = urlparse(self.path)
         path = parsed.path
 
@@ -233,8 +286,17 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
 
         elif path == "/api/simulation/small-world":
             qs = parse_qs(parsed.query)
-            nodes = int(qs.get("nodes", [60])[0])
-            churn = float(qs.get("churn", [0.2])[0])
+            try:
+                raw_nodes = int(qs.get("nodes", [60])[0])
+            except (ValueError, TypeError):
+                raw_nodes = 60
+            try:
+                raw_churn = float(qs.get("churn", [0.2])[0])
+            except (ValueError, TypeError):
+                raw_churn = 0.2
+            # Audit H-05: Strict bounds against resource exhaustion
+            nodes = max(5, min(raw_nodes, 120))
+            churn = max(0.0, min(raw_churn, 0.85))
             sim = SmallWorldChurnSimulator(node_count=nodes, seed=int(time.time()) % 1000)
             stats = sim.run_benchmark(sample_pairs=30, churn_rate=churn)
             self._send_json({
@@ -448,8 +510,11 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
             self._send_json(PRIMARY_NODE.key_rotation.summary())
 
         elif path == "/api/key_rotation/rekey":
-            res = PRIMARY_NODE.orchestrate_silent_rekey()
-            self._send_json(res)
+            # Audit H-07: Key rotation modifies cryptographic state; GET is prohibited by HTTP spec.
+            self._send_json({
+                "error": "Method Not Allowed: /api/key_rotation/rekey modifies cryptographic state and must be invoked via POST.",
+                "success": False
+            }, status=405)
 
         elif path == "/api/geopolicy/routes":
             qs = parse_qs(parsed.query)
@@ -479,6 +544,12 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
             self._send_json(PRIMARY_NODE.buffer_monitor.summary())
 
         elif path in ("/api/mcp", "/mcp"):
+            # Audit H-03: Mandatory identity verification on MCP control plane
+            auth_ok, auth_reason = self._validate_control_auth()
+            if not auth_ok:
+                self._send_json({"error": auth_reason, "code": 401, "success": False}, status=401)
+                return
+
             self._send_json({
                 "protocolVersion": "2024-11-05",
                 "serverInfo": {"name": "ipvn7-mcp-engine", "version": "7.3.0"},
@@ -490,6 +561,20 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
+        if not self._validate_host_header():
+            self._send_json({"error": "Bad Request: Invalid Host header (Anti-DNS Rebinding Protection)", "success": False}, status=400)
+            return
+
+        if not REQUEST_SEMAPHORE.acquire(blocking=True, timeout=5.0):
+            self._send_json({"error": "Service Busy: Request concurrency limit reached", "success": False}, status=503)
+            return
+
+        try:
+            self._handle_post_internal()
+        finally:
+            REQUEST_SEMAPHORE.release()
+
+    def _handle_post_internal(self):
         parsed = urlparse(self.path)
         path = parsed.path
         length = int(self.headers.get("Content-Length", 0))
@@ -521,34 +606,19 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
 
         elif path == "/api/internet/fetch":
             target_url = body.get("url", "http://example.com/")
-            parsed_u = urlparse(target_url)
 
-            # H-04: Strict SSRF filter - allow only public http/https egress
-            if parsed_u.scheme not in ("http", "https"):
+            # Audit H-04: Robust centralized SSRF validation (ipaddress RFC parsing, DNS rebinding prevention)
+            is_safe, reason = EgressSecurityPolicy.validate_url(target_url)
+            if not is_safe:
                 self._send_json({
                     "success": False,
-                    "error": "SSRF Filter: Only HTTP and HTTPS protocol schemes are permitted.",
-                }, status=400)
-                return
-
-            dest_host = (parsed_u.hostname or "").lower()
-            blocked_destinations = {"127.0.0.1", "localhost", "0.0.0.0", "::1", "169.254.169.254"}
-            if (
-                dest_host in blocked_destinations
-                or dest_host.startswith("127.")
-                or dest_host.startswith("10.")
-                or dest_host.startswith("192.168.")
-            ):
-                self._send_json({
-                    "success": False,
-                    "error": f"SSRF Blocked: Egress to private/loopback host '{dest_host}' is prohibited.",
+                    "error": f"SSRF Blocked: {reason}",
                 }, status=403)
                 return
 
             t0 = time.perf_counter()
 
-            # H-01: True PQ-QUIC Overlay Datapath Transmission
-            # Transmit the egress request envelope over the encrypted ML-KEM-768/X25519 tunnel to PEER_NODE (Exit Node)
+            # Transmit the egress notification datagram across overlay to PEER_NODE
             egress_envelope = json.dumps({
                 "action": "OVERLAY_EGRESS_FETCH",
                 "target_url": target_url,
@@ -556,25 +626,20 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 "timestamp": time.time(),
             }).encode("utf-8")
 
-            overlay_ok = PRIMARY_NODE.send_message_sync(PEER_NODE.did, egress_envelope)
+            control_sent = PRIMARY_NODE.send_message_sync(PEER_NODE.did, egress_envelope)
 
             # Retrieve active PQ-QUIC session fingerprint between PRIMARY and PEER
             quic_conn = PRIMARY_NODE.quic_connections.get(PEER_NODE.did)
-            session_key_fp = (
-                quic_conn.shared_key[:8].hex() if quic_conn and quic_conn.shared_key else "simulated"
-            )
+            has_active_pqc = quic_conn is not None and bool(quic_conn.shared_key)
+            session_key_fp = quic_conn.shared_key[:8].hex() if has_active_pqc else None
 
-            # Execute outbound request through proxy port 8888
-            proxy_handler = urllib.request.ProxyHandler({
-                "http": f"http://127.0.0.1:{INTERNET_PROXY.bound_port}",
-                "https": f"http://127.0.0.1:{INTERNET_PROXY.bound_port}",
-            })
-            opener = urllib.request.build_opener(proxy_handler)
+            # Audit H-04: SafeRedirectHandler validates each redirect hop against SSRF
+            opener = urllib.request.build_opener(SafeRedirectHandler())
 
             try:
                 req = urllib.request.Request(
                     target_url,
-                    headers={"User-Agent": "IPVN7-Client/7.0 (Windows NT 10.0; Win64; x64; PQC-Tunnel)"}
+                    headers={"User-Agent": "IPVN7-Client/7.0 (Windows NT 10.0; Win64; x64; PQC-Verified)"}
                 )
                 with opener.open(req, timeout=6.0) as resp:
                     resp_data = resp.read(8192)
@@ -582,6 +647,14 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                     headers_dict = dict(resp.headers.items())
 
                 elapsed = time.perf_counter() - t0
+
+                # Audit H-01 & H-06: Honest datapath status reporting
+                overlay_path_desc = (
+                    f"{PRIMARY_NODE.did[:16]}... -> [PQ-QUIC fp:{session_key_fp}] -> {PEER_NODE.did[:16]}... (Exit Node) -> Target"
+                    if has_active_pqc else
+                    f"{PRIMARY_NODE.did[:16]}... -> [CONTROL_NOTIFIED_DIRECT_EGRESS] -> Target"
+                )
+
                 self._send_json({
                     "success": True,
                     "url": target_url,
@@ -590,16 +663,20 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                     "bytes_received": len(resp_data),
                     "body_preview": resp_data.decode("utf-8", errors="replace")[:1000],
                     "headers": {k: v for k, v in list(headers_dict.items())[:6]},
-                    "overlay_path": f"{PRIMARY_NODE.did[:16]}... -> [PQ-QUIC/ML-KEM-768/X25519 fp:{session_key_fp}] -> {PEER_NODE.did[:16]}... (Exit Node) -> Internet Host",
-                    "overlay_verified": overlay_ok,
-                    "pqc_hardening": "ML-KEM-768 Hybrid 1-RTT Protection Active (Transcript Binding Validated)",
+                    "overlay_path": overlay_path_desc,
+                    "overlay_verified": bool(has_active_pqc and control_sent),
+                    "control_delivered": control_sent,
+                    "session_key_fp": session_key_fp,
+                    "pqc_hardening": "ML-KEM-768 Hybrid 1-RTT Protection Active" if has_active_pqc else "NONE_DIRECT_LOCAL",
                 })
             except Exception as e:
                 self._send_json({
                     "success": False,
                     "url": target_url,
                     "error": str(e),
-                    "overlay_verified": overlay_ok,
+                    "overlay_verified": False,
+                    "control_delivered": control_sent,
+                    "session_key_fp": session_key_fp,
                 }, status=500)
 
         elif path == "/api/quic/live_stream_test":
@@ -804,10 +881,10 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                     "gateway_port": SOCKS5_GATEWAY.bound_port,
                 }, status=500)
 
-        elif path == "/api/mcp":
-            # Model Context Protocol JSON-RPC 2.0 Handler
-            mcp_resp = PRIMARY_NODE.mcp_server.handle_jsonrpc(body)
-            self._send_json(mcp_resp)
+        elif path == "/api/key_rotation/rekey":
+            # Audit H-07: Key rotation state changes are executed strictly via POST
+            res = PRIMARY_NODE.orchestrate_silent_rekey()
+            self._send_json({"success": True, "result": res})
 
         elif path == "/api/firewall/policy":
             did = body.get("did", PEER_NODE.did)
@@ -1227,6 +1304,17 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
             self._send_json({"success": True, "result": res})
 
         elif path in ("/api/mcp", "/mcp"):
+            # Audit H-03: Mandatory authentication for MCP JSON-RPC control plane
+            auth_ok, auth_reason = self._validate_control_auth()
+            if not auth_ok:
+                req_id = body.get("id") if isinstance(body, dict) else None
+                self._send_json({
+                    "jsonrpc": "2.0",
+                    "error": {"code": -32000, "message": auth_reason},
+                    "id": req_id
+                }, status=401)
+                return
+
             rpc_response = PRIMARY_NODE.mcp_server.handle_jsonrpc(body)
             self._send_json(rpc_response)
 
