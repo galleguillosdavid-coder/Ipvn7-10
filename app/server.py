@@ -447,6 +447,10 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
         elif path == "/api/key_rotation/status":
             self._send_json(PRIMARY_NODE.key_rotation.summary())
 
+        elif path == "/api/key_rotation/rekey":
+            res = PRIMARY_NODE.orchestrate_silent_rekey()
+            self._send_json(res)
+
         elif path == "/api/upnp/status":
             self._send_json(PRIMARY_NODE.upnp_mapper.get_summary())
 

@@ -1131,6 +1131,14 @@ class IPVN7MCPServer:
                     "required": ["text"],
                 },
             },
+            {
+                "name": "ipvn7_orchestrate_silent_rekey",
+                "description": "Orquesta una migración silenciosa y continua de claves de sesión PQC (X25519 + ML-KEM-768 ratcheting) con ventana de gracia zero-downtime de 30s y destrucción segura de memoria (zeroization).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1757,6 +1765,10 @@ class IPVN7MCPServer:
             elif name == "ipvn7_compress_telemetry_payload":
                 text = arguments.get("text", "")
                 res = self.node.compress_telemetry_payload(text)
+                return True, res
+
+            elif name == "ipvn7_orchestrate_silent_rekey":
+                res = self.node.orchestrate_silent_rekey()
                 return True, res
 
             else:

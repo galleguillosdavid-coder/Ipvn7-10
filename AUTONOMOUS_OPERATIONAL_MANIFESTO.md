@@ -1,8 +1,8 @@
 # MANIFIESTO OPERACIONAL AUTÓNOMO IPVN 7
 ## Protocolo Soberano Post-Cuántico & Guía de Auto-Evolución para Agentes e Ingenieros
 
-> **Versión Canónica de Referencia:** IPVN 7.3.3 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
-> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (93/93 pasadas).  
+> **Versión Canónica de Referencia:** IPVN 7.4.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
+> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (94/94 pasadas).  
 > **Fecha de Sincronización:** Octubre 2026
 
 ---
@@ -16,13 +16,13 @@ El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red 
 2. **Identidad Descentralizada Soberana (DID):** Espacio de direccionamiento de 256 bits (`did:ipvn7:<hex>`), eliminando la dependencia de servidores DNS o entidades certificadoras (CA) centrales.
 3. **Privacidad & Evasión de DPI por Defecto:** Enrutamiento cebolla Sphinx de 3 saltos, camuflaje TLS 1.3 RFC 8446 (`0x17 0x03 0x03`), detección activa de envenenamiento DNS e inyecciones TCP RST.
 4. **Resiliencia Extrema & Auto-Reparación:** Red de mundo pequeño de Kleinberg ($r=2$), detector de fallos SWIM $O(1)$, protocolo de recuperación post-apagón en 5 fases, y copiloto IA de red con auto-reparación en bucle cerrado.
-5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con **59 herramientas nativas** para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
+5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con **60 herramientas nativas** para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
 
 ---
 
 ## 2. Catálogo de Subsistemas Activos (Capas L0 a L4)
 
-Actualmente, el repositorio cuenta con **59 subsistemas de protocolo integrados** y probados al 100% (93 pruebas unitarias):
+Actualmente, el repositorio cuenta con **60 subsistemas de protocolo integrados** y probados al 100% (94 pruebas unitarias):
 
 ### Capa L0: Acceso al Medio & Aceleración Datapath
 - [`ipvn7/access/hal.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/hal.py): Capa de abstracción de hardware y driver de sockets UDP overlay.
@@ -176,7 +176,7 @@ Para mantener el ciclo de vida evolutivo sin intervención humana:
 3. **Tarea Ocasional: Auditoría Externa Multi-LLM con ChatGPT ([https://chatgpt.com/](https://chatgpt.com/)):**
    - **Objetivo:** Ejecutar periódicamente o tras cada hito arquitectónico una auditoría cruzada independiente con ChatGPT para revisión adversaria de seguridad ZTNA, análisis de resistencia cuántica y coherencia RFC.
    - **Procedimiento:** Proveer el contexto de los ADRs consolidados y el RFC actual a la interfaz de [https://chatgpt.com/](https://chatgpt.com/), auditar posibles fallas de borde (split-brain, replay, desincronización de identidades efímeras) y trasladar los hallazgos validados a nuevos ADRs y pruebas unitarias de regresión en `tests/test_ipvn7.py`.
-   - **Auditoría #1 (20 Oct 2026):** Completada y neutralizada al 100%. Remediados los 5 hallazgos prioritarios (H-01 a H-05) mediante ADR-004: Datapath de overlay verificable en proxy, Transcript Binding con SHA-256 en HKDF PQC, formalización de PQ-QUIC, frontera de seguridad CORS/SSRF/DoS en API local y suite ampliada a 93 pruebas unitarias aprobadas al 100%.
+   - **Auditoría #1 (20 Oct 2026):** Completada y neutralizada al 100%. Remediados los 5 hallazgos prioritarios (H-01 a H-05) mediante ADR-004: Datapath de overlay verificable en proxy, Transcript Binding con SHA-256 en HKDF PQC, formalización de PQ-QUIC, frontera de seguridad CORS/SSRF/DoS en API local y suite ampliada a 94 pruebas unitarias aprobadas al 100%.
 
 ---
 

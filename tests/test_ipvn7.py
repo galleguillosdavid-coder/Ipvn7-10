@@ -1803,7 +1803,7 @@ def test_mcp_tools_catalog_57_tools():
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 59, f"Expected 59 MCP tools, found {len(tools)}"
+    assert len(tools) == 60, f"Expected 60 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -1932,6 +1932,19 @@ def test_mcp_tools_catalog_57_tools():
     })
     assert "allowed" in res_mem["result"]["content"][0]["text"]
     assert "replay" in res_mem["result"]["content"][0]["text"]
+
+    # Tool 9: ipvn7_orchestrate_silent_rekey
+    res_rekey = node.mcp_server.handle_jsonrpc({
+        "jsonrpc": "2.0",
+        "id": 118,
+        "method": "tools/call",
+        "params": {
+            "name": "ipvn7_orchestrate_silent_rekey",
+            "arguments": {},
+        },
+    })
+    assert "keys_matched" in res_rekey["result"]["content"][0]["text"]
+    assert "forward_secrecy_zeroized" in res_rekey["result"]["content"][0]["text"]
 
     node.stop()
 
@@ -3337,6 +3350,87 @@ def test_sovereign_header_compressor_lossless():
     assert stats["compressed_bytes"] < stats["original_bytes"]
     assert stats["saved_percentage"] > 25.0
     assert stats["lossless_verified"] is True
+
+
+def test_silent_rekeying_orchestration_zero_downtime_and_zeroization():
+    """Validates silent PQC re-keying, zero-downtime dual-key decryption in grace window, and memory zeroization."""
+    from ipvn7.security.rekeying import SilentKeyRotationOrchestrator, RekeyPhase
+
+    alice = SilentKeyRotationOrchestrator(
+        session_id="pqc-session-audit-alpha",
+        local_did="did:ipvn7:alice",
+        peer_did="did:ipvn7:bob",
+        grace_period_sec=5.0,
+    )
+    bob = SilentKeyRotationOrchestrator(
+        session_id="pqc-session-audit-alpha",
+        local_did="did:ipvn7:bob",
+        peer_did="did:ipvn7:alice",
+        initial_key=alice.active_material.key,
+        grace_period_sec=5.0,
+    )
+
+    assert alice.current_epoch == 1
+    assert bob.current_epoch == 1
+
+    # 1. Exchange payload on initial epoch 1
+    msg1 = b"IPVN7_EPOCH_1_STANDARD_TRAFFIC"
+    epoch1, c1 = alice.encrypt_payload(msg1)
+    assert epoch1 == 1
+    d1 = bob.decrypt_payload(epoch1, c1)
+    assert d1 == msg1
+
+    # 2. Initiate Silent PQC Rekeying
+    proposal = alice.initiate_rekey()
+    assert alice.phase == RekeyPhase.OFFERED
+    assert proposal.target_epoch == 2
+
+    # 3. Bob responds and derives epoch 2 key
+    commitment, bob_key = bob.respond_rekey(proposal)
+    assert bob.current_epoch == 2
+    assert bob.phase == RekeyPhase.COMMITTED
+
+    # 4. Alice finalizes and derives epoch 2 key
+    alice_key = alice.finalize_rekey(commitment)
+    assert alice.current_epoch == 2
+    assert alice_key == bob_key, "Derived post-quantum ratchet keys must match identically"
+
+    # 5. Zero-Downtime Verification: Bob sends on Epoch 2, Alice decrypts on Epoch 2
+    msg2 = b"IPVN7_EPOCH_2_POST_REKEY_TRAFFIC"
+    epoch2, c2 = bob.encrypt_payload(msg2)
+    assert epoch2 == 2
+    d2 = alice.decrypt_payload(epoch2, c2)
+    assert d2 == msg2
+
+    # 6. Out-of-order grace window: A delayed packet from Epoch 1 arrives at Bob
+    # Bob is on Epoch 2, but must successfully decrypt Epoch 1 packet using grace window
+    d1_delayed = bob.decrypt_payload(epoch1, c1)
+    assert d1_delayed == msg1
+
+    # 7. Forward Secrecy Memory Zeroization
+    assert alice.previous_material is not None
+    assert not alice.previous_material.is_zeroed
+
+    # Force zeroize previous epoch key
+    zeroed = alice.force_zeroize_previous()
+    assert zeroed is True
+    assert alice.previous_material.is_zeroed is True
+    assert alice.previous_material.fingerprint() == "ZEROIZED"
+
+    # Verify accessing zeroed key raises error
+    import pytest
+    with pytest.raises(ValueError, match="zeroized"):
+        _ = alice.previous_material.key
+
+    # Decrypting old epoch 1 packet on Alice must now fail strictly
+    with pytest.raises(ValueError, match="zeroized"):
+        alice.decrypt_payload(epoch1, c1)
+
+    summary = alice.get_orchestrator_summary()
+    assert summary["current_epoch"] == 2
+    assert summary["previous_key_zeroed"] is True
+    assert summary["total_rotations"] == 1
+
 
 
 
