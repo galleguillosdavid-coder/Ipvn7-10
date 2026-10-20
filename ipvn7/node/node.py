@@ -77,6 +77,8 @@ from ..access.buffer_monitor import BufferHealthMonitor, BufferHealthSnapshot
 from ..access.wasm_bridge import WasmSovereignEngine, WasmIdentityDTO
 from ..network.fsm import DeterministicNodeFSM, NodeState as FSMNodeState, FSMEvent
 from ..network.pipeline import DataPipeline, PacketContext
+from ..identity.ephemeral import EphemeralIdentityManager
+from ..network.hrs_frames import HRSDispatcher, HRSFrame, HRSFrameType, DeviceProfile, AdaptiveSLA
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -245,6 +247,13 @@ class IPVN7Node:
         self.wasm_engine = WasmSovereignEngine()
         self.fsm = DeterministicNodeFSM()
         self.pipeline = DataPipeline()
+
+        # IPv7-HRS Substrate: 24h Ephemeral DID & Quiet 5-Frame Protocol ("La Red Responde, No Grita")
+        self.ephemeral_identity = EphemeralIdentityManager(self.did)
+        self.hrs_dispatcher = HRSDispatcher(
+            local_did=self.did,
+            sla=AdaptiveSLA.get_defaults(DeviceProfile.SERVER),
+        )
 
     # -------------------------------------------------------------
     # Lifecycle Management

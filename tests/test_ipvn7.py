@@ -1797,13 +1797,13 @@ def test_packet_batcher_density_and_flush():
     assert stats["average_batch_density"] == 2.5
 
 
-def test_mcp_tools_catalog_51_tools():
-    """Validates 51 native tools in the MCP tools catalog and execution of chat, batcher, mobility, copilot, multipath, DNS, NAT, GMA, UIN, Shadow Device, PFO, WAN Prober, Remote Desktop, Key Rotation, UPnP, Censorship, Buffer Health, WASM PoW, FSM Lifecycle, and Pipeline Datagrams."""
-    node = IPVN7Node(alias="MCP-51-Tools", bind_host="127.0.0.1")
+def test_mcp_tools_catalog_53_tools():
+    """Validates 53 native tools in the MCP tools catalog and execution of chat, batcher, mobility, copilot, multipath, DNS, NAT, GMA, UIN, Shadow Device, PFO, WAN Prober, Remote Desktop, Key Rotation, UPnP, Censorship, Buffer Health, WASM PoW, FSM Lifecycle, Pipeline Datagrams, Ephemeral Identity, and HRS Frames."""
+    node = IPVN7Node(alias="MCP-53-Tools", bind_host="127.0.0.1")
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 51, f"Expected 51 MCP tools, found {len(tools)}"
+    assert len(tools) == 53, f"Expected 53 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -2716,5 +2716,197 @@ def test_pipes_and_filters_pipeline_and_dead_letter_queue():
     assert pipe_summary["stats"]["packets_processed"] == 2
     assert pipe_summary["stats"]["packets_completed"] == 1
     assert pipe_summary["stats"]["packets_dropped"] == 1
+
+
+def test_ephemeral_identity_rotation_and_verification():
+    """Validates 24-hour deterministic ephemeral DID derivation, rotation, and peer verification."""
+    from ipvn7.identity.ephemeral import EphemeralIdentityManager
+
+    root_alice = "did:ipvn7:zAliceRootKeyMaterial123"
+    mgr_alice = EphemeralIdentityManager(root_alice)
+
+    # Derive for day 1000
+    eph_1000 = mgr_alice.derive_ephemeral_did(1000)
+    assert eph_1000.root_did == root_alice
+    assert eph_1000.epoch_day == 1000
+    assert eph_1000.ephemeral_did.startswith("did:ipvn7:ephemeral:")
+    assert eph_1000.expires_at == 1001 * 86400
+
+    # Derive for day 1001: must rotate deterministically to a different DID
+    eph_1001 = mgr_alice.derive_ephemeral_did(1001)
+    assert eph_1001.ephemeral_did != eph_1000.ephemeral_did
+
+    # Calling again for day 1000 returns the cached/deterministic same DID
+    eph_1000_cached = mgr_alice.derive_ephemeral_did(1000)
+    assert eph_1000_cached.ephemeral_did == eph_1000.ephemeral_did
+
+    # Active ephemeral DID matches current day
+    active = mgr_alice.get_active_ephemeral_did()
+    assert active.startswith("did:ipvn7:ephemeral:")
+
+    # Peer verification with drift tolerance
+    # Bob verifies Alice's ephemeral DID of today
+    root_bob = "did:ipvn7:zBobRootKeyMaterial456"
+    mgr_bob = EphemeralIdentityManager(root_bob)
+
+    assert mgr_bob.verify_peer_ephemeral_did(
+        ephemeral_did=active,
+        peer_root_did=root_alice,
+        clock_drift_days=1,
+    ) is True
+
+    # Untrusted/forged DID fails
+    assert mgr_bob.verify_peer_ephemeral_did(
+        ephemeral_did="did:ipvn7:ephemeral:00000000000000000000000000000000",
+        peer_root_did=root_alice,
+    ) is False
+
+
+def test_hrs_5_frames_encode_decode_crc_and_dispatch():
+    """Validates IPv7-HRS 5-frame quiet protocol codec, CRC32 integrity, and dispatcher."""
+    from ipvn7.network.hrs_frames import (
+        HRSFrame,
+        HRSFrameType,
+        HRSDispatcher,
+        AdaptiveSLA,
+        DeviceProfile,
+    )
+
+    alice_did = "did:ipvn7:zAliceNode001"
+    bob_did = "did:ipvn7:zBobNode002"
+
+    dispatcher_bob = HRSDispatcher(local_did=bob_did)
+
+    # 1. Test encoding and decoding each of the 5 opcodes
+    for f_type in [
+        HRSFrameType.ANNOUNCE,
+        HRSFrameType.QUERY,
+        HRSFrameType.RESPONSE,
+        HRSFrameType.HEARTBEAT,
+        HRSFrameType.STATE_CHANGE,
+    ]:
+        frame = HRSFrame(
+            frame_type=f_type,
+            sequence_id=42,
+            source_did=alice_did,
+            target_did=bob_did,
+            payload=f"Payload for {f_type.name}".encode("utf-8"),
+            timestamp=1700000000.0,
+        )
+        encoded = frame.encode()
+        assert encoded.startswith(b"IP7H")
+        decoded = HRSFrame.decode(encoded)
+        assert decoded.frame_type == f_type
+        assert decoded.sequence_id == 42
+        assert decoded.source_did == alice_did
+        assert decoded.target_did == bob_did
+        assert decoded.payload == frame.payload
+        assert decoded.timestamp == 1700000000.0
+
+    # 2. Corrupted CRC32 is detected and rejected
+    corrupted = bytearray(encoded)
+    corrupted[10] ^= 0xFF
+    try:
+        HRSFrame.decode(bytes(corrupted))
+        assert False, "Should have raised ValueError on CRC32 mismatch"
+    except ValueError as e:
+        assert "CRC32 mismatch" in str(e)
+
+    # 3. Test Quiet Dispatcher: register QUERY handler producing a RESPONSE
+    def handle_query(in_frame: HRSFrame) -> HRSFrame:
+        return dispatcher_bob.create_frame(
+            frame_type=HRSFrameType.RESPONSE,
+            target_did=in_frame.source_did,
+            payload=b"QUERY_ACKNOWLEDGED",
+        )
+
+    dispatcher_bob.register_handler(HRSFrameType.QUERY, handle_query)
+
+    query_frame = HRSFrame(
+        frame_type=HRSFrameType.QUERY,
+        sequence_id=1,
+        source_did=alice_did,
+        target_did=bob_did,
+        payload=b"GET_UPTIME",
+    )
+    resp = dispatcher_bob.process_incoming(query_frame.encode())
+    assert resp is not None
+    assert resp.frame_type == HRSFrameType.RESPONSE
+    assert resp.target_did == alice_did
+    assert resp.payload == b"QUERY_ACKNOWLEDGED"
+
+    # 4. Directed unicast quiet rule: frame directed to charlie is dropped silently
+    charlie_frame = HRSFrame(
+        frame_type=HRSFrameType.QUERY,
+        sequence_id=2,
+        source_did=alice_did,
+        target_did="did:ipvn7:zCharlieDifferentNode",
+        payload=b"IGNORE_ME",
+    )
+    dropped = dispatcher_bob.process_incoming(charlie_frame.encode())
+    assert dropped is None
+
+
+def test_adaptive_sla_profiles():
+    """Validates adaptive SLA defaults across device tiers."""
+    from ipvn7.network.hrs_frames import AdaptiveSLA, DeviceProfile
+
+    iot = AdaptiveSLA.get_defaults(DeviceProfile.IOT)
+    assert iot.heartbeat_interval == 3.0
+    assert iot.query_timeout == 10.0
+    assert iot.max_retries == 2
+
+    laptop = AdaptiveSLA.get_defaults(DeviceProfile.LAPTOP)
+    assert laptop.heartbeat_interval == 7.0
+    assert laptop.query_timeout == 20.0
+    assert laptop.max_retries == 3
+
+    server = AdaptiveSLA.get_defaults(DeviceProfile.SERVER)
+    assert server.heartbeat_interval == 10.0
+    assert server.query_timeout == 30.0
+    assert server.max_retries == 4
+
+    satellite = AdaptiveSLA.get_defaults(DeviceProfile.SATELLITE)
+    assert satellite.heartbeat_interval == 15.0
+    assert satellite.query_timeout == 45.0
+    assert satellite.max_retries == 5
+
+
+def test_mcp_ephemeral_and_hrs_tools():
+    """Validates MCP tools for ephemeral identity rotation and HRS wire dispatching."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="mcp-test-node", bind_port=19875)
+    mcp = node.mcp_server
+
+    # Tool 1: ipvn7_get_daily_ephemeral_id
+    ok, res = mcp.execute_tool("ipvn7_get_daily_ephemeral_id", {})
+    assert ok is True
+    assert res["root_did"] == node.did
+    assert res["active_ephemeral_did"].startswith("did:ipvn7:ephemeral:")
+    assert res["rotation_frequency_hours"] == 24
+
+    # Tool 2: ipvn7_dispatch_hrs_frame (create)
+    ok, create_res = mcp.execute_tool("ipvn7_dispatch_hrs_frame", {
+        "action": "create",
+        "frame_type": "ANNOUNCE",
+        "target_did": "did:ipvn7:broadcast:quiet",
+        "payload_text": "Node Alpha Online",
+    })
+    assert ok is True
+    assert create_res["action"] == "created"
+    assert create_res["frame_type"] == "ANNOUNCE"
+    assert "wire_hex" in create_res
+
+    # Tool 3: ipvn7_dispatch_hrs_frame (decode)
+    ok, decode_res = mcp.execute_tool("ipvn7_dispatch_hrs_frame", {
+        "action": "decode",
+        "raw_hex": create_res["wire_hex"],
+    })
+    assert ok is True
+    assert decode_res["action"] == "decoded"
+    assert decode_res["frame_type"] == "ANNOUNCE"
+    assert decode_res["payload_text"] == "Node Alpha Online"
+    assert decode_res["crc32_valid"] is True
 
 

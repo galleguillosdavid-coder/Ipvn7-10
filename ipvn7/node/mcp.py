@@ -17,6 +17,7 @@ from ..network.onion import SphinxHop
 from ..access.services import ServiceScope
 from ..network.explainable import CandidateMetrics
 from ..security.delegation import ExecutionTier
+from ..network.hrs_frames import HRSFrame, HRSFrameType
 
 
 class IPVN7MCPServer:
@@ -946,6 +947,58 @@ class IPVN7MCPServer:
                     "required": ["raw_hex"],
                 },
             },
+            {
+                "name": "ipvn7_get_daily_ephemeral_id",
+                "description": "Obtiene o verifica el identificador descentralizado efímero rotativo de 24 horas (did:ipvn7:ephemeral:...) para eliminar el rastreo y fingerprinting en el cable ('La Red Responde, No Grita').",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "epoch_day": {
+                            "type": "integer",
+                            "description": "Día epoch específico (opcional, por defecto el día actual)",
+                        },
+                        "verify_peer_root_did": {
+                            "type": "string",
+                            "description": "DID raíz de un par para verificar si un DID efímero le pertenece",
+                        },
+                        "verify_ephemeral_did": {
+                            "type": "string",
+                            "description": "DID efímero recibido para validar pertenencia al DID raíz",
+                        },
+                    },
+                },
+            },
+            {
+                "name": "ipvn7_dispatch_hrs_frame",
+                "description": "Construye, despacha o decodifica tramas binarias canónicas del sustrato silencioso IPv7-HRS ('IP7H') con 5 opcodes canónicos (ANNOUNCE, QUERY, RESPONSE, HEARTBEAT, STATE_CHANGE).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "description": "Acción: 'create' para generar trama binaria, o 'decode' para analizar hex recibido",
+                            "enum": ["create", "decode"],
+                        },
+                        "frame_type": {
+                            "type": "string",
+                            "description": "Tipo de trama ('ANNOUNCE', 'QUERY', 'RESPONSE', 'HEARTBEAT', 'STATE_CHANGE')",
+                        },
+                        "target_did": {
+                            "type": "string",
+                            "description": "DID soberano destino (para action='create')",
+                        },
+                        "payload_text": {
+                            "type": "string",
+                            "description": "Carga útil en texto para la trama (para action='create')",
+                        },
+                        "raw_hex": {
+                            "type": "string",
+                            "description": "Trama binaria en formato hexadecimal (para action='decode')",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1464,6 +1517,67 @@ class IPVN7MCPServer:
                 raw_bytes = bytes.fromhex(raw_hex)
                 pipe_res = self.node.process_pipeline_datagram(raw_bytes, source_did=s_did, remote_addr=r_addr)
                 return True, pipe_res
+
+            elif name == "ipvn7_get_daily_ephemeral_id":
+                epoch_day = arguments.get("epoch_day")
+                record = self.node.ephemeral_identity.derive_ephemeral_did(epoch_day)
+                res: Dict[str, Any] = {
+                    "root_did": record.root_did,
+                    "active_ephemeral_did": record.ephemeral_did,
+                    "epoch_day": record.epoch_day,
+                    "expires_at": record.expires_at,
+                    "rotation_frequency_hours": 24,
+                }
+                v_peer = arguments.get("verify_peer_root_did")
+                v_eph = arguments.get("verify_ephemeral_did")
+                if v_peer and v_eph:
+                    res["verification_result"] = self.node.ephemeral_identity.verify_peer_ephemeral_did(
+                        ephemeral_did=v_eph,
+                        peer_root_did=v_peer,
+                    )
+                return True, res
+
+            elif name == "ipvn7_dispatch_hrs_frame":
+                action = arguments.get("action", "create")
+                if action == "create":
+                    ft_str = arguments.get("frame_type", "QUERY").upper()
+                    try:
+                        ft_enum = HRSFrameType[ft_str]
+                    except KeyError:
+                        ft_enum = HRSFrameType.QUERY
+
+                    target = arguments.get("target_did", "did:ipvn7:broadcast:quiet")
+                    payload = arguments.get("payload_text", "").encode("utf-8")
+                    frame = self.node.hrs_dispatcher.create_frame(
+                        frame_type=ft_enum,
+                        target_did=target,
+                        payload=payload,
+                    )
+                    encoded = frame.encode()
+                    return True, {
+                        "action": "created",
+                        "frame_type": ft_enum.name,
+                        "sequence_id": frame.sequence_id,
+                        "source_did": frame.source_did,
+                        "target_did": frame.target_did,
+                        "bytes_length": len(encoded),
+                        "wire_hex": encoded.hex(),
+                    }
+                elif action == "decode":
+                    raw_hex = arguments.get("raw_hex", "")
+                    raw_bytes = bytes.fromhex(raw_hex)
+                    decoded = HRSFrame.decode(raw_bytes)
+                    return True, {
+                        "action": "decoded",
+                        "frame_type": decoded.frame_type.name,
+                        "sequence_id": decoded.sequence_id,
+                        "source_did": decoded.source_did,
+                        "target_did": decoded.target_did,
+                        "payload_text": decoded.payload.decode("utf-8", errors="replace"),
+                        "timestamp": decoded.timestamp,
+                        "crc32_valid": True,
+                    }
+                return False, f"Acción inválida: {action}"
 
             else:
                 return False, f"Herramienta desconocida: {name}"

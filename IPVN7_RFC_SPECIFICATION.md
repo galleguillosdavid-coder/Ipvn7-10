@@ -654,11 +654,37 @@ La arquitectura cuenta con una suite integral de 42 pruebas de integración y re
 
 ---
 
+## 53. Sustrato Silencioso IPv7-HRS y Tramas Canónicas IP7H ("La Red Responde, No Grita")
+
+- **Supresión de Tormentas de Broadcast:** El sustrato de alta confiabilidad IPv7-HRS prohíbe el sondeo ruidoso hacia broadcast. Toda consulta requiere direccionamiento unicast dirigido hacia un DID soberano o ancla conocida.
+- **5 Tramas Canónicas (`MAGIC = 0x49503748 'IP7H'`):**
+  1. `0x01 ANNOUNCE`: Declaración explícita de presencia y petname.
+  2. `0x02 QUERY`: Solicitud unicast dirigida con límite estricto de tasa.
+  3. `0x03 RESPONSE`: Respuesta determinista con verificación CRC32.
+  4. `0x04 HEARTBEAT`: Micro-pulso keepalive sincronizado con el perfil SLA del nodo.
+  5. `0x05 STATE_CHANGE`: Notificación de cambio topológico o migración de enlace.
+- **SLAs Adaptativos por Perfil de Hardware:**
+  - *IoT:* Heartbeat 3.0s, Timeout 10.0s, Reintentos 2.
+  - *Laptop:* Heartbeat 7.0s, Timeout 20.0s, Reintentos 3.
+  - *Server:* Heartbeat 10.0s, Timeout 30.0s, Reintentos 4.
+  - *Satellite:* Heartbeat 15.0s, Timeout 45.0s, Reintentos 5.
+
+---
+
+## 54. Identidad Efímera Rotativa de 24 Horas y Resguardo Nexus ADR
+
+- **Mitigación Anti-Fingerprinting:** Derivación criptográfica HMAC-SHA256 diaria (`did:ipvn7:ephemeral:<hex>`) indexada por día epoch (`time.time() // 86400`).
+- **Preservación de Resolución Determinista:** Los petnames soberanos (`.ipv7`) y el DID raíz permanente permanecen inmutables en la capa de aplicación, mientras que el transporte utiliza el DID efímero rotativo para evitar trazabilidad pasiva de capa de enlace.
+- **Tolerancia a Desviación de Reloj:** Validación cruzada en ventanas de ±1 día epoch ante latencias extremas o desincronización horaria.
+- **Gobernanza Nexus ADR (.nexus/decisions/):** Registro formal e inmutable de decisiones arquitectónicas consolidadas para garantizar que sucesivos agentes IA mantengan la coherencia evolutiva sin desarmar subsistemas probados.
+
+---
+
 ## Resumen de Verificación y Suites de Prueba
 
-- **Suites de Prueba Ejecutadas:** 74 pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados.
-- **Resultado:** 100% aprobado (74/74) en ~4.89 segundos en hardware de producción Windows 11.
-- **Herramientas MCP Activas:** 51 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+- **Suites de Prueba Ejecutadas:** 78 pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados.
+- **Resultado:** 100% aprobado (78/78) en ~4.50 segundos en hardware de producción Windows 11.
+- **Herramientas MCP Activas:** 53 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
 
 
 

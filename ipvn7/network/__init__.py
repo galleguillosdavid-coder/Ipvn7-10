@@ -11,6 +11,14 @@ from .dht import (
     DHTRoutingTier,
 )
 
+from .hrs_frames import (
+    HRSFrame,
+    HRSFrameType,
+    DeviceProfile,
+    AdaptiveSLA,
+    HRSDispatcher,
+)
+
 __all__ = [
     "IPVN7Packet",
     "HeaderType",
@@ -19,4 +27,9 @@ __all__ = [
     "DHTNode",
     "NodeLocator",
     "DHTRoutingTier",
+    "HRSFrame",
+    "HRSFrameType",
+    "DeviceProfile",
+    "AdaptiveSLA",
+    "HRSDispatcher",
 ]

@@ -22,7 +22,7 @@ El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red 
 
 ## 2. Catálogo de Subsistemas Activos (Capas L0 a L4)
 
-Actualmente, el repositorio cuenta con **52 subsistemas de protocolo integrados** y probados al 100%:
+Actualmente, el repositorio cuenta con **54 subsistemas de protocolo integrados** y probados al 100%:
 
 ### Capa L0: Acceso al Medio & Aceleración Datapath
 - [`ipvn7/access/hal.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/hal.py): Capa de abstracción de hardware y driver de sockets UDP overlay.
@@ -56,6 +56,7 @@ Actualmente, el repositorio cuenta con **52 subsistemas de protocolo integrados*
 - [`ipvn7/network/mobility_anchor.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/mobility_anchor.py): Ancla topológica de movilidad con tickets proactivos 0-RTT, secuencia monótona y soporte Micro-PoW.
 - [`ipvn7/network/fsm.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/fsm.py): Autómata finito determinista (FSM) de ciclo de vida del nodo con contención ZTNA.
 - [`ipvn7/network/pipeline.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/pipeline.py): Línea de montaje Pipes & Filters con captura inmutable en Dead-Letter Queue.
+- [`ipvn7/network/hrs_frames.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/hrs_frames.py): Sustrato silencioso IPv7-HRS ("La Red Responde, No Grita") con 5 tramas canónicas (`IP7H`) y SLAs adaptativos por perfil.
 
 ### Capa L3: Seguridad ZTNA, Confianza & Diagnóstico
 - [`ipvn7/security/firewall.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/security/firewall.py): Cortafuegos de microsegmentación Zero-Trust (ZTNA) con política Default-Deny en el datapath.
@@ -75,6 +76,7 @@ Actualmente, el repositorio cuenta con **52 subsistemas de protocolo integrados*
 - [`ipvn7/gateway/socks5.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/gateway/socks5.py): Servidor Proxy SOCKS5 (RFC 1928) en `127.0.0.1:10807`.
 - [`ipvn7/storage/dag.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/storage/dag.py): Almacén inmutable DAG direccionado por contenido (`cid:ipvn7:<sha256>`) y cola asíncrona DTN con flush automático al handshake.
 - [`ipvn7/identity/petnames.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/identity/petnames.py): Resolución de nombres descentralizada (.ipv7) a DIDs e IPs sintéticas overlay (`10.7.0.0/16`, `fd07::/64`).
+- [`ipvn7/identity/ephemeral.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/identity/ephemeral.py): Identidad efímera rotativa de 24 horas (`did:ipvn7:ephemeral:...`) por HMAC-SHA256 para inmunidad anti-fingerprinting.
 - [`ipvn7/identity/uin.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/identity/uin.py): Red Universal de Intención e Identidad (UIN) con desacoplamiento de clave raíz de 256 bits y cadenas de delegación rotativas.
 - [`ipvn7/access/services.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/services.py): Gestor de ciclo de vida de microservicios con huella de RAM cero en reposo (Dormant -> Active -> Pruned).
 - [`ipvn7/access/chat.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/chat.py): Chat soberano P2P cifrado E2EE con firmas digitales Ed25519 y libreta de contactos.
@@ -83,7 +85,7 @@ Actualmente, el repositorio cuenta con **52 subsistemas de protocolo integrados*
 - [`ipvn7/network/dns_proxy.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/dns_proxy.py): Proxy DNS anti-fugas con caché local y resolución petname nativa.
 
 ### Plano de Control IA (MCP Server JSON-RPC 2.0)
-- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **51 herramientas nativas de introspección y comando** expuestas según la especificación Model Context Protocol (2024-11-05).
+- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **53 herramientas nativas de introspección y comando** expuestas según la especificación Model Context Protocol (2024-11-05).
 
 ---
 
@@ -99,11 +101,11 @@ Cualquier agente o usuario puede verificar y ejecutar el sistema de forma comple
 
 ### 3.2. Ejecución de la Suite de Pruebas (Zero Regressions)
 ```powershell
-# Ejecutar la suite completa de 74 tests unitarios
+# Ejecutar la suite completa de 78 tests unitarios
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (74/74) con código de salida 0.**
+*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (78/78) con código de salida 0.**
 
 ### 3.3. Lanzamiento del Servidor y Control Center Web
 ```powershell
@@ -116,7 +118,7 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 | Servicio | Endpoint | Protocolo / Propósito |
 |---|---|---|
 | **Control Center SPA** | `http://127.0.0.1:7070/` | Dashboard interactivo con telemetría en tiempo real y consola MCP |
-| **Servidor MCP** | `http://127.0.0.1:7070/mcp` | API JSON-RPC 2.0 con 51 herramientas para agentes LLM |
+| **Servidor MCP** | `http://127.0.0.1:7070/mcp` | API JSON-RPC 2.0 con 53 herramientas para agentes LLM |
 | **Proxy HTTP/HTTPS** | `http://127.0.0.1:8888/` | Pasarela de intercepción transparente para tráfico de aplicaciones |
 | **Proxy SOCKS5** | `127.0.0.1:10807` | Proxy RFC 1928 para tráfico TCP anónimo sobre la malla cuántica |
 | **Overlay UDP** | `127.0.0.1:9443` (primario) | Datapath QUIC cifrado punto a punto |

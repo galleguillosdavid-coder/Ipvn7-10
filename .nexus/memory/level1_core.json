@@ -1,0 +1,34 @@
+{
+  "system": "IPVN 7 Autonomous Network Operating System",
+  "version": "7.1.0",
+  "last_consolidated_epoch": 1792499400,
+  "invariants": {
+    "zero_external_dependencies": true,
+    "allowed_crypto_suite": ["FIPS 203 ML-KEM-768", "FIPS 204 ML-DSA-65", "Ed25519", "ChaCha20-Poly1305"],
+    "quiet_wire_protocol": "IP7H_HRS_5_FRAME",
+    "ephemeral_rotation_hours": 24,
+    "max_acceptable_test_failures": 0
+  },
+  "subsystems": {
+    "network_layers": 4,
+    "mcp_tools_count": 53,
+    "hrs_frame_opcodes": [
+      "ANNOUNCE (0x01)",
+      "QUERY (0x02)",
+      "RESPONSE (0x03)",
+      "HEARTBEAT (0x04)",
+      "STATE_CHANGE (0x05)"
+    ],
+    "adaptive_slas": {
+      "iot": {"heartbeat": 3.0, "timeout": 10.0},
+      "laptop": {"heartbeat": 7.0, "timeout": 20.0},
+      "server": {"heartbeat": 10.0, "timeout": 30.0},
+      "satellite": {"heartbeat": 15.0, "timeout": 45.0}
+    }
+  },
+  "historical_roots_salvaged": [
+    "C:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7 vX7 (L2/L3 overlay & telemetry)",
+    "D:/David/dvd/ipv7-hrs-final (HRS quiet wire protocol & 24h ephemeral IDs)",
+    "C:/Users/Frondabrick/Desktop/dvd/Ipv7/Nexus one/two/tree (22-step autonomous agent cycle & ADR memory)"
+  ]
+}
