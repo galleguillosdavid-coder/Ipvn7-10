@@ -1139,6 +1139,34 @@ class IPVN7MCPServer:
                     "properties": {},
                 },
             },
+            {
+                "name": "ipvn7_select_geopolicy_route",
+                "description": "Evalúa y selecciona el salto de red óptimo combinando distancia geodésica, latencia EWMA, reputación Web of Trust y enclaves estrictos de soberanía de datos (geofencing regulatorio).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "target_did": {
+                            "type": "string",
+                            "description": "DID soberano del destino",
+                        },
+                        "mode": {
+                            "type": "string",
+                            "enum": ["MIN_LATENCY", "MAX_TRUST", "SOVEREIGNTY_STRICT", "BALANCED"],
+                            "description": "Modo de política de optimización",
+                        },
+                        "enclave": {
+                            "type": "string",
+                            "description": "Enclave jurisdiccional requerido (ej: MERCOSUR, EU_GDPR, LATAM_SOVEREIGN)",
+                        },
+                        "excluded_regions": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Lista de regiones geográficas vetadas por geofencing",
+                        },
+                    },
+                    "required": ["target_did"],
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1769,6 +1797,14 @@ class IPVN7MCPServer:
 
             elif name == "ipvn7_orchestrate_silent_rekey":
                 res = self.node.orchestrate_silent_rekey()
+                return True, res
+
+            elif name == "ipvn7_select_geopolicy_route":
+                target_did = arguments.get("target_did", "did:ipvn7:destination")
+                mode = arguments.get("mode", "BALANCED")
+                enclave = arguments.get("enclave")
+                excluded = arguments.get("excluded_regions")
+                res = self.node.select_geopolicy_route(target_did, mode=mode, enclave=enclave, excluded_regions=excluded)
                 return True, res
 
             else:

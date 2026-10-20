@@ -80,6 +80,7 @@ from ..network.fsm import DeterministicNodeFSM, NodeState as FSMNodeState, FSMEv
 from ..network.pipeline import DataPipeline, PacketContext
 from ..identity.ephemeral import EphemeralIdentityManager
 from ..network.hrs_frames import HRSDispatcher, HRSFrame, HRSFrameType, DeviceProfile, AdaptiveSLA
+from ..network.geopolicy import GeoPolicyRouter, RoutingPolicyMode, GeoRegion, GeoNodeDescriptor
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -260,6 +261,10 @@ class IPVN7Node:
             local_did=self.did,
             sla=AdaptiveSLA.get_defaults(DeviceProfile.SERVER),
         )
+
+        # Geodistributed Policy & Sovereignty Enclave Router
+        self.geopolicy_router = GeoPolicyRouter(local_did=self.did)
+        self.geopolicy_router.populate_default_planetary_topology()
 
     # -------------------------------------------------------------
     # Lifecycle Management
@@ -1203,6 +1208,7 @@ class IPVN7Node:
             "remote_desktop": self.remote_desktop.get_status(),
             "key_rotation": self.key_rotation.summary(),
             "rekey_orchestrator": self.rekey_orchestrator.get_orchestrator_summary(),
+            "geopolicy_router": self.geopolicy_router.get_summary(),
             "upnp_mapper": self.upnp_mapper.get_summary(),
             "censorship_detector": self.censorship_detector.get_summary(),
             "buffer_monitor": self.buffer_monitor.summary(),
@@ -1264,4 +1270,39 @@ class IPVN7Node:
         summary["grace_decryption_verified"] = True
         summary["forward_secrecy_zeroized"] = True
         return summary
+
+    def select_geopolicy_route(
+        self,
+        target_did: str,
+        mode: str = "BALANCED",
+        enclave: Optional[str] = None,
+        excluded_regions: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Evaluates multi-attribute path selection with data sovereignty constraints."""
+        policy_mode = RoutingPolicyMode(mode) if mode in [m.value for m in RoutingPolicyMode] else RoutingPolicyMode.BALANCED
+        excl = []
+        if excluded_regions:
+            for r in excluded_regions:
+                try:
+                    excl.append(GeoRegion(r))
+                except ValueError:
+                    pass
+        decision = self.geopolicy_router.select_optimal_route(
+            target_did=target_did,
+            policy_mode=policy_mode,
+            required_enclave=enclave,
+            excluded_regions=excl,
+        )
+        return {
+            "selected_node_did": decision.selected_node_did,
+            "target_did": decision.target_did,
+            "policy_mode": decision.policy_mode.value,
+            "geodesic_distance_km": decision.geodesic_distance_km,
+            "effective_cost": decision.effective_cost,
+            "measured_rtt_ms": decision.measured_rtt_ms,
+            "trust_score": decision.trust_score,
+            "sovereignty_compliant": decision.sovereignty_compliant,
+            "candidate_count_evaluated": decision.candidate_count_evaluated,
+            "rejections": decision.rejection_reasons,
+        }
 

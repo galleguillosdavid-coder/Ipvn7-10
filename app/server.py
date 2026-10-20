@@ -451,6 +451,19 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
             res = PRIMARY_NODE.orchestrate_silent_rekey()
             self._send_json(res)
 
+        elif path == "/api/geopolicy/routes":
+            qs = parse_qs(parsed.query)
+            target = qs.get("target", ["did:ipvn7:destination"])[0]
+            mode = qs.get("mode", ["BALANCED"])[0]
+            enclave = qs.get("enclave", [None])[0]
+            excl_raw = qs.get("excluded", [""])[0]
+            excluded = [e.strip() for e in excl_raw.split(",") if e.strip()] if excl_raw else None
+            try:
+                res = PRIMARY_NODE.select_geopolicy_route(target, mode=mode, enclave=enclave, excluded_regions=excluded)
+                self._send_json(res)
+            except Exception as e:
+                self._send_json({"error": str(e)}, status=400)
+
         elif path == "/api/upnp/status":
             self._send_json(PRIMARY_NODE.upnp_mapper.get_summary())
 

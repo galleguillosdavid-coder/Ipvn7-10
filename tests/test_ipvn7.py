@@ -1803,7 +1803,7 @@ def test_mcp_tools_catalog_57_tools():
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 60, f"Expected 60 MCP tools, found {len(tools)}"
+    assert len(tools) == 61, f"Expected 61 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -1945,6 +1945,22 @@ def test_mcp_tools_catalog_57_tools():
     })
     assert "keys_matched" in res_rekey["result"]["content"][0]["text"]
     assert "forward_secrecy_zeroized" in res_rekey["result"]["content"][0]["text"]
+
+    # Tool 10: ipvn7_select_geopolicy_route
+    res_geo = node.mcp_server.handle_jsonrpc({
+        "jsonrpc": "2.0",
+        "id": 119,
+        "method": "tools/call",
+        "params": {
+            "name": "ipvn7_select_geopolicy_route",
+            "arguments": {
+                "target_did": "did:ipvn7:destination",
+                "mode": "MIN_LATENCY",
+            },
+        },
+    })
+    assert "selected_node_did" in res_geo["result"]["content"][0]["text"]
+    assert "geodesic_distance_km" in res_geo["result"]["content"][0]["text"]
 
     node.stop()
 
@@ -3430,6 +3446,57 @@ def test_silent_rekeying_orchestration_zero_downtime_and_zeroization():
     assert summary["current_epoch"] == 2
     assert summary["previous_key_zeroed"] is True
     assert summary["total_rotations"] == 1
+
+
+def test_geopolicy_routing_and_sovereignty_enclaves():
+    """Validates multi-attribute path selection, geofencing, and jurisdictional data sovereignty enclaves."""
+    from ipvn7.network.geopolicy import (
+        GeoPolicyRouter,
+        RoutingPolicyMode,
+        GeoRegion,
+        GeoNodeDescriptor,
+    )
+
+    router = GeoPolicyRouter(local_did="did:ipvn7:tester", local_latitude=-33.4489, local_longitude=-70.6693)
+    router.populate_default_planetary_topology()
+
+    # 1. Min Latency mode selects closest node (Santiago: 4.2ms)
+    dec1 = router.select_optimal_route(
+        target_did="did:ipvn7:target",
+        policy_mode=RoutingPolicyMode.MIN_LATENCY,
+    )
+    assert dec1.selected_node_did == "did:ipvn7:geo:santiago"
+    assert dec1.measured_rtt_ms == 4.2
+    assert dec1.geodesic_distance_km < 10.0
+
+    # 2. Sovereignty strict mode requiring EU_GDPR must choose Frankfurt despite higher latency
+    dec2 = router.select_optimal_route(
+        target_did="did:ipvn7:target",
+        policy_mode=RoutingPolicyMode.SOVEREIGNTY_STRICT,
+        required_enclave="EU_GDPR",
+    )
+    assert dec2.selected_node_did == "did:ipvn7:geo:frankfurt"
+    assert dec2.measured_rtt_ms == 175.0
+    assert dec2.sovereignty_compliant is True
+
+    # 3. Geofencing: Exclude LATAM_SANTIAGO; next best in LATAM should be Sao Paulo
+    dec3 = router.select_optimal_route(
+        target_did="did:ipvn7:target",
+        policy_mode=RoutingPolicyMode.MIN_LATENCY,
+        required_enclave="LATAM_SOVEREIGN",
+        excluded_regions=[GeoRegion.LATAM_SANTIAGO],
+    )
+    assert dec3.selected_node_did in ("did:ipvn7:geo:saopaulo", "did:ipvn7:geo:orbital-leo1")
+
+    # 4. Impossible constraints trigger LookupError with structured rejection reasons
+    import pytest
+    with pytest.raises(LookupError) as exc_info:
+        router.select_optimal_route(
+            target_did="did:ipvn7:target",
+            required_enclave="NON_EXISTENT_ENCLAVE_XYZ",
+        )
+    assert "MISSING_REQUIRED_ENCLAVE:NON_EXISTENT_ENCLAVE_XYZ" in str(exc_info.value)
+
 
 
 
