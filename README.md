@@ -30,7 +30,7 @@
 >    - [`.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md`](.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md) *(Canal de Datos Overlay Real mediante Enmarcado Canónico IP7X)*.
 >    - [`.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md`](.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md) *(Remediación Integral de la Auditoría #3: Tokens Dinámicos, PQC Handshake MITM Auth, SOCKS5 Bounded Relay, BitNet Fuzz Defense y Censura de Secretos)*.
 > 8. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
-> 8. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
+> 9. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
 ---
 
