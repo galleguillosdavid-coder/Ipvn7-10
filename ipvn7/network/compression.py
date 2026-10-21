@@ -7,7 +7,7 @@ Achieves 40-70% bandwidth reduction on control headers without dynamic state syn
 
 from __future__ import annotations
 import zlib
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional, Any
 from dataclasses import dataclass
 
 MAGIC_COMPRESSED = b"\x17\x07"  # 2 bytes magic

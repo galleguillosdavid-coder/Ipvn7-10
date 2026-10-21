@@ -338,8 +338,49 @@ De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar un
 
 ---
 
-*Fin del Protocolo de Handover. IPVN 7 v7.11.0 se encuentra auditado, blindado con el sistema permanente de ingeniería LAIA, verificado con 114 pruebas al 100%, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
+*Fin del Protocolo de Handover. IPVN 7 v7.11.0 se encuentra auditado, blindado con el sistema permanente de ingeniería LAIA, verificado con 115 pruebas al 100%, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
 
+---
 
+## ⚡ Comandos Rápidos del Agente (`/` Slash Commands)
+
+### 🧠 Razonamiento y Autonomía
+- `/boost <tarea>`: Inicia bucles de razonamiento profundo multiagente para depurar fallos complejos, condiciones de carrera o algoritmos difíciles.
+- `/goal <objetivo>`: Hace que el sistema trabaje de manera autónoma hasta que verifique que el objetivo se ha completado, sin pedir confirmaciones intermedias.
+- `/teamwork-preview`: Abre el modo de colaboración entre múltiples agentes especializados para tareas a gran escala (como migraciones de repositorios).
+
+### 📝 Planificación y Requisitos
+- `/plan`: Explora el código, realiza una sesión de preguntas de requisitos y genera un borrador estructurado (un artifact) antes de programar.
+- `/grill-me`: Inicia una entrevista interactiva donde la IA te cuestiona sobre los casos extremos (edge cases) y detalles de diseño de tu idea para no pasar nada por alto.
+
+### 🛠️ Herramientas y Gestión de Tareas
+- `/browser <tarea>`: Delega la tarea a un subagente con navegador seguro para realizar investigaciones en la web o verificar interfaces de usuario.
+- `/btw <pregunta>`: *(By the way)* Envía una pregunta rápida en segundo plano sin interrumpir ni pausar la ejecución o el pensamiento del agente principal.
+- `/agents`: Abre el Administrador de Agentes para alternar entre agentes personalizados y monitorizar tareas secundarias.
+- `/artifact`: Abre el panel de revisión de archivos generados (artifacts).
+- `/mcp`: Abre el gestor de servidores del Model Context Protocol.
+- `/skills`: Examina las habilidades (Agent Skills) locales y globales cargadas.
+- `/schedule <cuándo> <tarea>`: Programa una instrucción para que se ejecute en un momento específico o como una tarea programada repetitiva (cron).
+
+### ⚙️ Configuración y Modelos
+- `/effort [level]`: Define el nivel de esfuerzo de razonamiento deseado para el modelo activo (desde low hasta max).
+- `/config` (o `/settings`): Abre el editor interactivo de configuraciones globales.
+- `/model`: Permite elegir el modelo de lenguaje e inteligencia artificial predeterminado.
+- `/fast`: Activa el modo rápido (salta la generación de planes de razonamiento pesados) para respuestas inmediatas.
+- `/permissions`: Abre el gestor interactivo de permisos para las herramientas.
+
+### 💬 Control de Conversación e Historial
+- `/fork` (o `/branch`): Clona la conversación actual en una nueva línea temporal o sesión paralela.
+- `/resume` (o `/switch`): Despliega un buscador para cargar hilos de conversación antiguos.
+- `/rewind` (o `/undo`): Revierte el historial de la conversación hasta un mensaje anterior específico.
+- `/clear` (o `/new`): Limpia la pantalla y reinicia el contexto para empezar una sesión limpia.
+
+### 📂 Utilidades del Workspace y Sistema
+- `/add-dir <ruta>`: Añade una carpeta de tu equipo al espacio de trabajo activo de Antigravity.
+- `/context`: Muestra una gráfica visual de cuánta memoria de contexto estás consumiendo.
+- `/copy [n]`: Copia al portapapeles la última respuesta (o la respuesta número n) de la IA.
+- `/diff`: Abre el visor interactivo de diferencias de código para revisar cambios antes de consolidarlos.
+- `/learn`: Convierte el feedback o las correcciones que le diste en la sesión en una Regla (Rule) persistente para el futuro.
+- `/exit` (o `/quit`): Cierra la sesión interactiva y te devuelve a tu terminal base.
 
 

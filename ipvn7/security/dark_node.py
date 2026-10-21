@@ -15,10 +15,9 @@ import threading
 from enum import Enum
 from typing import Dict, Any, Optional, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ..security.firewall import ZTNAFirewall
-    from ..network.onion import SphinxRouter
-    from ..network.pacer import DWRRScheduler
+from ..security.firewall import ZTNAFirewall
+from ..network.onion import SphinxRouter
+from ..network.pacer import DWRRScheduler
 
 
 class OperatingMode(str, Enum):

@@ -148,7 +148,7 @@
           <button class="tab-btn" data-tab="tab-uin-shadow-pfo">Identidad UIN, Shadow & PFO</button>
           <button class="tab-btn" data-tab="tab-wan-desktop">Sondeo WAN & Escritorio Remoto</button>
           <button class="tab-btn" data-tab="tab-bitnet">BitNet b1.58 Ternary AI</button>
-          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (57 Herramientas IA)</button>
+          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (66 Herramientas IA)</button>
         </div>
 
         <!-- Tab 1: PQ-QUIC & Migration -->
@@ -534,63 +534,6 @@
                 <button class="btn btn-accent btn-small" id="btnRunCompressSample">Comprimir Datagrama</button>
               </div>
               <div id="compressResultsBox" class="json-viewer mono-text mt-3" style="max-height:120px; overflow-y:auto; font-size:0.8rem; display:none;"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab 6: Model Context Protocol (MCP) Server Console -->
-        <div class="tab-pane" id="tab-mcp">
-          <div class="interactive-card">
-            <div class="bench-header">
-              <div>
-                <h3>Servidor Nativo MCP (Model Context Protocol JSON-RPC 2.0)</h3>
-                <p class="desc">Permite a modelos LLM, agentes autónomos y copilotos inspeccionar la topología de red, enrutar paquetes y ordenar migraciones mediante llamadas a herramientas estructuradas.</p>
-              </div>
-              <div class="status-indicator">
-                <span class="pulsing-dot"></span>
-                <span class="mono-text">JSON-RPC 2.0 / MCP 2024-11-05</span>
-              </div>
-            </div>
-
-            <div class="interactive-card mt-4">
-              <h4>Consola de Ejecución de Herramientas MCP</h4>
-              <div class="streaming-control-bar mt-2">
-                <label>Herramienta MCP:
-                  <select id="selMcpTool" class="select-field">
-                    <option value="get_node_status">get_node_status (Telemetría General)</option>
-                    <option value="resolve_did">resolve_did (Búsqueda en DHT)</option>
-                    <option value="send_pq_datagram">send_pq_datagram (Datagrama PQ-QUIC)</option>
-                    <option value="route_sphinx_onion">route_sphinx_onion (Circuito Sphinx)</option>
-                    <option value="broadcast_plumtree_gossip">broadcast_plumtree_gossip (Broadcast Epidémico)</option>
-                    <option value="probe_peer_swim">probe_peer_swim (Detector SWIM)</option>
-                    <option value="trigger_connection_migration">trigger_connection_migration (Migración 5G)</option>
-                    <option value="ipvn7_firewall_rule">ipvn7_firewall_rule (Reglas ZTNA)</option>
-                    <option value="ipvn7_wot_vouch">ipvn7_wot_vouch (Aval Criptográfico WoT)</option>
-                    <option value="ipvn7_get_trust">ipvn7_get_trust (Confianza Transitiva)</option>
-                    <option value="ipvn7_dag_put">ipvn7_dag_put (Compromiso DAG)</option>
-                    <option value="ipvn7_get_anomalies">ipvn7_get_anomalies (Huellas de Anomalías O(1))</option>
-                    <option value="ipvn7_audit_split_brain">ipvn7_audit_split_brain (Auditoría Split-Brain)</option>
-                    <option value="ipvn7_register_petname">ipvn7_register_petname (Registro dDNS)</option>
-                    <option value="ipvn7_resolve_petname">ipvn7_resolve_petname (Resolución dDNS)</option>
-                    <option value="ipvn7_get_oob_sas">ipvn7_get_oob_sas (Validación SAS Emojis)</option>
-                    <option value="ipvn7_toggle_dark_node">ipvn7_toggle_dark_node (Conmutar Perfil Sigilo)</option>
-                    <option value="ipvn7_send_silent_call">ipvn7_send_silent_call (Llamada Unicast Silenciosa)</option>
-                    <option value="ipvn7_route_planetary">ipvn7_route_planetary (Malla Planetaria Kleinberg)</option>
-                    <option value="ipvn7_resilience_status">ipvn7_resilience_status (Guardián de Resiliencia)</option>
-                  </select>
-                </label>
-                <button class="btn btn-primary" id="btnExecuteMcpTool">Invocar Herramienta JSON-RPC</button>
-              </div>
-
-              <div class="mt-4">
-                <span style="font-size:0.75rem; color:var(--text-muted);">Payload de Solicitud JSON-RPC 2.0:</span>
-                <pre class="json-viewer mono-text" id="mcpRequestPreview" style="max-height:100px;"></pre>
-              </div>
-
-              <div class="mt-4">
-                <span style="font-size:0.75rem; color:var(--text-muted);">Respuesta JSON-RPC 2.0 de la Malla:</span>
-                <pre class="json-viewer mono-text" id="mcpResponseBox" style="max-height:180px;">Seleccione una herramienta y presione 'Invocar Herramienta JSON-RPC'.</pre>
-              </div>
             </div>
           </div>
         </div>
@@ -1376,11 +1319,11 @@
             <div class="bench-header">
               <div>
                 <h3>Servidor Model Context Protocol (MCP) — Plano de Control IA</h3>
-                <p class="desc">Interfaz nativa JSON-RPC 2.0 (Especificación 2024-11-05) con 59 herramientas de introspección, auto-reparación, datapath saturation, compresión estática, BitNet 1.58 y edge computing agéntico.</p>
+                <p class="desc">Interfaz nativa JSON-RPC 2.0 (Especificación 2024-11-05) con 66 herramientas de introspección, auto-reparación, datapath saturation, compresión estática, BitNet 1.58, tokens de reciprocidad y edge computing agéntico.</p>
               </div>
               <div class="status-indicator">
                 <span class="pulsing-dot"></span>
-                <span class="mono-text" id="mcpToolCountBadge">59 HERRAMIENTAS ACTIVAS</span>
+                <span class="mono-text" id="mcpToolCountBadge">66 HERRAMIENTAS ACTIVAS</span>
               </div>
             </div>
 
@@ -1391,7 +1334,7 @@
               </div>
               <div class="bench-item">
                 <span class="bench-label">Herramientas Conectadas</span>
-                <strong class="bench-val text-green" id="mcpToolsTotal">59</strong>
+                <strong class="bench-val text-green" id="mcpToolsTotal">66</strong>
               </div>
               <div class="bench-item">
                 <span class="bench-label">Capacidades</span>
@@ -1410,8 +1353,15 @@
               <div class="streaming-control-bar mt-2">
                 <select id="selMcpTool" class="select-field" style="max-width:250px;">
                   <option value="get_node_status">get_node_status</option>
+                  <option value="ipvn7_issue_reciprocity_token">ipvn7_issue_reciprocity_token (Reciprocidad IP7R)</option>
+                  <option value="ipvn7_settle_reciprocity_token">ipvn7_settle_reciprocity_token (Liquidación)</option>
+                  <option value="ipvn7_get_settlement_ledger">ipvn7_get_settlement_ledger (Libro Mayor)</option>
                   <option value="ipvn7_benchmark_saturation_throughput">ipvn7_benchmark_saturation_throughput (Datapath Gbps)</option>
                   <option value="ipvn7_compress_telemetry_payload">ipvn7_compress_telemetry_payload (Compresión)</option>
+                  <option value="ipvn7_orchestrate_silent_rekey">ipvn7_orchestrate_silent_rekey (PQC Rekeying)</option>
+                  <option value="ipvn7_select_geopolicy_route">ipvn7_select_geopolicy_route (Geopolicy)</option>
+                  <option value="ipvn7_sync_interregion_dht">ipvn7_sync_interregion_dht (DHT Bloom Sync)</option>
+                  <option value="ipvn7_probe_tunnel_telemetry">ipvn7_probe_tunnel_telemetry (Path MTU & Jitter)</option>
                   <option value="ipvn7_bitnet_quantize_and_infer">ipvn7_bitnet_quantize_and_infer (BitNet 1.58)</option>
                   <option value="ipvn7_dispatch_edge_ai_prompt">ipvn7_dispatch_edge_ai_prompt (Edge AI)</option>
                   <option value="ipvn7_dispatch_remote_media_frame">ipvn7_dispatch_remote_media_frame (Media)</option>
@@ -1455,7 +1405,11 @@
                 </select>
                 <button class="btn btn-primary btn-small" id="btnExecuteMcpTool">Invocar Herramienta MCP</button>
               </div>
-              <div id="mcpResponseBox" class="json-viewer mono-text mt-3" style="max-height:180px; overflow-y:auto; font-size:0.8rem;">
+              <div class="mt-2">
+                <span style="font-size:0.75rem; color:var(--text-muted);">Payload de Solicitud JSON-RPC 2.0:</span>
+                <pre class="json-viewer mono-text" id="mcpRequestPreview" style="max-height:80px;"></pre>
+              </div>
+              <div id="mcpResponseBox" class="json-viewer mono-text mt-2" style="max-height:180px; overflow-y:auto; font-size:0.8rem;">
                 Seleccione una herramienta y presione 'Invocar Herramienta MCP' para ver la respuesta JSON-RPC 2.0.
               </div>
             </div>

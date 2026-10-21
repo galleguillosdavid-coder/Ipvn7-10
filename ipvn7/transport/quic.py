@@ -12,7 +12,7 @@ import json
 import struct
 import base64
 from enum import IntEnum
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Dict, List, Optional, Tuple, Callable, Any
 from dataclasses import dataclass, field
 
 from ..crypto.pqc import (

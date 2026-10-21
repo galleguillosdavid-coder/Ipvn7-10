@@ -10,7 +10,7 @@ from __future__ import annotations
 import platform
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, Tuple
 from ..security.oob import derive_sas
 
 

@@ -962,6 +962,12 @@ document.addEventListener("DOMContentLoaded", () => {
     else if (tool === "ipvn7_run_churn_stress_test") sampleArgs = { node_count: 50, churn_rate: 0.20, packet_loss_rate: 0.10 };
     else if (tool === "ipvn7_get_daily_ephemeral_id") sampleArgs = {};
     else if (tool === "ipvn7_dispatch_hrs_frame") sampleArgs = { action: "create", frame_type: "QUERY", target_did: "did:ipvn7:zGateway123", payload_text: "PING" };
+    else if (tool === "ipvn7_issue_reciprocity_token") sampleArgs = { beneficiary_did: "did:ipvn7:zPeerNode", bandwidth_credits: 1048576 };
+    else if (tool === "ipvn7_get_settlement_ledger") sampleArgs = {};
+    else if (tool === "ipvn7_orchestrate_silent_rekey") sampleArgs = {};
+    else if (tool === "ipvn7_select_geopolicy_route") sampleArgs = { target_did: "did:ipvn7:zDestination", mode: "BALANCED" };
+    else if (tool === "ipvn7_sync_interregion_dht") sampleArgs = { peer_region: "region-europe-central" };
+    else if (tool === "ipvn7_probe_tunnel_telemetry") sampleArgs = { tunnel_id: "tun0-wintun", sample_rtt_ms: 12.5 };
 
     const sampleRpc = {
       jsonrpc: "2.0",
@@ -1807,53 +1813,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       } finally {
         btnCopilot.disabled = false;
-      }
-    });
-  }
-
-  // --- MCP Tool Invocation Tester ---
-  const btnMcp = document.getElementById("btnExecuteMcpTool");
-  if (btnMcp) {
-    btnMcp.addEventListener("click", async () => {
-      const toolName = document.getElementById("selMcpTool").value;
-      const box = document.getElementById("mcpResponseBox");
-
-      btnMcp.disabled = true;
-      box.textContent = `Invocando herramienta MCP '${toolName}' via JSON-RPC 2.0...`;
-
-      try {
-        // Query status endpoint or specific tool mapping
-        let endpoint = "/api/status";
-        if (toolName === "ipvn7_get_batcher_stats") endpoint = "/api/batcher/stats";
-        else if (toolName === "ipvn7_resilience_status") endpoint = "/api/resilience/status";
-        else if (toolName === "ipvn7_blackout_recovery") endpoint = "/api/blackout/status";
-        else if (toolName === "ipvn7_record_link_probe") endpoint = "/api/healing/summary";
-        else if (toolName === "ipvn7_run_ai_copilot") endpoint = "/api/copilot/status";
-        else if (toolName === "ipvn7_update_mobility_locator") endpoint = "/api/mobility/summary";
-        else if (toolName === "ipvn7_schedule_multipath") endpoint = "/api/multipath/summary";
-        else if (toolName === "ipvn7_resolve_dns_proxy") endpoint = "/api/dns/summary";
-        else if (toolName === "ipvn7_get_uin_passport") endpoint = "/api/uin/passport";
-        else if (toolName === "ipvn7_register_shadow_device") endpoint = "/api/shadow/devices";
-        else if (toolName === "ipvn7_get_pfo_tree") endpoint = "/api/pfo/tree";
-
-        const res = await fetch(endpoint);
-        const data = await res.json();
-        box.textContent = JSON.stringify({
-          jsonrpc: "2.0",
-          id: Math.floor(Math.random() * 1000) + 1,
-          result: {
-            tool_invoked: toolName,
-            status: "SUCCESS",
-            data: data
-          }
-        }, null, 2);
-      } catch (err) {
-        box.textContent = JSON.stringify({
-          jsonrpc: "2.0",
-          error: { code: -32000, message: `Error ejecutando ${toolName}: ${err}` }
-        }, null, 2);
-      } finally {
-        btnMcp.disabled = false;
       }
     });
   }

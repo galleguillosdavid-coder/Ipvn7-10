@@ -12,6 +12,8 @@ from typing import Dict, Any, List, Optional, Tuple, Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .node import IPVN7Node
+else:
+    IPVN7Node = Any
 
 from ..network.onion import SphinxHop
 from ..access.services import ServiceScope

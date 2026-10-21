@@ -10,7 +10,7 @@ import socket
 import urllib.request
 import urllib.error
 from urllib.parse import urlparse
-from typing import Tuple, List, Optional, Set
+from typing import Tuple, List, Optional, Set, Union
 
 
 class EgressSecurityPolicy:
