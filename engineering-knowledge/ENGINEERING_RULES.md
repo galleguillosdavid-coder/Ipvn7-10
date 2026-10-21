@@ -135,5 +135,20 @@
 - **ID:** `ER-SEC-012`
 - **Riesgo:** Documentación divergente o desactualizada que declare capacidades no soportadas o métricas irreales.
 - **Activación:** Cierre de tareas, releases y actualizaciones de versión.
-- **Acción Obligatoria:** Sincronizar el número exacto de pruebas aprobadas (ej. 108), herramientas MCP protegidas (63) y versiones de Python en `README.md`, `AUTONOMOUS_OPERATIONAL_MANIFESTO.md`, `.nexus/memory/level1_core.json` y CI workflows.
+- **Acción Obligatoria:** Sincronizar el número exacto de pruebas aprobadas (ej. 115), herramientas MCP protegidas (66) y versiones de Python en `README.md`, `AUTONOMOUS_OPERATIONAL_MANIFESTO.md`, `.nexus/memory/level1_core.json` y CI workflows.
 - **Incidentes Anteriores:** Auditoría 2 H-08; Auditoría 3 Sección 4.
+
+---
+
+### ER-OPS-013 — Preferencia por Scripts de Python sobre PowerShell Inline
+- **ID:** `ER-OPS-013`
+- **Riesgo:** Fallos de sintaxis por interpolación de comillas, errores de escape de caracteres especiales o truncamiento de tuberías complejas en la consola PowerShell de Windows.
+- **Activación:** Toda tarea técnica o de auditoría que requiera lógica multi-línea, regex o procesamiento de datos en Windows.
+- **Acción Obligatoria:** Escribir y ejecutar scripts de Python independientes (por ejemplo en `scripts/` o ficheros de verificación dedicados) en lugar de encadenar comandos complejos de PowerShell inline (`python -c "..."` multilinea).
+- **Ejemplo Incorrecto:**
+  ```powershell
+  python.exe -c "import re; f=open('file'); ids=re.findall(r'id=\"([^\"]+)\"', f.read()); ..."
+  ```
+- **Ejemplo Correcto:**
+  Escribir `scripts/audit_ids.py` con el código limpio y ejecutar `.\.venv\Scripts\python.exe scripts/audit_ids.py`.
+
