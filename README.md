@@ -1,5 +1,5 @@
 # IPVN 7 — Internet Protocol Version 7
-> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.12.0)**  
+> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.15.0)**  
 > *Implementación Canónica en Python 3.14 con Criptografía Híbrida NIST FIPS 203 & 204*  
 > **Repositorio Oficial:** [https://github.com/galleguillosdavid-coder/Ipvn7-10](https://github.com/galleguillosdavid-coder/Ipvn7-10)
 
@@ -11,10 +11,10 @@
 > Este documento es tu **punto de entrada canónico**. Léelo de principio a fin antes de ejecutar o modificar código.  
 > Tu orden de lectura obligatorio para comprender el ecosistema completo es:
 > 1. Este archivo [`README.md`](README.md) *(Visión ejecutiva, estructura global, mapa del repo y protocolo de handover)*.
-> 2. [`engineering-knowledge/`](engineering-knowledge/README.md) *(Sistema LAIA: Constitución, Reglas Operativas ER-SEC-001..012, Invariantes y Lecciones Aprendidas)*.
+> 2. [`engineering-knowledge/`](engineering-knowledge/README.md) *(Sistema LAIA: Constitución, Reglas Operativas ER-SEC-001..014, Invariantes y Lecciones Aprendidas LL-001..012)*.
 > 3. [`.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md`](.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md) *(Política inmutable anti-fallos, gobernanza SSRF, autenticación de control y modos de falla de IA)*.
-> 4. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(DIRECTIVA SUPREMA DE PRIORIDAD 0: Auto-invocable, Inviolable, Inmodificable en sus principios rectores, pero permanentemente Ampliable y Mejorable. Procedimiento autónomo de desarrollo, catálogo de subsistemas y directivas operativas de auto-evolución, activa imediatamente este modo agentico incluyendo todos sus comandosm tareas y autoridad)*.
-> 5. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 59 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
+> 4. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(DIRECTIVA SUPREMA DE PRIORIDAD 0: Auto-invocable, Inviolable, Inmodificable en sus principios rectores, pero permanentemente Ampliable y Mejorable. Procedimiento autónomo de desarrollo, catálogo de 72 subsistemas y directivas operativas de auto-evolución)*.
+> 5. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 65 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
 > 6. [`genesis.md`](genesis.md) *(Mandato Génesis v2.0, principios ontológicos, gobernanza evolutiva y multi-agente)*.
 > 7. **Architecture Decision Records (ADRs Inmutables):**
 >    - [`.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md`](.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md) *(Consolidación silenciosa IPv7-HRS e Identidad Efímera 24h)*.
@@ -31,6 +31,9 @@
 >    - [`.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md`](.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md) *(Remediación Integral de la Auditoría #3: Tokens Dinámicos, PQC Handshake MITM Auth, SOCKS5 Bounded Relay, BitNet Fuzz Defense y Censura de Secretos)*.
 >    - [`.nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md`](.nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md) *(Gobernanza de Cuotas y Liquidación Micro-Económica con Tokens de Reciprocidad IP7R)*.
 >    - [`.nexus/decisions/ADR-014-CRYPTOGRAPHIC-TEE-ENCLAVE-AND-RUNTIME-FORMAL-VERIFICATION.md`](.nexus/decisions/ADR-014-CRYPTOGRAPHIC-TEE-ENCLAVE-AND-RUNTIME-FORMAL-VERIFICATION.md) *(Enclave Criptográfico TEE Soberano, Formato Wire Canónico IP7E y Validación Formal de 6 Invariantes)*.
+>    - [`.nexus/decisions/ADR-015-ZERO-KNOWLEDGE-PROOFS-AND-EPHEMERAL-RING-SIGNATURES.md`](.nexus/decisions/ADR-015-ZERO-KNOWLEDGE-PROOFS-AND-EPHEMERAL-RING-SIGNATURES.md) *(Pruebas de Conocimiento Cero ZK-Schnorr σ, Rango Bulletproofs IP7Z y Firmas en Anillo AOS02 IP7S)*.
+>    - [`.nexus/decisions/ADR-016-EBPF-XDP-WIRESPEED-SWITCH-AND-EARLY-DROP.md`](.nexus/decisions/ADR-016-EBPF-XDP-WIRESPEED-SWITCH-AND-EARLY-DROP.md) *(Conmutador de Kernel eBPF/XDP, Verificación de Límites y Early-Drop O(1) IP7V..IP7P)*.
+>    - [`.nexus/decisions/ADR-017-TRI-STATE-OPERATING-MODE-CONTROLLER.md`](.nexus/decisions/ADR-017-TRI-STATE-OPERATING-MODE-CONTROLLER.md) *(Gobernador Adaptativo de Salud, Modos Tri-Estado OPEN/SAFE/DEGRADED y Anillo Causal de Transiciones)*.
 > 8. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
 > 9. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
@@ -45,7 +48,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **122/122 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~7.0s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
+*Criterio de Aceptación Innegociable:* **142/142 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~7.9s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell
@@ -55,15 +58,15 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 ### 1.3. Puntos de Entrada y Servicios Activos
 | Servicio / Protocolo | Dirección / Puerto | Propósito |
 |---|---|---|
-| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 69 subsistemas y consola MCP |
-| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **69 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
+| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 73 subsistemas y consola MCP |
+| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **74 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
 | **Proxy HTTP/HTTPS Interceptor** | `http://127.0.0.1:8888` | Pasarela transparente de intercepción y tunelización cuántica |
 | **Proxy SOCKS5 RFC 1928** | `127.0.0.1:10807` | Proxy anónimo para enrutamiento transparente de aplicaciones TCP |
 | **Socket Overlay UDP (QUIC)** | `127.0.0.1:9443` | Datapath de alta velocidad punto a punto cifrado con ML-KEM-768 |
 
 ---
 
-## 🏛️ 2. Arquitectura de Capas y Catálogo de Archivos (69 Subsistemas)
+## 🏛️ 2. Arquitectura de Capas y Catálogo de Archivos (73 Subsistemas)
 
 El árbol del repositorio está diseñado para una navegación directa y modular:
 
@@ -100,10 +103,12 @@ ipvn7-10/
 │   │   ├── services.py                 # Ciclo de vida de microservicios soberanos
 │   │   ├── chat.py                     # Chat P2P cifrado E2EE con firmas Ed25519
 │   │   ├── remote_desktop.py           # Escritorio remoto P2P a 60 FPS (<100µs wire dispatch, datapath IP7M)
-│   │   └── shadow_device.py            # Embajador LAN para dispositivos sombra (Edge AI/IoT)
-│   ├── crypto/                         # Criptografía Post-Cuántica (PQC) & Cuantización
+│   │   ├── shadow_device.py            # Embajador LAN para dispositivos sombra (Edge AI/IoT)
+│   │   └── xdp_switch.py               # Conmutador acelerado eBPF/XDP de kernel con Early-Drop O(1)
+│   ├── crypto/                         # Criptografía Post-Cuántica (PQC), ZKP & Cuantización
 │   │   ├── pqc.py                      # NIST FIPS 203 ML-KEM-768 & FIPS 204 ML-DSA-65
-│   │   └── bitnet.py                   # Motor de Cuantización Ternaria BitNet b1.58 (IP7B)
+│   │   ├── bitnet.py                   # Motor de Cuantización Ternaria BitNet b1.58 (IP7B)
+│   │   └── zkp.py                      # Motor de Zero-Knowledge Proofs (Schnorr Sigma y Bulletproofs IP7Z)
 │   ├── identity/                       # Capa L1: Identidad Soberana Descentralizada
 │   │   ├── did.py                      # Identificadores W3C DID Core 1.0 (did:ipvn7:...)
 │   │   ├── ephemeral.py                # Rotación de Identidad Efímera de 24h anti-tracking
@@ -136,8 +141,11 @@ ipvn7-10/
 │   │   ├── dns_proxy.py                # Servidor DNS proxy soberano anti-fugas
 │   │   ├── accounting.py               # Contabilidad de tránsito Tit-for-Tat
 │   │   ├── geopolicy.py                # Enrutador geodistribuido, geofencing y enclaves de soberanía
+│   │   ├── dht_sync.py                 # Sincronización interregional privada DHT con filtros de Bloom
+│   │   ├── tunnel_telemetry.py         # Telemetría de túneles soberanos y descubrimiento Path MTU
+│   │   ├── settlement.py               # Liquidación micro-económica con tokens de reciprocidad IP7R
 │   │   └── explainable.py              # Enrutamiento explicable con razonamiento en lenguaje natural
-│   ├── security/                       # Capa L3: Blindaje ZTNA & Confianza
+│   ├── security/                       # Capa L3: Blindaje ZTNA, Enclaves & Confianza
 │   │   ├── firewall.py                 # Cortafuegos Zero-Trust (Default-Deny)
 │   │   ├── wot.py                      # Web of Trust con atenuación transitiva (0.85^d)
 │   │   ├── anti_replay.py              # Ventana deslizante de 1024 bits (RFC 4303)
@@ -145,29 +153,34 @@ ipvn7-10/
 │   │   ├── dark_node.py                # Macro-orquestador de perfil sigiloso Dark Node
 │   │   ├── key_rotation.py             # Rotación proactiva de claves de sesión (Forward Secrecy)
 │   │   ├── rekeying.py                 # Orquestador de re-keying silencioso PQC y zeroization de RAM
-│   │   └── oob.py                      # Emparejamiento SAS (6 dígitos + 4 emojis) y UR multipart
-│   ├── diagnostics/                    # Capa L3: Observabilidad & Inteligencia
+│   │   ├── oob.py                      # Emparejamiento SAS (6 dígitos + 4 emojis) y UR multipart
+│   │   ├── tee_enclave.py              # Enclave criptográfico TEE soberano con MRENCLAVE (IP7E)
+│   │   ├── ring_signature.py           # Firmas en anillo efímeras AOS02 con nulificador anti-doble-voto (IP7S)
+│   │   └── operating_modes.py          # Gobernador adaptativo de salud y modos tri-estado (OPEN, SAFE, DEGRADED)
+│   ├── diagnostics/                    # Capa L3: Observabilidad, Inteligencia & Verificación Formal
 │   │   ├── anomaly.py                  # Huellador O(1) de anomalías SHA-256 (12 hex chars)
 │   │   ├── spectral.py                 # Análisis espectral Fourier DFT de periodicidad de jitter
 │   │   ├── copilot.py                  # Copiloto IA de red con remediación en bucle cerrado
 │   │   ├── censorship.py               # Detector de censura por DPI, DNS poisoning y TCP RST
+│   │   ├── formal_verifier.py          # Verificación formal en tiempo de ejecución de las 6 invariantes
 │   │   └── pfo.py                      # Gobernanza ontológica PFO (5 Principios -> 12 Funciones)
 │   ├── simulation/                     # Simulación & Estrés Topológico
 │   │   └── churn.py                    # Simulador Small-World y benchmark de estrés con pérdida y jitter
 │   ├── benchmark/                      # Rendimiento y Saturación de Datapath
 │   │   └── saturation.py               # Motor de saturación continua MTU 1280B (Gbps/pps/µs)
-│   ├── gateway/                        # Capa L4: Pasarelas del Mundo Exterior
+│   ├── gateway/                        # Capa L4: Pasarelas del Mundo Exterior & Salida
+│   │   ├── exit_relay.py               # Relay de salida soberano enmarcado IP7X
 │   │   ├── proxy.py                    # Pasarela interceptora HTTP/HTTPS con tunelización overlay
 │   │   ├── socks5.py                   # Pasarela SOCKS5 RFC 1928 (10807)
 │   │   └── translator.py               # Traductor IPv4/IPv6 <-> IPVN 7
 │   ├── storage/                        # Capa L4: Almacenamiento Distribuido
 │   │   └── dag.py                      # DAG inmutable por contenido (cid:ipvn7:...) y cola DTN
 │   └── node/                           # Daemon Operativo & Plano Agéntico
-│       ├── node.py                     # Orquestador del nodo (unifica los 61 subsistemas)
-│       ├── mcp.py                      # Servidor MCP JSON-RPC 2.0 (61 herramientas nativas)
+│       ├── node.py                     # Orquestador del nodo (unifica los 73 subsistemas)
+│       ├── mcp.py                      # Servidor MCP JSON-RPC 2.0 (74 herramientas nativas)
 │       └── cli.py                      # Interfaz de línea de comandos
 └── tests/
-    └── test_ipvn7.py                   # Suite canónica exhaustiva de 95 pruebas
+    └── test_ipvn7.py                   # Suite canónica exhaustiva de 142 pruebas unitarias aprobadas (100%)
 ```
 
 ---

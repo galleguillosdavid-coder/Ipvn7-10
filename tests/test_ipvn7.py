@@ -1803,7 +1803,7 @@ def test_mcp_tools_catalog_57_tools():
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 69, f"Expected 69 MCP tools, found {len(tools)}"
+    assert len(tools) == 74, f"Expected 74 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -4638,5 +4638,668 @@ def test_mcp_tee_and_formal_verification_tools_67_68_69():
     assert ok_dec is True
     assert res_dec["opcode"] == "OP_ATTESTATION_CHALLENGE"
     assert res_dec["payload"]["nonce"] == "MCP_NONCE_777"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LÍNEA Q — v7.13.0: ZK-Proofs & Ephemeral Ring Signatures
+# Tests 123–130 — Gobernanza Anónima en la Malla
+# ═══════════════════════════════════════════════════════════════════════════════
+
+from ipvn7.crypto.zkp import (
+    SovereignZKSchnorr,
+    SovereignBulletproof,
+    ZKSchnorrProof,
+)
+from ipvn7.security.ring_signature import (
+    SovereignRingSignature,
+    RingMember,
+)
+
+
+def test_zkp_schnorr_keygen_and_prove():
+    """Test 123: ZK-Schnorr — keygen, prove y verify con prueba válida."""
+    x, Y = SovereignZKSchnorr.keygen()
+    assert x > 0
+    assert Y > 0
+    proof = SovereignZKSchnorr.prove(x, Y, context="IPVN7:GOVERNANCE:2026")
+    assert proof.pk_hex == hex(Y)
+    assert proof.context == "IPVN7:GOVERNANCE:2026"
+    valid = SovereignZKSchnorr.verify(proof)
+    assert valid is True, "La prueba ZK-Schnorr válida debe verificar True"
+
+
+def test_zkp_schnorr_wire_roundtrip():
+    """Test 124: ZK-Schnorr — serialización y deserialización wire IP7Z (≤1280B, CRC32)."""
+    x, Y = SovereignZKSchnorr.keygen()
+    proof = SovereignZKSchnorr.prove(x, Y, context="wire-test")
+    frame = SovereignZKSchnorr.to_wire(proof)
+    assert len(frame) <= 1280, f"Frame IP7Z excede MTU: {len(frame)}B"
+    assert frame[:4] == b"IP7Z"
+    proof2 = SovereignZKSchnorr.from_wire(frame)
+    assert proof2.pk_hex == proof.pk_hex
+    assert proof2.R_hex == proof.R_hex
+    assert SovereignZKSchnorr.verify(proof2) is True
+
+
+def test_zkp_schnorr_negative_wrong_key():
+    """Test 125 (NEGATIVO): ZK-Schnorr — prueba con clave incorrecta debe rechazarse."""
+    x, Y = SovereignZKSchnorr.keygen()
+    _x2, Y2 = SovereignZKSchnorr.keygen()
+    proof = SovereignZKSchnorr.prove(x, Y, context="attack-test")
+    tampered = ZKSchnorrProof(
+        pk_hex=hex(Y2),
+        R_hex=proof.R_hex,
+        s_hex=proof.s_hex,
+        e_hex=proof.e_hex,
+        context=proof.context,
+    )
+    assert SovereignZKSchnorr.verify(tampered) is False, (
+        "Prueba ZK-Schnorr con clave incorrecta debe ser inválida"
+    )
+
+
+def test_zkp_bulletproof_range_valid():
+    """Test 126: Bulletproof — prueba de rango válida para v ∈ [0, 2^8)."""
+    engine = SovereignBulletproof(n_bits=8)
+    v = 137
+    proof = engine.prove(v, context="IP7R-balance-test")
+    assert proof.n_bits == 8
+    assert proof.commitment_hex.startswith("0x")
+    assert engine.verify(proof) is True, f"Bulletproof válido para v={v} debe verificar True"
+
+
+def test_zkp_bulletproof_wire_roundtrip():
+    """Test 127: Bulletproof — serialización wire IP7Z ≤1280B."""
+    engine = SovereignBulletproof(n_bits=8)
+    proof = engine.prove(42, context="wire-range")
+    frame = SovereignBulletproof.to_wire(proof)
+    assert len(frame) <= 1280, f"Frame IP7Z Bulletproof excede MTU: {len(frame)}B"
+    assert frame[:4] == b"IP7Z"
+    proof2 = SovereignBulletproof.from_wire(frame)
+    assert proof2.commitment_hex == proof.commitment_hex
+    assert proof2.n_bits == proof.n_bits
+    assert engine.verify(proof2) is True
+
+
+def test_ring_signature_sign_and_verify():
+    """Test 128: Ring Signature — firma anónima y verificación en anillo de 4 miembros."""
+    members = [RingMember.generate() for _ in range(4)]
+    signer = members[2]
+    message = b"PROPUESTA_GOBERNANZA_IPVN7_Q"
+    sig = SovereignRingSignature.sign(
+        message, signer, members,
+        epoch="2026-10-21:00", ring_context="GOVERNANCE_VOTE"
+    )
+    assert len(sig.ring_pks) == 4
+    assert sig.key_image_hex is not None
+    assert sig.epoch == "2026-10-21:00"
+    assert SovereignRingSignature.verify(sig, message) is True
+
+
+def test_ring_signature_wire_roundtrip():
+    """Test 129: Ring Signature — serialización wire IP7S ≤1280B con CRC32."""
+    members = [RingMember.generate() for _ in range(3)]
+    signer = members[0]
+    message = b"ALERT:CENSORSHIP_DETECTED"
+    sig = SovereignRingSignature.sign(
+        message, signer, members,
+        epoch="2026-10-21:06", ring_context="SECURITY_ALERT"
+    )
+    frame = SovereignRingSignature.to_wire(sig)
+    assert len(frame) <= 1280, f"Frame IP7S excede MTU: {len(frame)}B"
+    assert frame[:4] == b"IP7S"
+    sig2 = SovereignRingSignature.from_wire(frame)
+    assert sig2.key_image_hex == sig.key_image_hex
+    assert sig2.ring_context == "SECURITY_ALERT"
+    assert SovereignRingSignature.verify(sig2, message) is True
+
+
+def test_ring_signature_double_sign_detection():
+    """Test 130 (NEGATIVO/SEGURIDAD): key_image detecta doble voto en la misma época."""
+    members = [RingMember.generate() for _ in range(3)]
+    signer = members[1]
+    epoch = "2026-10-21:00"
+    msg1 = b"VOTO:A"
+    msg2 = b"VOTO:B"
+    sig1 = SovereignRingSignature.sign(msg1, signer, members, epoch=epoch, ring_context="VOTE")
+    sig2 = SovereignRingSignature.sign(msg2, signer, members, epoch=epoch, ring_context="VOTE")
+    # Ambas son individualmente válidas
+    assert SovereignRingSignature.verify(sig1, msg1) is True
+    assert SovereignRingSignature.verify(sig2, msg2) is True
+    # El key_image idéntico delata el doble voto
+    assert SovereignRingSignature.is_double_signed(sig1, sig2) is True
+    # Épocas distintas no son doble voto
+    sig3 = SovereignRingSignature.sign(msg2, signer, members, epoch="2026-10-22:00", ring_context="VOTE")
+    assert SovereignRingSignature.is_double_signed(sig1, sig3) is False
+
+
+def test_mcp_zkp_and_ring_tools_70_71_72():
+    """Test 131: Valida ejecución de MCP Tools 70, 71 y 72 (Línea Q ZKP y Ring Signatures)."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="mcp-zkp-node")
+
+    # Tool 70: ipvn7_zkp_schnorr_prove (keygen, prove, verify)
+    ok_kg, res_kg = node.mcp_server.execute_tool(
+        "ipvn7_zkp_schnorr_prove",
+        {"action": "keygen"},
+    )
+    assert ok_kg is True
+    sk_hex = res_kg["sk_hex"]
+    pk_hex = res_kg["pk_hex"]
+
+    ok_pr, res_pr = node.mcp_server.execute_tool(
+        "ipvn7_zkp_schnorr_prove",
+        {"action": "prove", "sk_hex": sk_hex, "pk_hex": pk_hex, "context": "mcp-zkp-ctx"},
+    )
+    assert ok_pr is True
+    assert res_pr["mtu_valid"] is True
+    wire_schnorr = res_pr["wire_hex"]
+
+    ok_v, res_v = node.mcp_server.execute_tool(
+        "ipvn7_zkp_schnorr_prove",
+        {"action": "verify", "wire_hex": wire_schnorr},
+    )
+    assert ok_v is True
+    assert res_v["valid"] is True
+
+    # Tool 71: ipvn7_zkp_range_proof (prove & verify v in [0, 2^8))
+    ok_rp, res_rp = node.mcp_server.execute_tool(
+        "ipvn7_zkp_range_proof",
+        {"action": "prove", "value": 77, "n_bits": 8, "context": "mcp-range-ctx"},
+    )
+    assert ok_rp is True
+    assert res_rp["mtu_valid"] is True
+    wire_range = res_rp["wire_hex"]
+
+    ok_rv, res_rv = node.mcp_server.execute_tool(
+        "ipvn7_zkp_range_proof",
+        {"action": "verify", "wire_hex": wire_range, "n_bits": 8},
+    )
+    assert ok_rv is True
+    assert res_rv["valid"] is True
+
+    # Tool 72: ipvn7_ring_signature (keygen, sign, verify)
+    ok_m1, res_m1 = node.mcp_server.execute_tool("ipvn7_ring_signature", {"action": "keygen"})
+    ok_m2, res_m2 = node.mcp_server.execute_tool("ipvn7_ring_signature", {"action": "keygen"})
+    ok_m3, res_m3 = node.mcp_server.execute_tool("ipvn7_ring_signature", {"action": "keygen"})
+    assert ok_m1 and ok_m2 and ok_m3
+
+    ring_pks = [res_m1["pk_hex"], res_m2["pk_hex"], res_m3["pk_hex"]]
+    ok_rs, res_rs = node.mcp_server.execute_tool(
+        "ipvn7_ring_signature",
+        {
+            "action": "sign",
+            "message": "PROPUESTA_MCP_001",
+            "signer_sk_hex": res_m2["sk_hex"],
+            "signer_pk_hex": res_m2["pk_hex"],
+            "ring_pks": ring_pks,
+            "epoch": "2026-10-21:00",
+            "ring_context": "MCP_GOVERNANCE",
+        },
+    )
+    assert ok_rs is True
+    assert res_rs["mtu_valid"] is True
+    wire_rs = res_rs["wire_hex"]
+
+    ok_rsv, res_rsv = node.mcp_server.execute_tool(
+        "ipvn7_ring_signature",
+        {
+            "action": "verify",
+            "wire_hex": wire_rs,
+            "message": "PROPUESTA_MCP_001",
+        },
+    )
+    assert ok_rsv is True
+    assert res_rsv["valid"] is True
+
+
+def test_zkp_and_ring_rest_api_logic():
+    """Test 132: Valida lógica de endpoints REST para ZKP Schnorr, Bulletproofs y Ring Signatures."""
+    from ipvn7.crypto.zkp import SovereignZKSchnorr, SovereignBulletproof, _Q, _G, _H
+    from ipvn7.security.ring_signature import SovereignRingSignature, RingMember
+
+    # 1. ZK Status verification
+    assert _Q > 0
+    assert _G > 0
+    assert _H > 0
+
+    # 2. ZK-Schnorr API prove & verify flow
+    x, Y = SovereignZKSchnorr.keygen()
+    proof = SovereignZKSchnorr.prove(x, Y, context="api-rest-ctx")
+    wire_schnorr = SovereignZKSchnorr.to_wire(proof)
+    assert len(wire_schnorr) <= 1280
+    proof_decoded = SovereignZKSchnorr.from_wire(wire_schnorr)
+    assert SovereignZKSchnorr.verify(proof_decoded) is True
+
+    # 3. Bulletproof Range API prove & verify flow
+    engine_8 = SovereignBulletproof(n_bits=8)
+    rp = engine_8.prove(200, context="api-balance-ctx")
+    wire_rp = SovereignBulletproof.to_wire(rp)
+    assert len(wire_rp) <= 1280
+    rp_decoded = SovereignBulletproof.from_wire(wire_rp)
+    assert engine_8.verify(rp_decoded) is True
+
+    # 4. Ring Signature API sign & verify flow
+    members = [RingMember.generate() for _ in range(4)]
+    signer = members[2]
+    msg = b"VOTE_REST_API_CONFIDENTIAL"
+    sig = SovereignRingSignature.sign(msg, signer, members, epoch="2026-10-21:00", ring_context="REST_VOTE")
+    wire_sig = SovereignRingSignature.to_wire(sig)
+    assert len(wire_sig) <= 1280
+    sig_decoded = SovereignRingSignature.from_wire(wire_sig)
+    assert SovereignRingSignature.verify(sig_decoded, msg) is True
+
+
+def test_xdp_switch_canonical_magics_and_fast_path():
+    """Test 133: Valida fast-path en O(1) de XDPKernelSimulator para las 11 cabeceras canónicas y descarte temprano."""
+    from ipvn7.access.xdp_switch import XDPKernelSimulator, XDPAction, CANONICAL_MAGICS
+
+    sim = XDPKernelSimulator(mesh_port=7777)
+
+    # 1. Las 11 cabeceras mágicas canónicas deben resultar en XDP_PASS
+    for magic in CANONICAL_MAGICS:
+        payload = magic + b"\x00" * 32
+        action, reason = sim.process_udp_payload(payload)
+        assert action == XDPAction.XDP_PASS
+        assert "PASS" in reason
+
+    # 2. Datagramas ilegítimos o con cabecera desconocida deben descartarse en O(1)
+    bad_payloads = [
+        b"HTTP/1.1 200 OK\r\n\r\n",
+        b"GET /index.html",
+        b"\x00\x00\x00\x00\x12\x34",
+        b"FAKE",
+        b"TEST",
+    ]
+    for bad in bad_payloads:
+        action, reason = sim.process_udp_payload(bad)
+        assert action == XDPAction.XDP_DROP
+        assert "DROP" in reason
+
+    # 3. Datagramas truncados (< 4 bytes)
+    action, reason = sim.process_udp_payload(b"IP7")
+    assert action == XDPAction.XDP_DROP
+    assert "truncado" in reason.lower()
+
+    # 4. Violación de MTU (payload > 1280 bytes)
+    oversized = b"IP7H" + b"X" * 1281
+    action, reason = sim.process_udp_payload(oversized)
+    assert action == XDPAction.XDP_DROP
+    assert "MTU" in reason
+
+    # 5. Métricas atómicas
+    stats = sim.get_stats()
+    assert stats["total_processed"] == len(CANONICAL_MAGICS) + len(bad_payloads) + 2
+    assert stats["passed"] == len(CANONICAL_MAGICS)
+    assert stats["dropped"] == len(bad_payloads) + 2
+    assert stats["malformed_dropped"] == 1
+    assert stats["early_drop_ratio_pct"] > 0.0
+
+
+def test_xdp_switch_ethernet_frame_bounds_checking():
+    """Test 134: Valida verificación de límites eBPF y emulación de cabeceras Ethernet/IPv4/UDP."""
+    from ipvn7.access.xdp_switch import XDPKernelSimulator, XDPAction
+
+    sim = XDPKernelSimulator(mesh_port=7777)
+
+    # 1. Trama Ethernet canónica legítima dirigida al puerto 7777
+    valid_frame = XDPKernelSimulator.synthesize_ethernet_frame(
+        b"IP7Z" + b"PROOFOFIDENTITY",
+        src_port=54321,
+        dst_port=7777,
+    )
+    action, reason = sim.process_frame(valid_frame)
+    assert action == XDPAction.XDP_PASS
+    assert "IP7Z" in reason
+
+    # 2. Trama Ethernet truncada (< 14 bytes) -> XDP_DROP
+    action, reason = sim.process_frame(b"\x00\x11\x22\x33\x44\x55")
+    assert action == XDPAction.XDP_DROP
+    assert "truncada" in reason.lower()
+
+    # 3. Tráfico no UDP (ej: TCP protocolo 6 simulado en cabecera IP) -> XDP_PASS (no interceptar)
+    tcp_frame = bytearray(valid_frame)
+    tcp_frame[14 + 9] = 6  # Protocolo TCP en lugar de UDP (17)
+    action, reason = sim.process_frame(bytes(tcp_frame))
+    assert action == XDPAction.XDP_PASS
+    assert "no-udp" in reason.lower()
+
+    # 4. Tráfico UDP dirigido a otro puerto del sistema (ej: DNS 53) -> XDP_PASS
+    dns_frame = XDPKernelSimulator.synthesize_ethernet_frame(
+        b"\x12\x34\x01\x00\x00\x01",
+        src_port=54321,
+        dst_port=53,
+    )
+    action, reason = sim.process_frame(dns_frame)
+    assert action == XDPAction.XDP_PASS
+    assert "53" in reason
+
+    # 5. Tráfico en puerto 7777 con número mágico ilegítimo -> XDP_DROP (Early Drop O(1))
+    malicious_frame = XDPKernelSimulator.synthesize_ethernet_frame(
+        b"MALICIOUS_FLOOD_PAYLOAD",
+        src_port=54321,
+        dst_port=7777,
+    )
+    action, reason = sim.process_frame(malicious_frame)
+    assert action == XDPAction.XDP_DROP
+    assert "DROP" in reason
+
+
+def test_xdp_switch_c_program_generation():
+    """Test 135: Valida la exportación de código C de kernel eBPF con clang target bpf."""
+    from ipvn7.access.xdp_switch import XDPKernelSimulator
+
+    c_code = XDPKernelSimulator.generate_c_program(mesh_port=7777)
+    assert "#include <linux/bpf.h>" in c_code
+    assert "#define IPVN7_PORT 7777" in c_code
+    assert "#define MAX_MTU_PAYLOAD 1280" in c_code
+    assert "MAGIC_IP7V" in c_code
+    assert "MAGIC_IP7H" in c_code
+    assert "MAGIC_IP7Z" in c_code
+    assert "MAGIC_IP7S" in c_code
+    assert "MAGIC_IP7P" in c_code
+    assert "SEC(\"xdp\")" in c_code
+    assert "bpf_map_lookup_elem" in c_code
+    assert "ipvn7_stats_map" in c_code
+    assert "XDP_DROP" in c_code
+    assert "XDP_PASS" in c_code
+
+
+def test_xdp_switch_node_integration_and_stats():
+    """Test 136: Valida integración de XDP switch en IPVN7Node y manipulación de telemetría."""
+    from ipvn7.node.node import IPVN7Node
+    from ipvn7.access.xdp_switch import XDPAction
+
+    node = IPVN7Node(alias="xdp-test-node")
+
+    # 1. Atributo xdp_switch presente y configurado
+    assert hasattr(node, "xdp_switch")
+    stats = node.get_xdp_stats()
+    assert stats["total_processed"] == 0
+
+    # 2. Evaluación de payload vía nodo
+    act, r = node.process_xdp_payload(b"IP7H_PAYLOAD")
+    assert act == XDPAction.XDP_PASS
+    assert node.get_xdp_stats()["passed"] == 1
+
+    # 3. Evaluación de payload inválido
+    act, r = node.process_xdp_payload(b"CORRUPT")
+    assert act == XDPAction.XDP_DROP
+    assert node.get_xdp_stats()["dropped"] == 1
+
+    # 4. Reset de métricas
+    node.reset_xdp_stats()
+    assert node.get_xdp_stats()["total_processed"] == 0
+
+    # 5. Exportación de código C vía nodo
+    c_prog = node.export_xdp_c_program()
+    assert "IPVN 7 Native Linux eBPF" in c_prog
+
+
+def test_mcp_xdp_switch_tool_73():
+    """Test 137: Valida registro y ejecución completa de MCP Tool 73 (ipvn7_xdp_switch)."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="mcp-xdp-node")
+
+    # Catálogo de herramientas debe contener exactamente 74 herramientas
+    tools = node.mcp_server.get_supported_tools()
+    assert len(tools) == 74
+    tool_names = [t["name"] for t in tools]
+    assert "ipvn7_xdp_switch" in tool_names
+
+    # Acción 1: get_stats
+    ok, res = node.mcp_server.execute_tool("ipvn7_xdp_switch", {"action": "get_stats"})
+    assert ok is True
+    assert "total_processed" in res
+
+    # Acción 2: export_c
+    ok, res = node.mcp_server.execute_tool("ipvn7_xdp_switch", {"action": "export_c"})
+    assert ok is True
+    assert "c_code" in res
+    assert res["compiler_flags"] == "clang -O2 -target bpf -c xdp_ipvn7.c -o xdp_ipvn7.o"
+
+    # Acción 3: synthesize_frame (legítimo IP7H)
+    ok, res = node.mcp_server.execute_tool(
+        "ipvn7_xdp_switch",
+        {"action": "synthesize_frame", "magic": "IP7H", "payload_size": 64},
+    )
+    assert ok is True
+    assert res["simulated_action"] == "XDP_PASS"
+    assert res["frame_len"] > 0
+
+    # Acción 4: synthesize_frame (malicioso FAKE)
+    ok, res = node.mcp_server.execute_tool(
+        "ipvn7_xdp_switch",
+        {"action": "synthesize_frame", "magic": "FAKE", "payload_size": 64},
+    )
+    assert ok is True
+    assert res["simulated_action"] == "XDP_DROP"
+
+    # Acción 5: process_payload
+    ok, res = node.mcp_server.execute_tool(
+        "ipvn7_xdp_switch",
+        {"action": "process_payload", "payload_hex": b"IP7Z_ZKP_PROOF".hex()},
+    )
+    assert ok is True
+    assert res["action"] == "XDP_PASS"
+
+    # Acción 6: reset_stats
+    ok, res = node.mcp_server.execute_tool("ipvn7_xdp_switch", {"action": "reset_stats"})
+    assert ok is True
+    assert res["status"] == "stats_reset"
+    assert res["stats"]["total_processed"] == 0
+
+
+def test_operating_mode_controller_tri_state_transitions():
+    """Test 138: Valida transiciones atómicas tri-estado, idempotencia y bounded ring buffer de 32 registros."""
+    import pytest
+    from ipvn7.security.operating_modes import OperatingModeController, NodeOperatingMode
+
+    ctrl = OperatingModeController()
+
+    # 1. Estado inicial por defecto: MODE_OPEN
+    assert ctrl.current_mode == NodeOperatingMode.MODE_OPEN
+    assert ctrl.is_open() is True
+    assert ctrl.is_safe() is False
+    assert ctrl.is_degraded() is False
+
+    # 2. Transición a MODE_SAFE
+    st = ctrl.set_mode(NodeOperatingMode.MODE_SAFE, reason="test_stealth_activation")
+    assert ctrl.current_mode == NodeOperatingMode.MODE_SAFE
+    assert ctrl.is_safe() is True
+    assert st["current_mode"] == "MODE_SAFE"
+    assert "ZERO_PII_EGRESS_ONLY" in st["active_protections"]
+
+    # 3. Transición a MODE_DEGRADED
+    st = ctrl.set_mode("MODE_DEGRADED", reason="congested_fabric")
+    assert ctrl.current_mode == NodeOperatingMode.MODE_DEGRADED
+    assert ctrl.is_degraded() is True
+    assert ctrl.pre_degraded_mode == NodeOperatingMode.MODE_SAFE
+    assert "SCAVENGER_BULK_PURGE" in st["active_protections"]
+
+    # 4. Transición de retorno a MODE_OPEN
+    st = ctrl.set_mode("MODE_OPEN", reason="normalcy_restored")
+    assert ctrl.current_mode == NodeOperatingMode.MODE_OPEN
+    assert ctrl.is_open() is True
+
+    # 5. Idempotencia: transición al mismo modo no genera registros redundantes
+    hist_before = len(ctrl.get_history())
+    ctrl.set_mode(NodeOperatingMode.MODE_OPEN)
+    assert len(ctrl.get_history()) == hist_before
+
+    # 6. Modo inválido lanza ValueError
+    with pytest.raises(ValueError, match="Invalid operating mode"):
+        ctrl.set_mode("MODE_INVALID_STATE")
+
+    # 7. Bounded ring buffer: 40 transiciones se truncan estrictamente a 32 registros
+    for i in range(40):
+        m = NodeOperatingMode.MODE_SAFE if i % 2 == 0 else NodeOperatingMode.MODE_OPEN
+        ctrl.set_mode(m, reason=f"fuzz_transition_{i}")
+    history = ctrl.get_history()
+    assert len(history) == 32
+    assert history[-1]["reason"] == "fuzz_transition_39"
+
+
+def test_adaptive_health_governor_trip_and_auto_recovery():
+    """Test 139: Valida activación adaptativa de MODE_DEGRADED ante umbrales y auto-recuperación tras cool-down."""
+    import time
+    from ipvn7.security.operating_modes import OperatingModeController, NodeOperatingMode
+
+    ctrl = OperatingModeController(
+        loss_threshold_pct=30.0,
+        drop_threshold_pct=25.0,
+        buffer_threshold_pct=80.0,
+        cooldown_sec=0.2,  # Ventana corta para prueba rápida
+    )
+
+    # 1. Telemetría normal: permanece en MODE_OPEN
+    st = ctrl.evaluate_health(loss_pct=10.0, drop_ratio_pct=5.0, buffer_util_pct=40.0)
+    assert ctrl.is_open() is True
+    assert st["consecutive_healthy_evals"] == 1
+
+    # 2. Pérdida excesiva (> 30%) dispara MODE_DEGRADED
+    st = ctrl.evaluate_health(loss_pct=35.0, drop_ratio_pct=5.0, buffer_util_pct=40.0)
+    assert ctrl.is_degraded() is True
+    assert ctrl.pre_degraded_mode == NodeOperatingMode.MODE_OPEN
+    assert "health_governor_tripped" in ctrl.get_history()[-1]["reason"]
+
+    # 3. Telemetría limpia inmediata no recupera antes de que expire el cooldown de 0.2s
+    ctrl.evaluate_health(loss_pct=0.0, drop_ratio_pct=0.0, buffer_util_pct=20.0)
+    assert ctrl.is_degraded() is True
+
+    # 4. Esperar que expire el cool-down y enviar ticks limpios adicionales
+    time.sleep(0.25)
+    st = ctrl.evaluate_health(loss_pct=0.0, drop_ratio_pct=0.0, buffer_util_pct=20.0)
+    assert ctrl.is_open() is True
+    assert "health_governor_cooldown_recovered" in ctrl.get_history()[-1]["reason"]
+
+
+def test_operating_mode_subsystem_cascades():
+    """Test 140: Valida la cascada de políticas sobre DarkNode, ZTNA Firewall y DWRR Scheduler."""
+    from ipvn7.security.operating_modes import OperatingModeController, NodeOperatingMode
+    from ipvn7.security.dark_node import DarkNodeMacroOrchestrator
+    from ipvn7.security.firewall import ZTNAFirewall
+    from ipvn7.network.pacer import DWRRScheduler, QoSClass, QueuedPacket
+    from ipvn7.network.packet import IPVN7Packet, TrafficClass
+
+    dark = DarkNodeMacroOrchestrator()
+    fw = ZTNAFirewall(default_deny=False)
+    pacer = DWRRScheduler()
+
+    ctrl = OperatingModeController(
+        dark_node=dark,
+        firewall=fw,
+        scheduler=pacer,
+    )
+
+    # 1. Modo Seguro: silencia anuncios en dark node y fuerza default-deny en ZTNA
+    ctrl.set_mode(NodeOperatingMode.MODE_SAFE)
+    assert dark.is_dark_node() is True
+    assert dark.listeners_muted is True
+    assert fw.default_deny is True
+
+    # 2. Poblar cola BULK en el pacer
+    dummy_pkt = IPVN7Packet(
+        src_did_fp=b"\x01" * 16,
+        dst_did_fp=b"\x02" * 16,
+        traffic_class=TrafficClass.BEST_EFFORT,
+        payload=b"dummy_bulk_payload",
+    )
+    pacer.queues[QoSClass.BULK].append(
+        QueuedPacket(packet=dummy_pkt, target_addr=("127.0.0.1", 7777), size=100, enqueued_at=0.0)
+    )
+    assert len(pacer.queues[QoSClass.BULK]) == 1
+
+    # 3. Transición a MODE_DEGRADED purga cola BULK y altera pesos QoS
+    ctrl.set_mode(NodeOperatingMode.MODE_DEGRADED)
+    assert len(pacer.queues[QoSClass.BULK]) == 0  # Purga completada
+    assert pacer.WEIGHTS[QoSClass.BULK] == 0
+    assert pacer.WEIGHTS[QoSClass.CONTROL] == 6000
+
+    # 4. Transición de retorno a MODE_OPEN restaura pesos originales del scheduler
+    ctrl.set_mode(NodeOperatingMode.MODE_OPEN)
+    assert pacer.WEIGHTS[QoSClass.BULK] == 1000
+    assert pacer.WEIGHTS[QoSClass.CONTROL] == 4000
+    assert dark.is_dark_node() is False
+
+
+def test_ipvn7_node_operating_mode_integration():
+    """Test 141: Valida métodos helper y telemetría de modos de operación en IPVN7Node."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="mode-integration-node")
+
+    # 1. Atributo mode_controller presente
+    assert hasattr(node, "mode_controller")
+
+    # 2. get_operating_mode_status
+    st = node.get_operating_mode_status()
+    assert st["current_mode"] == "MODE_OPEN"
+    assert st["is_open"] is True
+
+    # 3. set_operating_mode
+    st = node.set_operating_mode("MODE_SAFE", reason="unit_test_stealth")
+    assert st["current_mode"] == "MODE_SAFE"
+    assert node.mode_controller.is_safe() is True
+
+    # 4. evaluate_operating_health
+    st = node.evaluate_operating_health(loss_pct=45.0, drop_ratio_pct=10.0, buffer_util_pct=50.0)
+    assert st["current_mode"] == "MODE_DEGRADED"
+
+    # 5. get_operating_mode_history
+    hist = node.get_operating_mode_history()
+    assert len(hist) >= 3
+
+    # 6. Integración en node.get_status()
+    full_status = node.get_status()
+    assert "operating_mode" in full_status
+    assert full_status["operating_mode"]["current_mode"] == "MODE_DEGRADED"
+
+
+def test_mcp_operating_mode_tool_74():
+    """Test 142: Valida registro y ejecución completa de MCP Tool 74 (ipvn7_operating_mode)."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="mcp-operating-mode-node")
+
+    # Catálogo de herramientas debe contener exactamente 74 herramientas
+    tools = node.mcp_server.get_supported_tools()
+    assert len(tools) == 74
+    tool_names = [t["name"] for t in tools]
+    assert "ipvn7_operating_mode" in tool_names
+
+    # Acción 1: get_status
+    ok, res = node.mcp_server.execute_tool("ipvn7_operating_mode", {"action": "get_status"})
+    assert ok is True
+    assert res["current_mode"] == "MODE_OPEN"
+
+    # Acción 2: set_mode a MODE_SAFE
+    ok, res = node.mcp_server.execute_tool(
+        "ipvn7_operating_mode",
+        {"action": "set_mode", "mode": "MODE_SAFE", "reason": "mcp_stealth_test"},
+    )
+    assert ok is True
+    assert res["current_mode"] == "MODE_SAFE"
+
+    # Acción 3: evaluate_health con pérdida crítica
+    ok, res = node.mcp_server.execute_tool(
+        "ipvn7_operating_mode",
+        {"action": "evaluate_health", "loss_pct": 55.0, "drop_ratio_pct": 10.0, "buffer_util_pct": 60.0},
+    )
+    assert ok is True
+    assert res["current_mode"] == "MODE_DEGRADED"
+
+    # Acción 4: get_history
+    ok, res = node.mcp_server.execute_tool("ipvn7_operating_mode", {"action": "get_history"})
+    assert ok is True
+    assert res["count"] >= 3
+    assert len(res["history"]) >= 3
+
+    # Acción 5: acción desconocida
+    ok, res = node.mcp_server.execute_tool("ipvn7_operating_mode", {"action": "unknown_action"})
+    assert ok is False
+    assert "Acción de Operating Mode desconocida" in str(res)
 
 

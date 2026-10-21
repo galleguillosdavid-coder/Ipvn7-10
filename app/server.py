@@ -563,6 +563,53 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
         elif path == "/api/formal/verify":
             self._send_json(PRIMARY_NODE.run_formal_verification())
 
+        elif path == "/api/zkp/status":
+            from ipvn7.crypto.zkp import _Q, _G, _H
+            self._send_json({
+                "status": "OPERATIONAL",
+                "version": "7.13.0",
+                "group": "Zq (252-bit Ed25519 scalar field)",
+                "prime_order_q": hex(_Q),
+                "generator_g": hex(_G),
+                "generator_h": hex(_H),
+                "wire_protocols": {
+                    "zk_schnorr": {"type": "0x01", "magic": "IP7Z", "mtu": 1280},
+                    "range_proof": {"type": "0x02", "magic": "IP7Z", "mtu": 1280},
+                    "ring_signature": {"type": "0x10", "magic": "IP7S", "mtu": 1280},
+                },
+                "security_invariants": [
+                    "ZERO_FIAT_SHAMIR_REUSE",
+                    "SOUNDNESS_128BIT",
+                    "ZERO_VALUE_LEAKAGE",
+                    "ANONYMITY_AOS02",
+                    "DOUBLE_SIGN_NULLIFIER_DETECTION",
+                ],
+            })
+
+        elif path == "/api/xdp/stats":
+            self._send_json(PRIMARY_NODE.get_xdp_stats())
+
+        elif path == "/api/xdp/export_c":
+            c_code = PRIMARY_NODE.export_xdp_c_program()
+            self._send_json({
+                "success": True,
+                "c_code": c_code,
+                "lines": len(c_code.splitlines()),
+                "mesh_port": PRIMARY_NODE.bound_port or PRIMARY_NODE.requested_port,
+                "compiler_flags": "clang -O2 -target bpf -c xdp_ipvn7.c -o xdp_ipvn7.o",
+            })
+
+        elif path == "/api/mode/status":
+            self._send_json(PRIMARY_NODE.get_operating_mode_status())
+
+        elif path == "/api/mode/history":
+            history = PRIMARY_NODE.get_operating_mode_history()
+            self._send_json({
+                "success": True,
+                "history": history,
+                "count": len(history),
+            })
+
         elif path == "/api/upnp/status":
             self._send_json(PRIMARY_NODE.upnp_mapper.get_summary())
 
@@ -1396,6 +1443,182 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                     return
                 parsed_frame = PRIMARY_NODE.parse_enclave_frame(bytes.fromhex(raw_hex))
                 self._send_json({"success": True, "parsed": parsed_frame})
+
+        elif path == "/api/zkp/schnorr/prove":
+            from ipvn7.crypto.zkp import SovereignZKSchnorr
+            sk_hex = body.get("sk_hex")
+            pk_hex = body.get("pk_hex")
+            ctx = body.get("context", "web-dashboard")
+            if not sk_hex or not pk_hex:
+                x, Y = SovereignZKSchnorr.keygen()
+            else:
+                x, Y = int(sk_hex, 16), int(pk_hex, 16)
+            proof = SovereignZKSchnorr.prove(x, Y, context=ctx)
+            wire = SovereignZKSchnorr.to_wire(proof)
+            self._send_json({
+                "success": True,
+                "pk_hex": hex(Y),
+                "wire_hex": wire.hex(),
+                "wire_len": len(wire),
+                "mtu_valid": len(wire) <= 1280,
+                "proof": proof.to_dict(),
+            })
+
+        elif path == "/api/zkp/schnorr/verify":
+            from ipvn7.crypto.zkp import SovereignZKSchnorr, ZKSchnorrProof
+            wire_hex = body.get("wire_hex")
+            if wire_hex:
+                wire = bytes.fromhex(wire_hex)
+                proof = SovereignZKSchnorr.from_wire(wire)
+            else:
+                proof_dict = body.get("proof", {})
+                proof = ZKSchnorrProof.from_dict(proof_dict)
+            valid = SovereignZKSchnorr.verify(proof)
+            self._send_json({"success": True, "valid": valid, "pk_hex": proof.pk_hex})
+
+        elif path == "/api/zkp/range/prove":
+            from ipvn7.crypto.zkp import SovereignBulletproof
+            val = int(body.get("value", 42))
+            n_bits = int(body.get("n_bits", 8))
+            ctx = body.get("context", "balance-proof")
+            engine = SovereignBulletproof(n_bits=n_bits)
+            try:
+                proof = engine.prove(val, context=ctx)
+                wire = SovereignBulletproof.to_wire(proof)
+                self._send_json({
+                    "success": True,
+                    "commitment_hex": proof.commitment_hex,
+                    "wire_hex": wire.hex(),
+                    "wire_len": len(wire),
+                    "mtu_valid": len(wire) <= 1280,
+                    "n_bits": n_bits,
+                })
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=400)
+
+        elif path == "/api/zkp/range/verify":
+            from ipvn7.crypto.zkp import SovereignBulletproof
+            wire_hex = body.get("wire_hex")
+            n_bits = int(body.get("n_bits", 8))
+            engine = SovereignBulletproof(n_bits=n_bits)
+            if not wire_hex:
+                self._send_json({"success": False, "error": "Missing wire_hex"}, status=400)
+                return
+            proof = SovereignBulletproof.from_wire(bytes.fromhex(wire_hex))
+            valid = engine.verify(proof)
+            self._send_json({
+                "success": True,
+                "valid": valid,
+                "commitment_hex": proof.commitment_hex,
+                "n_bits": proof.n_bits,
+            })
+
+        elif path == "/api/ring/sign":
+            from ipvn7.security.ring_signature import SovereignRingSignature, RingMember
+            msg = body.get("message", "IPVN7_ANONYMOUS_VOTE").encode("utf-8")
+            ring_size = max(2, min(8, int(body.get("ring_size", 4))))
+            members = [RingMember.generate() for _ in range(ring_size)]
+            signer_idx = int(body.get("signer_index", 0)) % ring_size
+            signer = members[signer_idx]
+            epoch = body.get("epoch", "2026-10-21:00")
+            ctx = body.get("ring_context", "GOVERNANCE_VOTE")
+            sig = SovereignRingSignature.sign(msg, signer, members, epoch=epoch, ring_context=ctx)
+            wire = SovereignRingSignature.to_wire(sig)
+            self._send_json({
+                "success": True,
+                "wire_hex": wire.hex(),
+                "wire_len": len(wire),
+                "mtu_valid": len(wire) <= 1280,
+                "ring_pks": sig.ring_pks,
+                "key_image_hex": sig.key_image_hex,
+                "epoch": sig.epoch,
+            })
+
+        elif path == "/api/ring/verify":
+            from ipvn7.security.ring_signature import SovereignRingSignature
+            wire_hex = body.get("wire_hex")
+            msg = body.get("message", "IPVN7_ANONYMOUS_VOTE").encode("utf-8")
+            if not wire_hex:
+                self._send_json({"success": False, "error": "Missing wire_hex"}, status=400)
+                return
+            sig = SovereignRingSignature.from_wire(bytes.fromhex(wire_hex))
+            valid = SovereignRingSignature.verify(sig, msg)
+            self._send_json({
+                "success": True,
+                "valid": valid,
+                "key_image_hex": sig.key_image_hex,
+                "ring_size": len(sig.ring_pks),
+                "epoch": sig.epoch,
+            })
+
+        elif path == "/api/xdp/filter":
+            frame_hex = body.get("frame_hex")
+            payload_hex = body.get("payload_hex")
+            if frame_hex:
+                frame_bytes = bytes.fromhex(frame_hex)
+                action, reason = PRIMARY_NODE.process_xdp_frame(frame_bytes)
+                self._send_json({
+                    "success": True,
+                    "action": action.name,
+                    "action_code": int(action),
+                    "reason": reason,
+                    "frame_len": len(frame_bytes),
+                    "stats": PRIMARY_NODE.get_xdp_stats(),
+                })
+            elif payload_hex:
+                payload_bytes = bytes.fromhex(payload_hex)
+                action, reason = PRIMARY_NODE.process_xdp_payload(payload_bytes)
+                self._send_json({
+                    "success": True,
+                    "action": action.name,
+                    "action_code": int(action),
+                    "reason": reason,
+                    "payload_len": len(payload_bytes),
+                    "stats": PRIMARY_NODE.get_xdp_stats(),
+                })
+            else:
+                self._send_json({"success": False, "error": "Requiere 'frame_hex' o 'payload_hex'"}, status=400)
+
+        elif path == "/api/xdp/reset":
+            PRIMARY_NODE.reset_xdp_stats()
+            self._send_json({"success": True, "stats": PRIMARY_NODE.get_xdp_stats()})
+
+        elif path == "/api/xdp/synthesize":
+            magic_str = body.get("magic", "IP7H")
+            size = int(body.get("payload_size", 64))
+            from ipvn7.access.xdp_switch import XDPKernelSimulator
+            payload = magic_str.encode("ascii") + b"\x00" * max(0, size - len(magic_str))
+            frame = XDPKernelSimulator.synthesize_ethernet_frame(payload)
+            action, reason = PRIMARY_NODE.process_xdp_frame(frame)
+            self._send_json({
+                "success": True,
+                "magic": magic_str,
+                "frame_hex": frame.hex(),
+                "frame_len": len(frame),
+                "action": action.name,
+                "action_code": int(action),
+                "reason": reason,
+                "stats": PRIMARY_NODE.get_xdp_stats(),
+            })
+
+        elif path == "/api/mode/set":
+            mode_str = body.get("mode")
+            if not mode_str:
+                self._send_json({"success": False, "error": "Requiere campo 'mode' (MODE_OPEN, MODE_SAFE, MODE_DEGRADED)"}, status=400)
+                return
+            reason = body.get("reason", "api_request")
+            try:
+                status = PRIMARY_NODE.set_operating_mode(mode_str, reason=reason)
+                self._send_json({"success": True, "status": status})
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=400)
+
+        elif path == "/api/mode/evaluate":
+            loss_pct = float(body.get("loss_pct", 0.0))
+            drop_ratio_pct = float(body.get("drop_ratio_pct", 0.0))
+            buffer_util_pct = float(body.get("buffer_util_pct", 0.0))
+            status = PRIMARY_NODE.evaluate_operating_health(loss_pct, drop_ratio_pct, buffer_util_pct)
+            self._send_json({"success": True, "status": status})
 
         elif path in ("/api/mcp", "/mcp"):
             # Audit H-03: Mandatory authentication for MCP JSON-RPC control plane

@@ -1,17 +1,17 @@
 {
   "system": "IPVN 7 Autonomous Network Operating System",
-  "version": "7.12.0",
+  "version": "7.15.0",
   "git": {
     "branch": "main",
     "remote_origin": "https://github.com/galleguillosdavid-coder/Ipvn7-10.git",
-    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0", "v7.4.0", "v7.5.0", "v7.6.0", "v7.7.0", "v7.8.0", "v7.9.0", "v7.10.0", "v7.11.0", "v7.12.0"],
+    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0", "v7.4.0", "v7.5.0", "v7.6.0", "v7.7.0", "v7.8.0", "v7.9.0", "v7.10.0", "v7.11.0", "v7.12.0", "v7.13.0", "v7.14.0", "v7.15.0"],
     "clean_working_tree": true
   },
   "runtime_environment": {
     "os": "Windows 11 AMD64 (PowerShell)",
     "python": ".\\.venv\\Scripts\\python.exe (Python 3.14.6)",
     "pytest_command": ".\\.venv\\Scripts\\pytest.exe -q",
-    "test_suite_status": "122/122 passing (100% pass rate, 0 regressions)",
+    "test_suite_status": "142/142 passing (100% pass rate, 0 regressions)",
     "ports": {
       "web_ui": 7070,
       "mcp_server": "7070/mcp",
@@ -34,14 +34,32 @@
     "bitnet_quantization": "BITNET_B158_IP7B",
     "reciprocity_settlement": "IP7R_1280B_PROOF_OF_TRANSIT",
     "enclave_attestation_wire": "IP7E_1280B_CANONICAL_ENCLAVE",
+    "zkp_schnorr_range_wire": "IP7Z_1280B_CANONICAL_ZKP",
+    "ephemeral_ring_signature_wire": "IP7S_1280B_CANONICAL_RING_SIG",
+    "ebpf_xdp_early_drop": "WIRE_SPEED_O1_EARLY_DROP",
+    "operating_mode_tri_state": "MODE_OPEN_SAFE_DEGRADED",
+    "canonical_magic_headers": [
+      "IP7V", "IP7H", "IP7M", "IP7B", "IP7X", "IP7R", "IP7S", "IP7T", "IP7E", "IP7Z", "IP7P"
+    ],
     "ephemeral_rotation_hours": 24,
     "max_acceptable_test_failures": 0,
     "security_governance_policy": ".nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md"
   },
   "subsystems": {
-    "total_active_subsystems": 69,
+    "total_active_subsystems": 73,
     "network_layers": 4,
-    "mcp_tools_count": 69,
+    "mcp_tools_count": 74,
+    "operating_modes": [
+      "MODE_OPEN",
+      "MODE_SAFE",
+      "MODE_DEGRADED"
+    ],
+    "health_thresholds": {
+      "loss_pct": 30.0,
+      "drop_ratio_pct": 25.0,
+      "buffer_util_pct": 80.0,
+      "cooldown_sec": 10.0
+    },
     "hrs_frame_opcodes": [
       "ANNOUNCE (0x01)",
       "QUERY (0x02)",
@@ -70,8 +88,8 @@
   "documentation_hierarchy": [
     "README.md (Master Handover & Architecture Map)",
     ".nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md (Immutable Anti-Failure & Security Policy)",
-    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 69 Subsystems)",
-    "IPVN7_RFC_SPECIFICATION.md (61 Technical RFC Sections)",
+    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 73 Subsystems)",
+    "IPVN7_RFC_SPECIFICATION.md (66 Technical RFC Sections)",
     "genesis.md (Genesis Mandate v2.0)",
     ".nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md (Consolidated Decisions)",
     ".nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md (Edge AI & Media Datapath)",
@@ -86,11 +104,14 @@
     ".nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md (True Exit Relay IP7X)",
     ".nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md (Third Audit Remediation H-01 to H-10)",
     ".nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md (Sovereign Reciprocity Settlement IP7R)",
-    ".nexus/decisions/ADR-014-CRYPTOGRAPHIC-TEE-ENCLAVE-AND-RUNTIME-FORMAL-VERIFICATION.md (Cryptographic TEE Enclave & Runtime Formal Verification IP7E)"
+    ".nexus/decisions/ADR-014-CRYPTOGRAPHIC-TEE-ENCLAVE-AND-RUNTIME-FORMAL-VERIFICATION.md (Cryptographic TEE Enclave & Runtime Formal Verification IP7E)",
+    ".nexus/decisions/ADR-015-ZERO-KNOWLEDGE-PROOFS-AND-EPHEMERAL-RING-SIGNATURES.md (Zero-Knowledge Proofs & Ephemeral Ring Signatures IP7Z/IP7S)",
+    ".nexus/decisions/ADR-016-EBPF-XDP-WIRESPEED-SWITCH-AND-EARLY-DROP.md (eBPF/XDP Wire-Speed Switch & Early-Drop Engine IP7V..IP7P)",
+    ".nexus/decisions/ADR-017-TRI-STATE-OPERATING-MODE-CONTROLLER.md (Tri-State Operating Mode Controller & Adaptive Health Governor)"
   ],
   "handover": {
     "ready_for_clean_agent": true,
-    "audit_status": "LINE_P_TEE_AND_FORMAL_VERIFICATION_FULLY_CONSOLIDATED"
+    "audit_status": "LINE_T_TRI_STATE_OPERATING_MODES_AND_HEALTH_GOVERNOR_CONSOLIDATED"
   }
 }
 

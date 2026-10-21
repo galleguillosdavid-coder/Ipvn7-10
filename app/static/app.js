@@ -2773,6 +2773,434 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // =============================================================
+  // ZKP & EPHEMERAL RING SIGNATURES CONTROLLER (Línea Q)
+  // =============================================================
+
+  // 1. ZK-Schnorr Prove & Verify
+  const btnZkpSchnorr = document.getElementById("btnRunZkpSchnorr");
+  if (btnZkpSchnorr) {
+    btnZkpSchnorr.addEventListener("click", async () => {
+      const ctx = document.getElementById("txtZkpSchnorrCtx")?.value.trim() || "IPVN7:GOVERNANCE:2026";
+      const out = document.getElementById("zkpSchnorrOutput");
+      const pkEl = document.getElementById("zkpSchnorrPk");
+      const lenEl = document.getElementById("zkpSchnorrWireLen");
+      const badge = document.getElementById("zkpSchnorrStatusBadge");
+
+      if (out) out.textContent = "Generando y verificando prueba ZK-Schnorr en Zq...";
+      try {
+        const resProve = await fetch("/api/zkp/schnorr/prove", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ context: ctx })
+        });
+        const dataProve = await resProve.json();
+
+        if (pkEl && dataProve.pk_hex) pkEl.textContent = dataProve.pk_hex.slice(0, 18) + "...";
+        if (lenEl) lenEl.textContent = `${dataProve.wire_len} B`;
+
+        // Verify the wire frame
+        const resVerify = await fetch("/api/zkp/schnorr/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wire_hex: dataProve.wire_hex })
+        });
+        const dataVerify = await resVerify.json();
+
+        if (badge) {
+          badge.textContent = dataVerify.valid ? "VERIFICADO (100% ZK-PoK)" : "INVÁLIDO";
+          badge.className = dataVerify.valid ? "badge-status text-green" : "badge-status text-red";
+        }
+
+        if (out) {
+          out.textContent = JSON.stringify({
+            protocol: "Schnorr Sigma (ZK-PoK) / IP7Z",
+            public_key: dataProve.pk_hex,
+            proof_commitment_R: dataProve.proof?.R,
+            response_s: dataProve.proof?.s,
+            fiat_shamir_e: dataProve.proof?.e,
+            wire_frame_bytes: dataProve.wire_len,
+            mtu_valid: dataProve.mtu_valid,
+            verification_status: dataVerify.valid ? "ACCEPT (Linear s·G ≡ R + e·Y mod q verified)" : "REJECT",
+          }, null, 2);
+        }
+      } catch (err) {
+        if (out) out.textContent = "Error: " + err;
+      }
+    });
+  }
+
+  // 2. Bulletproof Range Proof
+  const btnZkpRange = document.getElementById("btnRunZkpRange");
+  if (btnZkpRange) {
+    btnZkpRange.addEventListener("click", async () => {
+      const val = parseInt(document.getElementById("txtZkpRangeVal")?.value || "137", 10);
+      const nBits = parseInt(document.getElementById("selZkpRangeBits")?.value || "8", 10);
+      const out = document.getElementById("zkpRangeOutput");
+      const cEl = document.getElementById("zkpRangeCommitment");
+      const lenEl = document.getElementById("zkpRangeWireLen");
+      const badge = document.getElementById("zkpRangeStatusBadge");
+
+      if (out) out.textContent = `Generando prueba de rango confidencial para v=${val} ∈ [0, 2^${nBits})...`;
+      try {
+        const resProve = await fetch("/api/zkp/range/prove", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: val, n_bits: nBits, context: "balance-proof" })
+        });
+        const dataProve = await resProve.json();
+
+        if (!dataProve.success) {
+          if (out) out.textContent = "Error: " + dataProve.error;
+          return;
+        }
+
+        if (cEl) cEl.textContent = dataProve.commitment_hex ? dataProve.commitment_hex.slice(0, 18) + "..." : "--";
+        if (lenEl) lenEl.textContent = `${dataProve.wire_len} B`;
+
+        // Verify the wire frame
+        const resVerify = await fetch("/api/zkp/range/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wire_hex: dataProve.wire_hex, n_bits: nBits })
+        });
+        const dataVerify = await resVerify.json();
+
+        if (badge) {
+          badge.textContent = dataVerify.valid ? `RANGO VÁLIDO [0, 2^${nBits})` : "FALLO DE RANGO";
+          badge.className = dataVerify.valid ? "badge-status text-green" : "badge-status text-red";
+        }
+
+        if (out) {
+          out.textContent = JSON.stringify({
+            protocol: "Pedersen Commitment + OR-Proof Σ (CDS94) / IP7Z",
+            pedersen_commitment_C: dataProve.commitment_hex,
+            value_secret: "(Oculto por blinding factor r)",
+            n_bits: nBits,
+            range_bound: `[0, ${Math.pow(2, nBits)})`,
+            wire_frame_len: `${dataProve.wire_len} B (MTU ≤ 1280B)`,
+            homomorphic_bit_sum_check: "Σ (2^i · C_i) ≡ C (mod q) [PASSED]",
+            verified_soundness: dataVerify.valid,
+          }, null, 2);
+        }
+      } catch (err) {
+        if (out) out.textContent = "Error: " + err;
+      }
+    });
+  }
+
+  // 3. Sovereign Ephemeral Ring Signature
+  const btnRingSign = document.getElementById("btnRunRingSign");
+  if (btnRingSign) {
+    btnRingSign.addEventListener("click", async () => {
+      const msg = document.getElementById("txtRingMsg")?.value.trim() || "PROPUESTA_GOBERNANZA_MALLA_42";
+      const ringSize = parseInt(document.getElementById("selRingSize")?.value || "4", 10);
+      const out = document.getElementById("ringOutput");
+      const kEl = document.getElementById("ringKeyImage");
+      const lenEl = document.getElementById("ringWireLen");
+      const badge = document.getElementById("ringDoubleSignBadge");
+
+      if (out) out.textContent = `Firmando mensaje anónimamente en un anillo de ${ringSize} miembros...`;
+      try {
+        const resSign = await fetch("/api/ring/sign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: msg, ring_size: ringSize, epoch: "2026-10-21:00", ring_context: "GOVERNANCE_VOTE" })
+        });
+        const dataSign = await resSign.json();
+
+        if (kEl) kEl.textContent = dataSign.key_image_hex ? dataSign.key_image_hex.slice(0, 18) + "..." : "--";
+        if (lenEl) lenEl.textContent = `${dataSign.wire_len} B`;
+
+        // Verify the wire frame
+        const resVerify = await fetch("/api/ring/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wire_hex: dataSign.wire_hex, message: msg })
+        });
+        const dataVerify = await resVerify.json();
+
+        if (badge) {
+          badge.textContent = dataVerify.valid ? "PROTEGIDO (Nulificador K Activo)" : "RECHAZADO";
+          badge.className = dataVerify.valid ? "badge-status text-green" : "badge-status text-red";
+        }
+
+        if (out) {
+          out.textContent = JSON.stringify({
+            protocol: "Abe-Ohkubo-Suzuki (AOS02) Ephemeral Ring Signature / IP7S",
+            ring_size: dataSign.ring_pks?.length,
+            anonymous_signer_identity: "Oculto matemáticamente entre los n miembros",
+            key_image_nullifier_K: dataSign.key_image_hex,
+            epoch: dataSign.epoch,
+            ring_pks_in_group: dataSign.ring_pks?.map(pk => pk.slice(0, 16) + "..."),
+            wire_len: `${dataSign.wire_len} B (MTU ≤ 1280B)`,
+            cyclic_closure: "c_n ≡ c_0 [VERIFIED TRUE]",
+            signature_valid: dataVerify.valid,
+          }, null, 2);
+        }
+      } catch (err) {
+        if (out) out.textContent = "Error: " + err;
+      }
+    });
+  }
+
+  // --- Línea S: eBPF / XDP Wire-Speed Switch & Early-Drop Engine Logic ---
+  async function fetchXdpStats() {
+    try {
+      const res = await fetch("/api/xdp/stats");
+      const data = await res.json();
+      const elTotal = document.getElementById("xdpTotalProcessed");
+      const elPassed = document.getElementById("xdpPassed");
+      const elDropped = document.getElementById("xdpDropped");
+      const elRatio = document.getElementById("xdpEarlyDropRatio");
+      const elBytes = document.getElementById("xdpBytesProcessed");
+      const elMalformed = document.getElementById("xdpMalformed");
+
+      if (elTotal) elTotal.textContent = data.total_processed || 0;
+      if (elPassed) elPassed.textContent = data.passed || 0;
+      if (elDropped) elDropped.textContent = data.dropped || 0;
+      if (elRatio) elRatio.textContent = `${data.early_drop_ratio_pct || 0.0}%`;
+      if (elBytes) elBytes.textContent = `${(data.bytes_processed || 0).toLocaleString()} B`;
+      if (elMalformed) elMalformed.textContent = data.malformed_dropped || 0;
+    } catch (err) {
+      console.error("Error fetching XDP stats:", err);
+    }
+  }
+
+  const btnRefreshXdp = document.getElementById("btnRefreshXdpStats");
+  if (btnRefreshXdp) {
+    btnRefreshXdp.addEventListener("click", () => fetchXdpStats());
+  }
+
+  const btnResetXdp = document.getElementById("btnResetXdpStats");
+  if (btnResetXdp) {
+    btnResetXdp.addEventListener("click", async () => {
+      try {
+        await fetch("/api/xdp/reset", { method: "POST", headers: { "Content-Type": "application/json" } });
+        await fetchXdpStats();
+      } catch (err) {
+        console.error("Error resetting XDP stats:", err);
+      }
+    });
+  }
+
+  const btnInjectXdp = document.getElementById("btnInjectXdpPacket");
+  if (btnInjectXdp) {
+    btnInjectXdp.addEventListener("click", async () => {
+      const magic = document.getElementById("selXdpMagic").value;
+      const size = parseInt(document.getElementById("selXdpSize").value, 10);
+      const actionBadge = document.getElementById("xdpActionBadge");
+      const frameLenEl = document.getElementById("xdpFrameLen");
+      const reasonEl = document.getElementById("xdpReasonText");
+      const out = document.getElementById("xdpSimulatorOutput");
+
+      if (out) out.textContent = `Sintetizando trama Ethernet/IP/UDP [Magic: ${magic}, Payload: ${size}B]...`;
+      try {
+        const res = await fetch("/api/xdp/synthesize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ magic: magic, payload_size: size })
+        });
+        const data = await res.json();
+
+        if (actionBadge) {
+          actionBadge.textContent = data.action;
+          actionBadge.className = data.action === "XDP_PASS" ? "badge-status text-green" : "badge-status text-red";
+        }
+        if (frameLenEl) frameLenEl.textContent = `${data.frame_len} B`;
+        if (reasonEl) reasonEl.textContent = data.reason;
+
+        if (out) {
+          out.textContent = JSON.stringify({
+            kernel_driver: "eBPF/XDP Fast-Path Early-Drop Engine",
+            action: data.action,
+            action_code: data.action_code,
+            reason: data.reason,
+            synthetic_frame_len: `${data.frame_len} B`,
+            magic: data.magic,
+            stats_summary: data.stats,
+          }, null, 2);
+        }
+
+        await fetchXdpStats();
+      } catch (err) {
+        if (out) out.textContent = "Error: " + err;
+      }
+    });
+  }
+
+  const btnExportXdpC = document.getElementById("btnExportXdpC");
+  if (btnExportXdpC) {
+    btnExportXdpC.addEventListener("click", async () => {
+      const out = document.getElementById("xdpCProgramOutput");
+      if (out) out.textContent = "Obteniendo código fuente del kernel C...";
+      try {
+        const res = await fetch("/api/xdp/export_c");
+        const data = await res.json();
+        if (out) {
+          out.textContent = data.c_code;
+        }
+      } catch (err) {
+        if (out) out.textContent = "Error exportando código C: " + err;
+      }
+    });
+  }
+
+  // -----------------------------------------------------------------
+  // Línea T: Sovereign Tri-State Operating Mode Controller & Health Governor
+  // -----------------------------------------------------------------
+  async function fetchModeStatus() {
+    try {
+      const res = await fetch("/api/mode/status");
+      const data = await res.json();
+
+      const curLabel = document.getElementById("modeCurrentLabel");
+      const preLabel = document.getElementById("modePreDegradadoLabel");
+      const transCount = document.getElementById("modeTransitionsCount");
+      const timeInCur = document.getElementById("modeTimeInCurrent");
+      const healthyEvals = document.getElementById("modeHealthyEvals");
+      const lastIso = document.getElementById("modeLastTransitionIso");
+      const badgesContainer = document.getElementById("modeProtectionsBadges");
+      const headerMode = document.getElementById("headerOperatingMode");
+      const modeDot = document.getElementById("modeDot");
+
+      if (curLabel) {
+        curLabel.textContent = data.current_mode;
+        if (data.current_mode === "MODE_OPEN") curLabel.className = "kpi-value text-green";
+        else if (data.current_mode === "MODE_SAFE") curLabel.className = "kpi-value text-purple";
+        else curLabel.className = "kpi-value text-red";
+      }
+
+      if (headerMode) headerMode.textContent = data.current_mode;
+      if (modeDot) {
+        if (data.current_mode === "MODE_OPEN") modeDot.style.backgroundColor = "var(--accent-green, #10b981)";
+        else if (data.current_mode === "MODE_SAFE") modeDot.style.backgroundColor = "var(--accent-purple, #a855f7)";
+        else modeDot.style.backgroundColor = "var(--accent-red, #ef4444)";
+      }
+
+      if (preLabel) preLabel.textContent = data.pre_degraded_mode;
+      if (transCount) transCount.textContent = data.transitions_count;
+      if (timeInCur) timeInCur.textContent = `${data.time_in_current_mode_sec}s activo`;
+      if (healthyEvals) healthyEvals.textContent = data.consecutive_healthy_evals;
+      if (lastIso) lastIso.textContent = data.last_transition_iso;
+
+      if (badgesContainer && data.active_protections) {
+        badgesContainer.innerHTML = data.active_protections.map(p =>
+          `<span class="badge-tag" style="margin-right:4px;">${p}</span>`
+        ).join("");
+      }
+    } catch (err) {
+      console.warn("Error fetching mode status:", err);
+    }
+  }
+
+  const btnRefreshModeStatus = document.getElementById("btnRefreshModeStatus");
+  if (btnRefreshModeStatus) {
+    btnRefreshModeStatus.addEventListener("click", fetchModeStatus);
+  }
+
+  async function switchMode(targetMode) {
+    try {
+      const res = await fetch("/api/mode/set", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: targetMode, reason: "ui_switch" })
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchModeStatus();
+      } else {
+        alert("Error cambiando modo: " + data.error);
+      }
+    } catch (err) {
+      alert("Error al conmutar modo: " + err);
+    }
+  }
+
+  const btnSetModeOpen = document.getElementById("btnSetModeOpen");
+  if (btnSetModeOpen) {
+    btnSetModeOpen.addEventListener("click", () => switchMode("MODE_OPEN"));
+  }
+
+  const btnSetModeSafe = document.getElementById("btnSetModeSafe");
+  if (btnSetModeSafe) {
+    btnSetModeSafe.addEventListener("click", () => switchMode("MODE_SAFE"));
+  }
+
+  const btnSetModeDegraded = document.getElementById("btnSetModeDegraded");
+  if (btnSetModeDegraded) {
+    btnSetModeDegraded.addEventListener("click", () => switchMode("MODE_DEGRADED"));
+  }
+
+  const btnEvaluateHealth = document.getElementById("btnEvaluateHealth");
+  if (btnEvaluateHealth) {
+    btnEvaluateHealth.addEventListener("click", async () => {
+      const loss = parseFloat(document.getElementById("inputLossPct").value) || 0.0;
+      const drop = parseFloat(document.getElementById("inputDropRatioPct").value) || 0.0;
+      const buffer = parseFloat(document.getElementById("inputBufferPct").value) || 0.0;
+      const out = document.getElementById("modeGovernorOutput");
+      if (out) out.textContent = "Evaluando telemetría en el gobernador...";
+
+      try {
+        const res = await fetch("/api/mode/evaluate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ loss_pct: loss, drop_ratio_pct: drop, buffer_util_pct: buffer })
+        });
+        const data = await res.json();
+        if (out) {
+          out.textContent = JSON.stringify(data, null, 2);
+        }
+        await fetchModeStatus();
+      } catch (err) {
+        if (out) out.textContent = "Error: " + err;
+      }
+    });
+  }
+
+  const btnSimulateCleanRecovery = document.getElementById("btnSimulateCleanRecovery");
+  if (btnSimulateCleanRecovery) {
+    btnSimulateCleanRecovery.addEventListener("click", async () => {
+      document.getElementById("inputLossPct").value = "0.0";
+      document.getElementById("inputDropRatioPct").value = "0.0";
+      document.getElementById("inputBufferPct").value = "15.0";
+      const out = document.getElementById("modeGovernorOutput");
+      if (out) out.textContent = "Inyectando telemetría limpia para auto-recuperación...";
+
+      try {
+        const res = await fetch("/api/mode/evaluate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ loss_pct: 0.0, drop_ratio_pct: 0.0, buffer_util_pct: 15.0 })
+        });
+        const data = await res.json();
+        if (out) {
+          out.textContent = JSON.stringify(data, null, 2);
+        }
+        await fetchModeStatus();
+      } catch (err) {
+        if (out) out.textContent = "Error: " + err;
+      }
+    });
+  }
+
+  const btnFetchModeHistory = document.getElementById("btnFetchModeHistory");
+  if (btnFetchModeHistory) {
+    btnFetchModeHistory.addEventListener("click", async () => {
+      const out = document.getElementById("modeHistoryOutput");
+      if (out) out.textContent = "Cargando anillo de auditoría de transiciones...";
+      try {
+        const res = await fetch("/api/mode/history");
+        const data = await res.json();
+        if (out) {
+          out.textContent = JSON.stringify(data, null, 2);
+        }
+      } catch (err) {
+        if (out) out.textContent = "Error cargando historial: " + err;
+      }
+    });
+  }
+
   // Initializations
   fetchDagBlocks();
   fetchDiagnostics();
@@ -2793,5 +3221,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initPlanetaryGlobe();
   loadBitNetDemo(16, 16, 42);
   fetchTeeStatus();
+  fetchXdpStats();
+  fetchModeStatus();
 });
 

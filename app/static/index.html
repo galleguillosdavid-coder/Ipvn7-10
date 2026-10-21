@@ -31,6 +31,10 @@
         <span class="pulsing-dot"></span>
         <span id="daemonStatus">LIVE MESH ACTIVE</span>
       </div>
+      <div class="status-indicator mode-badge-indicator" id="headerModeWrap">
+        <span class="pulsing-dot" id="modeDot" style="background-color: var(--accent-cyan, #06b6d4);"></span>
+        <span id="headerOperatingMode">MODE_OPEN</span>
+      </div>
       <div class="pqc-shield">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span>FIPS 203 / 204 HARDENED</span>
@@ -148,8 +152,11 @@
           <button class="tab-btn" data-tab="tab-uin-shadow-pfo">Identidad UIN, Shadow & PFO</button>
           <button class="tab-btn" data-tab="tab-wan-desktop">Sondeo WAN & Escritorio Remoto</button>
           <button class="tab-btn" data-tab="tab-bitnet">BitNet b1.58 Ternary AI</button>
-          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (69 Herramientas IA)</button>
+          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (74 Herramientas IA)</button>
           <button class="tab-btn" data-tab="tab-tee-formal">Enclave TEE & Validación Formal</button>
+          <button class="tab-btn" data-tab="tab-zkp-ring">Línea Q: ZKP & Firmas en Anillo</button>
+          <button class="tab-btn" data-tab="tab-xdp">Línea S: eBPF/XDP Switch & Early-Drop</button>
+          <button class="tab-btn" data-tab="tab-operating-mode">Línea T: Modos Tri-Estado & Salud</button>
         </div>
 
         <!-- Tab 1: PQ-QUIC & Migration -->
@@ -1406,6 +1413,9 @@
                   <option value="ipvn7_tee_attest_node">ipvn7_tee_attest_node</option>
                   <option value="ipvn7_verify_runtime_formal_invariants">ipvn7_verify_runtime_formal_invariants</option>
                   <option value="ipvn7_dispatch_enclave_frame">ipvn7_dispatch_enclave_frame</option>
+                  <option value="ipvn7_zkp_schnorr_prove">ipvn7_zkp_schnorr_prove</option>
+                  <option value="ipvn7_zkp_range_proof">ipvn7_zkp_range_proof</option>
+                  <option value="ipvn7_ring_signature">ipvn7_ring_signature</option>
                 </select>
                 <button class="btn btn-primary btn-small" id="btnExecuteMcpTool">Invocar Herramienta MCP</button>
               </div>
@@ -1473,6 +1483,261 @@
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <!-- Tab 22: ZKP & Ephemeral Ring Signatures (Línea Q) -->
+        <div class="tab-pane" id="tab-zkp-ring">
+          <!-- Card 1: ZK-Schnorr -->
+          <div class="interactive-card">
+            <div class="bench-header">
+              <h3>Pruebas de Conocimiento Cero ZK-Schnorr (Protocolo $\Sigma$ / IP7Z)</h3>
+              <button class="btn btn-primary btn-small" id="btnRunZkpSchnorr">Generar y Verificar ZK-PoK</button>
+            </div>
+            <p class="desc">Demuestra matemáticamente la posesión de la clave privada raíz $x$ tal que $Y = x \cdot G \pmod q$ sin revelar el escalar secreto. Wire canónico IP7Z $\le 1280$B.</p>
+
+            <div class="action-row mt-2" style="display:flex; gap:8px; align-items:center;">
+              <input type="text" id="txtZkpSchnorrCtx" class="input-field" placeholder="Contexto de sesión (ej: IPVN7:GOVERNANCE:2026)" value="IPVN7:GOVERNANCE:2026" style="flex:1;">
+            </div>
+
+            <div class="simulation-metrics-bar mt-2">
+              <div class="sim-metric"><span>Clave Pública Y:</span> <strong id="zkpSchnorrPk" class="mono-text" style="font-size:0.75rem;">--</strong></div>
+              <div class="sim-metric"><span>Longitud Wire:</span> <strong id="zkpSchnorrWireLen">--</strong></div>
+              <div class="sim-metric"><span>Límite MTU:</span> <strong id="zkpSchnorrMtuBadge" class="badge-status text-green">≤ 1280B</strong></div>
+              <div class="sim-metric"><span>Verificación ZK:</span> <strong id="zkpSchnorrStatusBadge" class="badge-status text-cyan">LISTO</strong></div>
+            </div>
+
+            <pre class="json-viewer mono-text mt-2" id="zkpSchnorrOutput" style="max-height:120px; overflow-y:auto;">Presione 'Generar y Verificar ZK-PoK' para ejecutar el protocolo Sigma de 3 pasos...</pre>
+          </div>
+
+          <!-- Card 2: Bulletproofs Range Proof -->
+          <div class="interactive-card mt-4">
+            <div class="bench-header">
+              <h3>Prueba de Rango Confidencial Bulletproofs (Pedersen / IP7Z)</h3>
+              <button class="btn btn-accent btn-small" id="btnRunZkpRange">Comprometer y Probar Rango</button>
+            </div>
+            <p class="desc">Compromiso homomórfico $C = v \cdot G + r \cdot H \pmod q$ con descomposición binaria y OR-proofs $\Sigma$ 1-de-2 (CDS94). Demuestra que el saldo $v \in [0, 2^n)$ sin exponer la cifra.</p>
+
+            <div class="action-row mt-2" style="display:flex; gap:12px; align-items:center;">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Saldo Confidencial $v$:
+                <input type="number" id="txtZkpRangeVal" class="input-field" value="137" min="0" max="65535" style="width:110px; margin-left:6px;">
+              </label>
+              <label style="font-size:0.85rem; color:var(--text-muted);">Bits $n$:
+                <select id="selZkpRangeBits" class="select-field" style="margin-left:6px;">
+                  <option value="8" selected>8 bits [0, 256)</option>
+                  <option value="16">16 bits [0, 65536)</option>
+                  <option value="32">32 bits [0, 4.29B)</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="simulation-metrics-bar mt-2">
+              <div class="sim-metric"><span>Compromiso C:</span> <strong id="zkpRangeCommitment" class="mono-text" style="font-size:0.75rem;">--</strong></div>
+              <div class="sim-metric"><span>Tamaño Trama:</span> <strong id="zkpRangeWireLen">--</strong></div>
+              <div class="sim-metric"><span>Homomorfismo:</span> <strong id="zkpRangeHomomorphicBadge" class="badge-status text-green">VERIFICADO</strong></div>
+              <div class="sim-metric"><span>Estado Rango:</span> <strong id="zkpRangeStatusBadge" class="badge-status text-cyan">EN ESPERA</strong></div>
+            </div>
+
+            <pre class="json-viewer mono-text mt-2" id="zkpRangeOutput" style="max-height:120px; overflow-y:auto;">Configure el saldo confidencial y presione 'Comprometer y Probar Rango'...</pre>
+          </div>
+
+          <!-- Card 3: Ephemeral Ring Signatures -->
+          <div class="interactive-card mt-4">
+            <div class="bench-header">
+              <h3>Firmas en Anillo Efímeras (AOS02 / IP7S) con Nulificador</h3>
+              <button class="btn btn-green btn-small" id="btnRunRingSign">Firmar en Anillo de Forma Anónima</button>
+            </div>
+            <p class="desc">Firma en anillo 1-de-$n$ demostrando pertenencia al grupo de validadores sin revelar el índice del firmante. El nulificador `key_image` $K = x_s \cdot H(PK_s)$ previene el doble voto en la misma época.</p>
+
+            <div class="action-row mt-2" style="display:flex; gap:12px; align-items:center;">
+              <input type="text" id="txtRingMsg" class="input-field" placeholder="Mensaje a firmar (ej: PROPUESTA_GOBERNANZA_MALLA_42)" value="PROPUESTA_GOBERNANZA_MALLA_42" style="flex:1;">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Miembros del Anillo:
+                <select id="selRingSize" class="select-field" style="margin-left:6px;">
+                  <option value="3">3 Miembros</option>
+                  <option value="4" selected>4 Miembros</option>
+                  <option value="5">5 Miembros</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="simulation-metrics-bar mt-2">
+              <div class="sim-metric"><span>Nulificador K:</span> <strong id="ringKeyImage" class="mono-text" style="font-size:0.75rem;">--</strong></div>
+              <div class="sim-metric"><span>Trama Wire IP7S:</span> <strong id="ringWireLen">--</strong></div>
+              <div class="sim-metric"><span>Anonimato:</span> <strong class="badge-status text-green">1-de-n CERRADO</strong></div>
+              <div class="sim-metric"><span>Anti-Doble-Voto:</span> <strong id="ringDoubleSignBadge" class="badge-status text-cyan">PROTEGIDO</strong></div>
+            </div>
+
+            <pre class="json-viewer mono-text mt-2" id="ringOutput" style="max-height:140px; overflow-y:auto;">Presione 'Firmar en Anillo de Forma Anónima' para emitir la firma AOS02...</pre>
+          </div>
+        </div>
+
+        <!-- Tab: Línea S - eBPF / XDP Wire-Speed Switch & Early-Drop Engine -->
+        <div class="tab-pane" id="tab-xdp">
+          <!-- Card 1: Live Kernel Telemetry -->
+          <div class="interactive-card">
+            <div class="bench-header">
+              <h3>Conmutador eBPF/XDP de Kernel (Línea S / Fast-Path en Alambre)</h3>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-outline btn-small" id="btnRefreshXdpStats">Actualizar Métricas</button>
+                <button class="btn btn-warning btn-small" id="btnResetXdpStats">Reiniciar Contadores</button>
+              </div>
+            </div>
+            <p class="desc">Emulación rigurosa del driver XDP de Linux kernel para conmutación lock-free en O(1). Descarta en alambre paquetes ilegítimos o que violen MTU antes de asignar búferes de socket.</p>
+
+            <div class="simulation-metrics-bar mt-2">
+              <div class="sim-metric"><span>Total Procesados:</span> <strong id="xdpTotalProcessed" class="text-white">0</strong></div>
+              <div class="sim-metric"><span>Admitidos (PASS):</span> <strong id="xdpPassed" class="text-green">0</strong></div>
+              <div class="sim-metric"><span>Descartados (DROP):</span> <strong id="xdpDropped" class="text-amber">0</strong></div>
+              <div class="sim-metric"><span>Early-Drop Ratio:</span> <strong id="xdpEarlyDropRatio" class="badge-status text-cyan">0.0%</strong></div>
+            </div>
+
+            <div class="simulation-metrics-bar mt-2">
+              <div class="sim-metric"><span>Bytes Procesados:</span> <strong id="xdpBytesProcessed" class="mono-text">0 B</strong></div>
+              <div class="sim-metric"><span>Truncados/Malformados:</span> <strong id="xdpMalformed" class="text-red">0</strong></div>
+              <div class="sim-metric"><span>Invariante MTU:</span> <strong class="badge-status text-green">≤ 1280B REFORZADO</strong></div>
+              <div class="sim-metric"><span>Verificador eBPF:</span> <strong class="badge-status text-cyan">BOUNDS CHECKED</strong></div>
+            </div>
+          </div>
+
+          <!-- Card 2: Packet Injector & Bounds-Checked Simulator -->
+          <div class="interactive-card mt-4">
+            <div class="bench-header">
+              <h3>Inyector de Tramas Sintéticas & Verificador de Límites</h3>
+              <button class="btn btn-primary btn-small" id="btnInjectXdpPacket">Sintetizar & Conmutar Trama</button>
+            </div>
+            <p class="desc">Sintetiza una trama Ethernet + IPv4 + UDP canónica y la somete al motor de inspección eBPF. Comprueba números mágicos canónicos y restricciones de MTU en tiempo real.</p>
+
+            <div class="action-row mt-2" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Cabecera Mágica:
+                <select id="selXdpMagic" class="select-field" style="margin-left:6px;">
+                  <option value="IP7H" selected>IP7H (HRS Substrato Silencioso)</option>
+                  <option value="IP7V">IP7V (Legacy Genesis Datagram)</option>
+                  <option value="IP7Z">IP7Z (Zero-Knowledge Proof)</option>
+                  <option value="IP7S">IP7S (Ring Signature / DHT Sync)</option>
+                  <option value="IP7E">IP7E (TEE Enclave Sealed Frame)</option>
+                  <option value="IP7B">IP7B (BitNet AI Quantized)</option>
+                  <option value="IP7R">IP7R (Reciprocity Token)</option>
+                  <option value="IP7M">IP7M (Mobility Anchor Ticket)</option>
+                  <option value="IP7T">IP7T (Tunnel Telemetry PMTU)</option>
+                  <option value="IP7P">IP7P (WAN Prober Frame)</option>
+                  <option value="FAKE">MALICIOUS_DROP (Foreign UDP Traffic)</option>
+                </select>
+              </label>
+
+              <label style="font-size:0.85rem; color:var(--text-muted);">Tamaño Payload:
+                <select id="selXdpSize" class="select-field" style="margin-left:6px;">
+                  <option value="64" selected>64 Bytes (Normal)</option>
+                  <option value="512">512 Bytes (Normal)</option>
+                  <option value="1280">1280 Bytes (MTU Máximo Válido)</option>
+                  <option value="1500">1500 Bytes (Violación MTU -> DROP)</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="simulation-metrics-bar mt-2">
+              <div class="sim-metric"><span>Acción Kernel:</span> <strong id="xdpActionBadge" class="badge-status text-cyan">EN ESPERA</strong></div>
+              <div class="sim-metric"><span>Longitud Trama:</span> <strong id="xdpFrameLen">--</strong></div>
+              <div class="sim-metric"><span>Diagnóstico:</span> <strong id="xdpReasonText" class="mono-text" style="font-size:0.75rem;">--</strong></div>
+            </div>
+
+            <pre class="json-viewer mono-text mt-2" id="xdpSimulatorOutput" style="max-height:120px; overflow-y:auto;">Seleccione parámetros y presione 'Sintetizar & Conmutar Trama' para evaluar...</pre>
+          </div>
+
+          <!-- Card 3: Native C eBPF Kernel Program Export -->
+          <div class="interactive-card mt-4">
+            <div class="bench-header">
+              <h3>Exportador de Programa C eBPF / XDP Nativo</h3>
+              <button class="btn btn-accent btn-small" id="btnExportXdpC">Obtener Fuente C Nativo</button>
+            </div>
+            <p class="desc">Código fuente C oficial del programa `xdp_ipvn7.c` verificado para compilación directa en Linux con `clang -O2 -target bpf -c xdp_ipvn7.c -o xdp_ipvn7.o`.</p>
+
+            <pre class="json-viewer mono-text mt-2" id="xdpCProgramOutput" style="max-height:160px; overflow-y:auto;">Haga clic en 'Obtener Fuente C Nativo' para visualizar el programa del kernel eBPF...</pre>
+          </div>
+        </div>
+
+        <!-- Tab 20: Línea T - Tri-State Operating Mode Controller & Adaptive Health Governor -->
+        <div class="tab-pane" id="tab-operating-mode">
+          <!-- Card 1: Live Status & Active Protections -->
+          <div class="interactive-card">
+            <div class="bench-header">
+              <h3>Gobernador de Modos de Operación Tri-Estado (Línea T)</h3>
+              <div class="actions">
+                <button class="btn btn-outline btn-small" id="btnRefreshModeStatus">Refrescar Estado</button>
+              </div>
+            </div>
+            <p class="desc">Controlador macro-atómico que orquesta el perfil de seguridad del nodo entre tres estados canónicos (RFC Sec 66 / 0.7 Sec 4.8): <strong>MODE_OPEN</strong> (malla nominal abierta), <strong>MODE_SAFE</strong> (nodo oscuro sigiloso con Sphinx forzado) y <strong>MODE_DEGRADED</strong> (austeridad defensiva bajo congestión o ataque).</p>
+
+            <div class="kpi-grid mt-2" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+              <div class="glass-panel p-2">
+                <span class="kpi-label">Modo Activo</span>
+                <span class="kpi-value text-cyan" id="modeCurrentLabel">MODE_OPEN</span>
+                <span class="kpi-meta" id="modeTimeInCurrent">0s activo</span>
+              </div>
+              <div class="glass-panel p-2">
+                <span class="kpi-label">Modo Pre-Degradado</span>
+                <span class="kpi-value mono-text" id="modePreDegradadoLabel">MODE_OPEN</span>
+                <span class="kpi-meta">Punto de retorno tras alivio</span>
+              </div>
+              <div class="glass-panel p-2">
+                <span class="kpi-label">Transiciones</span>
+                <span class="kpi-value text-purple" id="modeTransitionsCount">0</span>
+                <span class="kpi-meta" id="modeLastTransitionIso">--</span>
+              </div>
+              <div class="glass-panel p-2">
+                <span class="kpi-label">Evals Saludables</span>
+                <span class="kpi-value text-green" id="modeHealthyEvals">0</span>
+                <span class="kpi-meta">Ticks limpios consecutivos</span>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Protecciones Activas en el Stack:</label>
+              <div id="modeProtectionsBadges" class="badges-container mt-1">
+                <span class="badge-tag">NOMINAL_MESH_DISCOVERY</span>
+                <span class="badge-tag">PROPORTIONAL_FAIRNESS_DWRR</span>
+              </div>
+            </div>
+
+            <!-- Mode Selector Buttons -->
+            <div class="streaming-control-bar mt-3">
+              <span style="font-size:0.85rem; color:var(--text-muted); margin-right:8px;">Conmutar Modo Manual:</span>
+              <button class="btn btn-outline btn-small" id="btnSetModeOpen">MODE_OPEN (Malla Nominal)</button>
+              <button class="btn btn-warning btn-small" id="btnSetModeSafe">MODE_SAFE (Nodo Oscuro)</button>
+              <button class="btn btn-primary btn-small" id="btnSetModeDegraded">MODE_DEGRADED (Defensa Austera)</button>
+            </div>
+          </div>
+
+          <!-- Card 2: Adaptive Health Governor & Telemetry Trip Simulator -->
+          <div class="interactive-card mt-4">
+            <h3>Simulador del Gobernador Adaptativo de Salud (Health Trip & Auto-Recovery)</h3>
+            <p class="desc">Inyecta métricas sintéticas de telemetría de red. Si la pérdida supera el 30%, el early-drop supera el 25% o el buffer DWRR excede el 80%, el gobernador dispara automáticamente <strong>MODE_DEGRADED</strong>, purgando la cola Bulk e hiper-priorizando Control y Realtime.</p>
+
+            <div class="form-row mt-2" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Pérdida de Paquetes:
+                <input type="number" id="inputLossPct" class="select-field" style="width:75px; margin-left:6px;" value="35.0" min="0" max="100" step="1"> %
+              </label>
+              <label style="font-size:0.85rem; color:var(--text-muted);">Drop Ratio XDP:
+                <input type="number" id="inputDropRatioPct" class="select-field" style="width:75px; margin-left:6px;" value="10.0" min="0" max="100" step="1"> %
+              </label>
+              <label style="font-size:0.85rem; color:var(--text-muted);">Uso Buffer DWRR:
+                <input type="number" id="inputBufferPct" class="select-field" style="width:75px; margin-left:6px;" value="50.0" min="0" max="100" step="1"> %
+              </label>
+              <button class="btn btn-warning btn-small" id="btnEvaluateHealth">Evaluar Telemetría</button>
+              <button class="btn btn-outline btn-small" id="btnSimulateCleanRecovery">Simular Telemetría Saludable (0% pérdida)</button>
+            </div>
+
+            <pre class="json-viewer mono-text mt-3" id="modeGovernorOutput" style="max-height:140px; overflow-y:auto;">Ajuste las métricas y presione 'Evaluar Telemetría' para observar el comportamiento adaptativo del gobernador...</pre>
+          </div>
+
+          <!-- Card 3: Transition Audit History Ring -->
+          <div class="interactive-card mt-4">
+            <div class="bench-header">
+              <h3>Anillo de Auditoría Causal de Transiciones (Últimas 32 Transiciones)</h3>
+              <button class="btn btn-accent btn-small" id="btnFetchModeHistory">Consultar Historial</button>
+            </div>
+            <p class="desc">Registro inmutable en memoria de todas las transiciones operativas, motivos de activación y snapshot de métricas causales.</p>
+
+            <pre class="json-viewer mono-text mt-2" id="modeHistoryOutput" style="max-height:180px; overflow-y:auto;">Presione 'Consultar Historial' para cargar el anillo de auditoría de transiciones...</pre>
           </div>
         </div>
       </section>

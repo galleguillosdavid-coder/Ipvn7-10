@@ -86,6 +86,10 @@ from ..network.tunnel_telemetry import SovereignTunnelTelemetry, TunnelMetrics, 
 from ..network.settlement import SovereignReciprocitySettlement, ReciprocityToken
 from ..security.tee_enclave import SovereignEnclave, EnclaveOpcode, TEEAttestationReport
 from ..diagnostics.formal_verifier import RuntimeFormalVerifier
+from ..crypto.zkp import SovereignZKSchnorr, SovereignBulletproof
+from ..security.ring_signature import SovereignRingSignature
+from ..access.xdp_switch import XDPKernelSimulator, XDPAction, XDPFilterStats
+from ..security.operating_modes import OperatingModeController, NodeOperatingMode, ModeTransition
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -298,6 +302,22 @@ class IPVN7Node:
         self.enclave = SovereignEnclave(node_id=self.did)
         self.formal_verifier = RuntimeFormalVerifier(node=self)
 
+        # Zero-Knowledge Proofs & Ephemeral Ring Signatures (Línea Q / IP7Z, IP7S)
+        self.zk_schnorr = SovereignZKSchnorr()
+        self.bulletproof = SovereignBulletproof()
+        self.ring_signer = SovereignRingSignature()
+
+        # Sovereign eBPF / XDP Wire-Speed Switch & Early-Drop Engine (Línea S)
+        self.xdp_switch = XDPKernelSimulator(mesh_port=self.requested_port or 7777)
+
+        # Sovereign Tri-State Operating Mode Controller & Adaptive Health Governor (Línea T)
+        self.mode_controller = OperatingModeController(
+            dark_node=self.dark_node,
+            firewall=self.firewall,
+            scheduler=self.scheduler,
+            xdp_switch=self.xdp_switch,
+        )
+
     # -------------------------------------------------------------
     # Lifecycle Management
     # -------------------------------------------------------------
@@ -306,6 +326,8 @@ class IPVN7Node:
         """Starts socket driver and registers local locator in DHT."""
         self.driver = self.hal.start_socket_driver(self.bind_host, self.requested_port)
         self.bound_port = self.driver.bind_port
+        if self.bound_port > 0:
+            self.xdp_switch.mesh_port = self.bound_port
 
         local_locator = NodeLocator(
             ip=self.bind_host,
@@ -1222,6 +1244,7 @@ class IPVN7Node:
             "planetary_mesh": self.planetary_mesh.get_mesh_metrics(),
             "resilience_guardian": self.resilience_guardian.get_health_status(),
             "dark_node": self.dark_node.get_status(),
+            "operating_mode": self.mode_controller.get_status(),
             "silent_dispatcher": self.silent_dispatcher.get_stats(),
             "link_healing": self.link_healing.get_summary(),
             "blackout_recovery": self.blackout_recovery.get_status(),
@@ -1497,6 +1520,91 @@ class IPVN7Node:
             "payload": parsed_json,
             "payload_len": len(payload_bytes),
         }
+
+    # -------------------------------------------------------------
+    # Zero-Knowledge Proofs & Ephemeral Ring Signatures (Línea Q)
+    # -------------------------------------------------------------
+
+    def create_schnorr_proof(self, secret: Optional[int] = None) -> Dict[str, Any]:
+        """Creates a non-interactive Sigma ZK-proof of discrete logarithm knowledge."""
+        proof = self.zk_schnorr.prove(secret)
+        return proof.to_dict()
+
+    def verify_schnorr_proof(self, proof_data: Dict[str, Any]) -> bool:
+        """Verifies a non-interactive Sigma ZK-proof."""
+        from ..crypto.zkp import ZKSchnorrProof
+        proof = ZKSchnorrProof.from_dict(proof_data)
+        return self.zk_schnorr.verify(proof)
+
+    def create_range_proof(self, value: int, num_bits: int = 16) -> Dict[str, Any]:
+        """Creates a compact Pedersen commitment Bulletproof range proof."""
+        proof = self.bulletproof.prove_range(value, num_bits=num_bits)
+        return proof.to_dict()
+
+    def verify_range_proof(self, proof_data: Dict[str, Any]) -> bool:
+        """Verifies a Pedersen commitment Bulletproof range proof."""
+        from ..crypto.zkp import RangeProof
+        proof = RangeProof.from_dict(proof_data)
+        return self.bulletproof.verify_range(proof)
+
+    def sign_ring(self, ring_public_keys: List[int], signer_index: int, signer_privkey: int, message: str) -> Dict[str, Any]:
+        """Generates an AOS02 Ephemeral Ring Signature."""
+        sig = self.ring_signer.sign(ring_public_keys, signer_index, signer_privkey, message)
+        return sig.to_dict()
+
+    def verify_ring_signature(self, sig_data: Dict[str, Any]) -> bool:
+        """Verifies an AOS02 Ephemeral Ring Signature."""
+        from ..security.ring_signature import RingSignature
+        sig = RingSignature.from_dict(sig_data)
+        return self.ring_signer.verify(sig)
+
+    # -------------------------------------------------------------
+    # eBPF / XDP Wire-Speed Switch & Early-Drop Engine (Línea S)
+    # -------------------------------------------------------------
+
+    def process_xdp_frame(self, frame: bytes) -> Tuple[XDPAction, str]:
+        """Evaluates an Ethernet frame through the eBPF / XDP bounds-checked filter."""
+        return self.xdp_switch.process_frame(frame)
+
+    def process_xdp_payload(self, payload: bytes) -> Tuple[XDPAction, str]:
+        """Fast-path evaluation of UDP payload directed to IPVN 7 mesh port."""
+        return self.xdp_switch.process_udp_payload(payload)
+
+    def get_xdp_stats(self) -> Dict[str, Any]:
+        """Returns atomic packet filter and early-drop telemetry."""
+        return self.xdp_switch.get_stats()
+
+    def reset_xdp_stats(self) -> None:
+        """Resets eBPF switch telemetry counters."""
+        self.xdp_switch.reset_stats()
+
+    def export_xdp_c_program(self) -> str:
+        """Generates the native C eBPF kernel program source code."""
+        return self.xdp_switch.generate_c_program(self.bound_port or self.requested_port)
+
+    # -------------------------------------------------------------
+    # Tri-State Operating Mode Controller & Health Governor (Línea T)
+    # -------------------------------------------------------------
+
+    def set_operating_mode(self, mode: str, reason: str = "manual_override") -> Dict[str, Any]:
+        """Atomically sets operating mode (MODE_OPEN, MODE_SAFE, MODE_DEGRADED)."""
+        return self.mode_controller.set_mode(mode, reason=reason)
+
+    def get_operating_mode_status(self) -> Dict[str, Any]:
+        """Returns the current operating mode status, protections and health metrics."""
+        return self.mode_controller.get_status()
+
+    def get_operating_mode_history(self) -> List[Dict[str, Any]]:
+        """Returns bounded ring history of mode transitions."""
+        return self.mode_controller.get_history()
+
+    def evaluate_operating_health(
+        self, loss_pct: float, drop_ratio_pct: float, buffer_util_pct: float
+    ) -> Dict[str, Any]:
+        """Evaluates loss, drop, and buffer telemetry to adaptively trip or recover mode."""
+        return self.mode_controller.evaluate_health(loss_pct, drop_ratio_pct, buffer_util_pct)
+
+
 
 
 

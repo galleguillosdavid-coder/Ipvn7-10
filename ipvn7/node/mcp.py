@@ -1312,6 +1312,183 @@ class IPVN7MCPServer:
                     "required": ["action"],
                 },
             },
+            {
+                "name": "ipvn7_zkp_schnorr_prove",
+                "description": "[Línea Q / Tool 70] Genera una prueba de conocimiento ZK-Schnorr no interactiva (Fiat-Shamir) demostrando posesión de una clave DID privada sin revelarla. Serializa en wire canónico IP7Z (≤1280B, CRC32). Uso: gobernanza anónima de nodo.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["keygen", "prove", "verify"],
+                            "description": "'keygen': genera par (pk, sk); 'prove': genera prueba dado sk_hex; 'verify': verifica prueba wire_hex",
+                        },
+                        "sk_hex": {
+                            "type": "string",
+                            "description": "Clave privada escalar en hexadecimal (requerida para 'prove')",
+                        },
+                        "pk_hex": {
+                            "type": "string",
+                            "description": "Clave pública escalar en hexadecimal (requerida para 'prove' y 'verify')",
+                        },
+                        "wire_hex": {
+                            "type": "string",
+                            "description": "Frame IP7Z en hexadecimal (requerido para 'verify')",
+                        },
+                        "context": {
+                            "type": "string",
+                            "description": "Contexto de sesión (DID, epoch, propósito) para el desafío Fiat-Shamir",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
+            {
+                "name": "ipvn7_zkp_range_proof",
+                "description": "[Línea Q / Tool 71] Genera o verifica una prueba de rango confidencial (Bulletproof Pedersen) demostrando que un valor v ∈ [0, 2^n) sin revelar v. Aplicación: probar saldo de tokens IP7R sin exposición. Wire: IP7Z ≤1280B.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["prove", "verify"],
+                            "description": "'prove': genera prueba para valor v; 'verify': verifica prueba wire_hex",
+                        },
+                        "value": {
+                            "type": "integer",
+                            "description": "Valor entero v a comprometer (requerido para 'prove'). Debe estar en [0, 2^n_bits)",
+                        },
+                        "n_bits": {
+                            "type": "integer",
+                            "description": "Número de bits del rango (defecto 32 → [0, 4294967295])",
+                        },
+                        "wire_hex": {
+                            "type": "string",
+                            "description": "Frame IP7Z en hexadecimal (requerido para 'verify')",
+                        },
+                        "context": {
+                            "type": "string",
+                            "description": "Contexto de sesión para el desafío Fiat-Shamir",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
+            {
+                "name": "ipvn7_ring_signature",
+                "description": "[Línea Q / Tool 72] Genera o verifica una Firma en Anillo Efímera (Schnorr Ring Signature) para gobernanza anónima en la malla. El firmante demuestra pertenecer al anillo sin revelar su identidad. Nulificador key_image anti-doble-voto. Wire: IP7S ≤1280B.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["keygen", "sign", "verify", "detect_double_sign"],
+                            "description": "'keygen': genera miembro; 'sign': firma; 'verify': verifica; 'detect_double_sign': detecta doble voto",
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Mensaje a firmar en texto (requerido para 'sign' y 'verify')",
+                        },
+                        "signer_sk_hex": {
+                            "type": "string",
+                            "description": "Clave privada escalar del firmante (requerida para 'sign')",
+                        },
+                        "signer_pk_hex": {
+                            "type": "string",
+                            "description": "Clave pública del firmante (requerida para 'sign')",
+                        },
+                        "ring_pks": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Lista de claves públicas del anillo incluyendo al firmante",
+                        },
+                        "wire_hex": {
+                            "type": "string",
+                            "description": "Frame IP7S en hexadecimal (requerido para 'verify' y 'detect_double_sign')",
+                        },
+                        "wire_hex_2": {
+                            "type": "string",
+                            "description": "Segunda firma IP7S en hexadecimal (requerido para 'detect_double_sign')",
+                        },
+                        "epoch": {
+                            "type": "string",
+                            "description": "Época efímera de rotación (ej: '2026-10-21:00') para anti-replay",
+                        },
+                        "ring_context": {
+                            "type": "string",
+                            "description": "Contexto del anillo (ej: 'GOVERNANCE_VOTE', 'SECURITY_ALERT')",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
+            {
+                "name": "ipvn7_xdp_switch",
+                "description": "[Línea S / Tool 73] Administra el conmutador eBPF / XDP a nivel de kernel y motor de early-drop en alambre O(1). Evalúa tramas Ethernet o payloads UDP verificando números mágicos canónicos (IP7V..IP7P) y MTU <= 1280B, consulta estadísticas atómicas o exporta el programa C nativo para clang.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["process_frame", "process_payload", "get_stats", "reset_stats", "export_c", "synthesize_frame"],
+                            "description": "Acción a realizar en el conmutador eBPF/XDP",
+                        },
+                        "frame_hex": {
+                            "type": "string",
+                            "description": "Trama Ethernet completa en hexadecimal para evaluación de límites (requerido para 'process_frame')",
+                        },
+                        "payload_hex": {
+                            "type": "string",
+                            "description": "Carga útil UDP en hexadecimal (requerido para 'process_payload')",
+                        },
+                        "magic": {
+                            "type": "string",
+                            "description": "Magic canónico para sintetizar trama ('IP7V', 'IP7H', 'IP7Z', 'IP7S', etc.)",
+                        },
+                        "payload_size": {
+                            "type": "integer",
+                            "description": "Tamaño de la carga útil para sintetizar trama (defecto: 64 bytes)",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
+            {
+                "name": "ipvn7_operating_mode",
+                "description": "[Línea T / Tool 74] Gobierna los modos de operación tri-estado (MODE_OPEN, MODE_SAFE, MODE_DEGRADED) y el gobernador adaptativo de salud. Permite consultar telemetría en tiempo real, conmutar modos atómicamente, evaluar métricas de salud (pérdida, early-drop, buffer) y consultar el anillo de auditoría de transiciones.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["get_status", "set_mode", "evaluate_health", "get_history"],
+                            "description": "Acción a realizar en el gobernador tri-estado",
+                        },
+                        "mode": {
+                            "type": "string",
+                            "enum": ["MODE_OPEN", "MODE_SAFE", "MODE_DEGRADED"],
+                            "description": "Modo objetivo para action='set_mode'",
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": "Razón causal de la transición de modo (opcional, por defecto 'manual_override')",
+                        },
+                        "loss_pct": {
+                            "type": "number",
+                            "description": "Porcentaje de pérdida de paquetes para action='evaluate_health' (ej: 35.0)",
+                        },
+                        "drop_ratio_pct": {
+                            "type": "number",
+                            "description": "Porcentaje de descarte temprano XDP para action='evaluate_health' (ej: 28.0)",
+                        },
+                        "buffer_util_pct": {
+                            "type": "number",
+                            "description": "Porcentaje de utilización de buffer DWRR para action='evaluate_health' (ej: 85.0)",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -2036,6 +2213,257 @@ class IPVN7MCPServer:
                     raw_bytes = bytes.fromhex(raw_hex)
                     res = self.node.parse_enclave_frame(raw_bytes)
                     return True, res
+
+            # ── Línea Q: ZKP & Ring Signatures (Tools 70, 71, 72) ────────────────
+            elif name == "ipvn7_zkp_schnorr_prove":
+                from ..crypto.zkp import SovereignZKSchnorr, ZKSchnorrProof
+                act = arguments.get("action", "prove")
+                ctx = arguments.get("context", "")
+                if act == "keygen":
+                    seed_hex = arguments.get("seed_hex")
+                    seed = bytes.fromhex(seed_hex) if seed_hex else None
+                    x, Y = SovereignZKSchnorr.keygen(seed)
+                    return True, {
+                        "sk_hex": hex(x),
+                        "pk_hex": hex(Y),
+                        "note": "Guarda sk_hex de forma segura. pk_hex es público.",
+                    }
+                elif act == "prove":
+                    sk_hex = arguments.get("sk_hex")
+                    pk_hex = arguments.get("pk_hex")
+                    if not sk_hex or not pk_hex:
+                        return False, "Se requieren 'sk_hex' y 'pk_hex' para 'prove'"
+                    x = int(sk_hex, 16)
+                    Y = int(pk_hex, 16)
+                    proof = SovereignZKSchnorr.prove(x, Y, context=ctx)
+                    wire = SovereignZKSchnorr.to_wire(proof)
+                    return True, {
+                        "proof": proof.to_dict(),
+                        "wire_hex": wire.hex(),
+                        "wire_len": len(wire),
+                        "mtu_valid": len(wire) <= 1280,
+                        "protocol": "ZK-Schnorr Sigma / Fiat-Shamir / IP7Z",
+                    }
+                elif act == "verify":
+                    wire_hex = arguments.get("wire_hex")
+                    if not wire_hex:
+                        return False, "Se requiere 'wire_hex' para 'verify'"
+                    wire = bytes.fromhex(wire_hex)
+                    proof = SovereignZKSchnorr.from_wire(wire)
+                    valid = SovereignZKSchnorr.verify(proof)
+                    return True, {
+                        "valid": valid,
+                        "pk_hex": proof.pk_hex,
+                        "context": proof.context,
+                        "protocol": "ZK-Schnorr Sigma / Fiat-Shamir / IP7Z",
+                    }
+                else:
+                    return False, f"Acción ZKP desconocida: {act}"
+
+            elif name == "ipvn7_zkp_range_proof":
+                from ..crypto.zkp import SovereignBulletproof, SovereignRangeProof
+                act = arguments.get("action", "prove")
+                n_bits = max(1, min(64, int(arguments.get("n_bits", 32))))
+                ctx = arguments.get("context", "")
+                engine = SovereignBulletproof(n_bits=n_bits)
+                if act == "prove":
+                    v_raw = arguments.get("value")
+                    if v_raw is None:
+                        return False, "Se requiere 'value' para 'prove'"
+                    v = int(v_raw)
+                    if v < 0 or v >= 2**n_bits:
+                        return False, f"Valor {v} fuera de rango [0, 2^{n_bits})"
+                    proof = engine.prove(v, context=ctx)
+                    wire = SovereignBulletproof.to_wire(proof)
+                    return True, {
+                        "commitment_hex": proof.commitment_hex,
+                        "n_bits": n_bits,
+                        "wire_hex": wire.hex(),
+                        "wire_len": len(wire),
+                        "mtu_valid": len(wire) <= 1280,
+                        "note": f"El valor v={v} está comprometido. No se revela.",
+                        "protocol": "Pedersen Commitment + OR-Proof Bulletproof / IP7Z",
+                    }
+                elif act == "verify":
+                    wire_hex = arguments.get("wire_hex")
+                    if not wire_hex:
+                        return False, "Se requiere 'wire_hex' para 'verify'"
+                    wire = bytes.fromhex(wire_hex)
+                    proof = SovereignBulletproof.from_wire(wire)
+                    valid = engine.verify(proof)
+                    return True, {
+                        "valid": valid,
+                        "n_bits": proof.n_bits,
+                        "commitment_hex": proof.commitment_hex,
+                        "context": proof.context,
+                        "protocol": "Pedersen Commitment + OR-Proof Bulletproof / IP7Z",
+                    }
+                else:
+                    return False, f"Acción Range Proof desconocida: {act}"
+
+            elif name == "ipvn7_ring_signature":
+                from ..security.ring_signature import (
+                    SovereignRingSignature, RingMember, EphemeralRingSignature
+                )
+                act = arguments.get("action", "keygen")
+                epoch = arguments.get("epoch", "")
+                ring_context = arguments.get("ring_context", "GOVERNANCE_VOTE")
+                if act == "keygen":
+                    member = RingMember.generate()
+                    return True, {
+                        "pk_hex": member.pk_hex,
+                        "sk_hex": member.sk_hex,
+                        "note": "Guarda sk_hex de forma segura. Comparte solo pk_hex al anillo.",
+                    }
+                elif act == "sign":
+                    msg_str = arguments.get("message", "")
+                    sk_hex = arguments.get("signer_sk_hex")
+                    pk_hex = arguments.get("signer_pk_hex")
+                    ring_pks_raw = arguments.get("ring_pks", [])
+                    if not sk_hex or not pk_hex:
+                        return False, "Se requieren 'signer_sk_hex' y 'signer_pk_hex'"
+                    if len(ring_pks_raw) < 2:
+                        return False, "El anillo debe tener al menos 2 miembros en 'ring_pks'"
+                    signer = RingMember(pk_hex=pk_hex, sk_hex=sk_hex)
+                    ring = [RingMember(pk_hex=pk) for pk in ring_pks_raw]
+                    # Asegurar que el firmante esté en el anillo
+                    if pk_hex not in ring_pks_raw:
+                        ring.append(RingMember(pk_hex=pk_hex))
+                    # Reemplazar el miembro con sk
+                    ring = [signer if m.pk_hex == pk_hex else m for m in ring]
+                    sig = SovereignRingSignature.sign(
+                        msg_str.encode(), signer, ring,
+                        epoch=epoch, ring_context=ring_context
+                    )
+                    wire = SovereignRingSignature.to_wire(sig)
+                    return True, {
+                        "key_image_hex": sig.key_image_hex,
+                        "ring_size": len(sig.ring_pks),
+                        "wire_hex": wire.hex(),
+                        "wire_len": len(wire),
+                        "mtu_valid": len(wire) <= 1280,
+                        "epoch": sig.epoch,
+                        "ring_context": sig.ring_context,
+                        "protocol": "Schnorr Ring Signature / IP7S / Ephemeral Anti-Tracking",
+                    }
+                elif act == "verify":
+                    wire_hex = arguments.get("wire_hex")
+                    msg_str = arguments.get("message", "")
+                    if not wire_hex:
+                        return False, "Se requiere 'wire_hex' para 'verify'"
+                    wire = bytes.fromhex(wire_hex)
+                    sig = SovereignRingSignature.from_wire(wire)
+                    valid = SovereignRingSignature.verify(sig, msg_str.encode())
+                    return True, {
+                        "valid": valid,
+                        "ring_size": len(sig.ring_pks),
+                        "key_image_hex": sig.key_image_hex,
+                        "epoch": sig.epoch,
+                        "ring_context": sig.ring_context,
+                        "anonymous": True,
+                        "protocol": "Schnorr Ring Signature / IP7S",
+                    }
+                elif act == "detect_double_sign":
+                    wire_hex = arguments.get("wire_hex")
+                    wire_hex_2 = arguments.get("wire_hex_2")
+                    if not wire_hex or not wire_hex_2:
+                        return False, "Se requieren 'wire_hex' y 'wire_hex_2'"
+                    sig1 = SovereignRingSignature.from_wire(bytes.fromhex(wire_hex))
+                    sig2 = SovereignRingSignature.from_wire(bytes.fromhex(wire_hex_2))
+                    double = SovereignRingSignature.is_double_signed(sig1, sig2)
+                    return True, {
+                        "double_signed": double,
+                        "key_image_1": sig1.key_image_hex,
+                        "key_image_2": sig2.key_image_hex,
+                        "same_epoch": sig1.epoch == sig2.epoch,
+                        "threat_level": "HIGH" if double else "NONE",
+                    }
+                else:
+                    return False, f"Acción Ring Signature desconocida: {act}"
+
+            elif name == "ipvn7_xdp_switch":
+                act = arguments.get("action", "get_stats")
+                if act == "get_stats":
+                    return True, self.node.get_xdp_stats()
+                elif act == "reset_stats":
+                    self.node.reset_xdp_stats()
+                    return True, {"status": "stats_reset", "stats": self.node.get_xdp_stats()}
+                elif act == "export_c":
+                    c_code = self.node.export_xdp_c_program()
+                    return True, {
+                        "c_code": c_code,
+                        "lines": len(c_code.splitlines()),
+                        "compiler_flags": "clang -O2 -target bpf -c xdp_ipvn7.c -o xdp_ipvn7.o",
+                        "map_name": "ipvn7_stats_map",
+                        "filter_sec": "SEC(\"xdp\") xdp_ipvn7_filter",
+                    }
+                elif act == "process_frame":
+                    frame_hex = arguments.get("frame_hex", "")
+                    if not frame_hex:
+                        return False, "Se requiere 'frame_hex' para 'process_frame'"
+                    frame_bytes = bytes.fromhex(frame_hex)
+                    action, reason = self.node.process_xdp_frame(frame_bytes)
+                    return True, {
+                        "action": action.name,
+                        "action_code": int(action),
+                        "reason": reason,
+                        "frame_len": len(frame_bytes),
+                    }
+                elif act == "process_payload":
+                    payload_hex = arguments.get("payload_hex", "")
+                    if not payload_hex:
+                        return False, "Se requiere 'payload_hex' para 'process_payload'"
+                    payload_bytes = bytes.fromhex(payload_hex)
+                    action, reason = self.node.process_xdp_payload(payload_bytes)
+                    return True, {
+                        "action": action.name,
+                        "action_code": int(action),
+                        "reason": reason,
+                        "payload_len": len(payload_bytes),
+                    }
+                elif act == "synthesize_frame":
+                    magic_str = arguments.get("magic", "IP7H")
+                    size = int(arguments.get("payload_size", 64))
+                    from ..access.xdp_switch import XDPKernelSimulator
+                    payload = magic_str.encode("ascii") + b"\x00" * max(0, size - len(magic_str))
+                    dst_port = self.node.xdp_switch.mesh_port
+                    synth_frame = XDPKernelSimulator.synthesize_ethernet_frame(payload, dst_port=dst_port)
+                    action, reason = self.node.process_xdp_frame(synth_frame)
+                    return True, {
+                        "synthetic_frame_hex": synth_frame.hex(),
+                        "frame_len": len(synth_frame),
+                        "magic": magic_str,
+                        "simulated_action": action.name,
+                        "simulated_reason": reason,
+                    }
+                else:
+                    return False, f"Acción XDP desconocida: {act}"
+
+            elif name == "ipvn7_operating_mode":
+                act = arguments.get("action", "get_status")
+                if act == "get_status":
+                    return True, self.node.get_operating_mode_status()
+                elif act == "set_mode":
+                    mode_str = arguments.get("mode")
+                    if not mode_str:
+                        return False, "Se requiere 'mode' para 'set_mode' (MODE_OPEN, MODE_SAFE, MODE_DEGRADED)"
+                    reason = arguments.get("reason", "mcp_override")
+                    status = self.node.set_operating_mode(mode_str, reason=reason)
+                    return True, status
+                elif act == "evaluate_health":
+                    loss_pct = float(arguments.get("loss_pct", 0.0))
+                    drop_ratio_pct = float(arguments.get("drop_ratio_pct", 0.0))
+                    buffer_util_pct = float(arguments.get("buffer_util_pct", 0.0))
+                    status = self.node.evaluate_operating_health(loss_pct, drop_ratio_pct, buffer_util_pct)
+                    return True, status
+                elif act == "get_history":
+                    history = self.node.get_operating_mode_history()
+                    return True, {
+                        "history": history,
+                        "count": len(history),
+                    }
+                else:
+                    return False, f"Acción de Operating Mode desconocida: {act}"
 
             else:
                 return False, f"Herramienta desconocida: {name}"

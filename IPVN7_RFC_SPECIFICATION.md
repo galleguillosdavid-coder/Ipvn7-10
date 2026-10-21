@@ -762,17 +762,108 @@ La arquitectura cuenta con una suite integral de 42 pruebas de integración y re
 
 ---
 
+## 62. Pruebas de Conocimiento Cero (ZKP) & Protocolo Sigma Schnorr (`IP7Z`)
+
+- **Prueba de Conocimiento de Clave Privada (`SovereignZKSchnorr`):** Demuestra posesión del escalar secreto $x$ tal que la clave pública $Y = x \cdot G \pmod q$ sin revelar $x$, garantizando la identidad de los nodos en gobernanza descentralizada.
+- **Protocolo Sigma $\Sigma$ de 3 Pasos sobre $(\mathbb{Z}_q, +)$:**
+  - *Compromiso (Prover):* Selección de nonce efímero $r \leftarrow \mathbb{Z}_q$; emisión del compromiso $R = r \cdot G \pmod q$.
+  - *Desafío Fiat-Shamir (No Interactivo):* $e = \text{SHA3-256}(\text{"IPVN7:ZKP:FIAT-SHAMIR:v1:"} \parallel \text{context} \parallel Y \parallel R) \pmod q$.
+  - *Respuesta:* $s = (r + e \cdot x) \pmod q$.
+  - *Verificación (Verifier):* Comprueba la relación lineal $s \cdot G \equiv R + e \cdot Y \pmod q$.
+- **Formato Canónico Wire `IP7Z` (MTU $\le 1280$B):**
+  - Magic bytes: `0x4950375A` (`b"IP7Z"`).
+  - Estructura: `[4B MAGIC][1B VERSION=0x01][1B TYPE=0x01][2B LENGTH][PAYLOAD COMPRIMIDO][4B CRC32]`.
+  - Invariante estricto de seguridad `ZERO_FIAT_SHAMIR_REUSE`: desafíos únicos ligados al contexto criptográfico y al nonce de sesión.
+
+---
+
+## 63. Pruebas de Rango Confidenciales Bulletproofs de Pedersen (`IP7Z`)
+
+- **Demostración de Rango Acotado (`SovereignBulletproof`):** Permite a un nodo demostrar que su saldo de tokens de reciprocidad `IP7R` o valor sensible se encuentra en el rango $v \in [0, 2^n)$ (con $n \le 64$) sin revelar el valor exacto $v$.
+- **Compromiso Homomórfico de Pedersen:**
+  - $C = (v \cdot G + r \cdot H) \pmod q$, donde $G$ y $H$ son generadores ortogonales independientes del protocolo.
+  - Descomposición homomórfica en $n$ bits: $v = \sum_{i=0}^{n-1} 2^i b_i$, con factores de cegado $r_i$ tales que $\sum 2^i r_i \equiv r \pmod q$.
+  - Verificación de consistencia aditiva: $\sum_{i=0}^{n-1} (2^i \cdot C_i) \equiv C \pmod q$.
+- **OR-Proofs $\Sigma$ de 1-de-2 (CDS94):** Demostración interactiva/Fiat-Shamir por cada bit de que $b_i \in \{0, 1\}$ probando el conocimiento del logaritmo discreto de $C_i$ o $(C_i - G)$ respecto al generador $H$.
+- **Empaquetado Wire Compacto en Base64:** Serialización optimizada de escalares de 32 bytes dentro de la trama `IP7Z` (Type `0x02`), asegurando un tamaño de cable de $\approx 1232$ bytes para $n=8$, estrictamente acotado al MTU $\le 1280$B.
+
+---
+
+## 64. Firmas en Anillo Efímeras (AOS02) & Nulificador Anti-Doble-Voto (`IP7S`)
+
+- **Gobernanza Anónima en la Malla (`SovereignRingSignature`):** Permite a un nodo firmar una propuesta o alerta de seguridad acreditando pertenencia al conjunto de validadores $\{PK_0, \dots, PK_{n-1}\}$ sin revelar cuál de ellos generó la firma.
+- **Protocolo Cíclico Abe-Ohkubo-Suzuki (AOS02):**
+  - El firmante real (índice $s$) inicia la cadena calculando $R_s = r_s \cdot G \pmod q$ y el desafío $c_{s+1}$.
+  - Para todo $i \neq s$, se eligen respuestas simuladas $s_i \leftarrow \mathbb{Z}_q$ y compromisos $R_i = (s_i \cdot G - c_i \cdot Y_i) \pmod q$, propagando recursivamente $c_{i+1} = H(msg \parallel K \parallel R_i \parallel \dots)$.
+  - El firmante cierra el ciclo computando la respuesta real $s_s = (r_s + c_s \cdot x_s) \pmod q$.
+  - El verificador confirma el cierre cíclico comprobando $c_n \equiv c_0$.
+- **Nulificador Criptográfico `key_image`:**
+  - $K = (x_s \cdot H(PK_s)) \pmod q$.
+  - Impide de forma determinista el doble voto o doble firma en la misma época (`is_double_signed`) preservando el anonimato incondicional del firmante.
+- **Formato Canónico Wire `IP7S` (MTU $\le 1280$B):**
+  - Magic bytes: `0x49503753` (`b"IP7S"`).
+  - Estructura: `[4B MAGIC][1B VERSION=0x01][1B TYPE=0x10][2B LENGTH][PAYLOAD COMPRIMIDO][4B CRC32]`.
+
+---
+
+## 65. Conmutador eBPF / XDP Wire-Speed & Motor de Early-Drop en Alambre (`XDPKernelSimulator`)
+
+- **Conmutación Acelerada de Nivel de Kernel (`XDPKernelSimulator`):** Emulación rigurosa del driver eBPF / XDP de Linux kernel para inspección directa en el anillo de recepción del adaptador de red (NIC RX ring) antes de la asignación de estructuras `sk_buff`.
+- **Verificación de Límites (*Packet Bounds Checking*):**
+  - Validación en tiempo de compilación/ejecución de límites de cabecera:
+    - Ethernet: 14 bytes (`data + sizeof(ethhdr) <= data_end`).
+    - IPv4: IHL $\ge 20$ bytes y `protocol == IPPROTO_UDP` (17).
+    - IPv6: Cabecera base de 40 bytes y `next_header == IPPROTO_UDP`.
+    - UDP: 8 bytes (`udp + sizeof(udphdr) <= data_end`).
+  - Tráfico no dirigido al puerto de la malla IPVN 7 (`dest_port != mesh_port`) es devuelto con `XDP_PASS` al stack TCP/IP estándar del sistema operativo para preservar la conectividad general del host.
+- **Descarte Temprano en Alambre en $O(1)$ (*Early-Drop Engine*):**
+  - Tráfico dirigido al puerto de la malla con violación de MTU ($\text{len} > 1280$B) $\implies$ `XDP_DROP`.
+  - Datagramas truncados ($< 4$ bytes) $\implies$ `XDP_DROP` (contador de malformados).
+  - Tráfico foráneo o inundaciones DDoS sin cabecera mágica canónica de IPVN 7 $\implies$ `XDP_DROP` instantáneo.
+- **Catálogo Canónico de 11 Números Mágicos (4 Bytes Big-Endian):**
+  - `IP7V` (`0x49503756`), `IP7H` (`0x49503748`), `IP7M` (`0x4950374D`), `IP7B` (`0x49503742`),
+  - `IP7X` (`0x49503758`), `IP7R` (`0x49503752`), `IP7S` (`0x49503753`), `IP7T` (`0x49503754`),
+  - `IP7E` (`0x49503745`), `IP7Z` (`0x4950375A`), `IP7P` (`0x49503750`).
+- **Exportación de Programa C Nativo (`xdp_ipvn7.c`):** Generador de código C verificado para compilación con `clang -O2 -target bpf -c xdp_ipvn7.c -o xdp_ipvn7.o` utilizando mapas de telemetría atómica `BPF_MAP_TYPE_PERCPU_ARRAY`.
+
+---
+
+## 66. Gobernador Adaptativo de Salud & Controlador de Modos Tri-Estado (`OperatingModeController`)
+
+- **Perfil de Operación Tri-Estado (`NodeOperatingMode`):**
+  - `MODE_OPEN` (Malla Nominal Estándar):
+    - Comunicación bidireccional abierta entre nodos con locators publicados en la DHT.
+    - Planificación de tráfico DWRR con pesos balanceados entre las 4 clases de QoS (Control 4000, Realtime 3000, Interactive 2000, Bulk 1000).
+    - ZTNA permisivo o evaluado bajo políticas ACL estándar.
+  - `MODE_SAFE` (Nodo Oscuro / Sigilo Activo):
+    - Perfil Zero-PII Egress-Only.
+    - Anuncios públicos silenciados en la DHT para ocultar la presencia del nodo en la red pública.
+    - Enrutamiento cebolla Sphinx mandatorio de 3 saltos con tramas fijas de 1280 bytes.
+    - Micro-jitter anti-correlación temporal activado en el pacer de tráfico.
+    - Cortafuegos ZTNA con regla *Default-Deny* incondicional.
+  - `MODE_DEGRADED` (Defensa Austera & Contención de Congestión):
+    - Activado ante contingencias de red, degradación severa de enlace o ataques de denegación de servicio.
+    - Purga instantánea y suspensión de la cola Bulk / Scavenger (`QoSClass.BULK`) en el planificador DWRR para liberar RAM de inmediato y proteger el Global Memory Arbiter.
+    - Reconcentración de cuotas QoS: Control (peso 6000) y Realtime (peso 3500) priorizados; Interactive reducido a 500 y Bulk a 0.
+    - Silenciamiento de anuncios DHT y refuerzo de cortafuegos ZTNA.
+- **Gobernador Adaptativo de Salud (`evaluate_health`):**
+  - Evaluación continua y lock-free de tres invariantes de saturación:
+    1. Tasa de pérdida de paquetes $> 30.0\%$ (`loss_threshold_pct`).
+    2. Tasa de descarte temprano eBPF/XDP $> 25.0\%$ (`drop_threshold_pct`).
+    3. Saturación de búfer de colas DWRR $> 80.0\%$ (`buffer_threshold_pct`).
+  - **Disparo Inmediato:** Ante cualquier violación, conmuta atómicamente a `MODE_DEGRADED` y almacena el estado previo en `pre_degraded_mode`.
+  - **Auto-Recuperación con Cool-Down:** Tras el restablecimiento de métricas saludables, exige el transcurso de una ventana de enfriamiento (por defecto $10.0$ segundos) y al menos 2 ticks limpios consecutivos antes de retornar al modo previo.
+- **Anillo de Auditoría Causal de Transiciones:**
+  - Registro inmutable de longitud acotada (32 elementos en `collections.deque`) que preserva la causalidad cronológica de los cambios de estado, timestamps ISO/epoch y snapshots de telemetría.
+  - Idempotencia estricta: transiciones repetidas hacia el mismo modo no consumen entradas en el búfer circular.
+- **Integración MCP (Herramienta 74: `ipvn7_operating_mode`):**
+  - Permite a agentes de IA consultar el estado (`get_status`), forzar transiciones manuales (`set_mode`), inyectar telemetría para evaluación del gobernador (`evaluate_health`) o auditar el historial de transiciones (`get_history`).
+
+---
+
 ## Resumen de Verificación y Suites de Prueba
 
-- **Suites de Prueba Ejecutadas:** Pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados (122/122 pruebas unitarias aprobadas al 100% sin regresiones).
-- **Herramientas MCP Activas:** 69 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
-- **Versión Oficial del Protocolo:** IPVN 7.12.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65).
-
-
-
-
-
-
-
-
+- **Suites de Prueba Ejecutadas:** Pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados (142/142 pruebas unitarias aprobadas al 100% sin regresiones).
+- **Herramientas MCP Activas:** 74 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+- **Versión Oficial del Protocolo:** IPVN 7.15.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65).
 
