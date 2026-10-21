@@ -1803,7 +1803,7 @@ def test_mcp_tools_catalog_57_tools():
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 75, f"Expected 75 MCP tools, found {len(tools)}"
+    assert len(tools) >= 75, f"Expected at least 75 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -5453,9 +5453,9 @@ def test_mcp_ota_tool_75_and_node_integration():
 
     node = IPVN7Node(alias="ota-node-integration")
 
-    # 1. Catálogo total de herramientas MCP debe ser 75
+    # 1. Catálogo total de herramientas MCP debe ser al menos 75
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 75
+    assert len(tools) >= 75
     tool_names = [t["name"] for t in tools]
     assert "ipvn7_ota_hotswap" in tool_names
 
@@ -5508,6 +5508,190 @@ def test_mcp_ota_tool_75_and_node_integration():
     )
     assert ok is False
     assert "No previous snapshot exists" in rb_res["error"]
+
+
+# =============================================================================
+# LÍNEA V: SERVIDOR DNS UDP SOBERANO RFC 1035 / RFC 3596 & CÓDEC BINARIO (v7.17.0)
+# =============================================================================
+
+def test_dns_codec_domain_name_encoding_and_pointer_loops():
+    """Test 148: Valida codificación RFC 1035 de etiquetas de dominio y detección de bucles de compresión."""
+    from ipvn7.network.dns_server import encode_domain_name, decode_domain_name
+
+    # 1. Codificación estándar
+    encoded = encode_domain_name("laptop.ipv7")
+    expected = b"\x06laptop\x04ipv7\x00"
+    assert encoded == expected
+
+    # 2. Decodificación estándar
+    decoded, offset = decode_domain_name(encoded, 0)
+    assert decoded == "laptop.ipv7"
+    assert offset == len(encoded)
+
+    # 3. Puntero de compresión válido
+    # Simula un paquete donde "laptop.ipv7" está en offset 12, y en offset 28 hay un puntero 0xC00C
+    packet_buf = b"\x00" * 12 + encoded + b"\x00" * 3 + b"\xc0\x0c"
+    decoded_ptr, next_off = decode_domain_name(packet_buf, 28)
+    assert decoded_ptr == "laptop.ipv7"
+    assert next_off == 30
+
+    # 4. Detección y contención de bucle infinito de punteros
+    loop_buf = b"\xc0\x00"  # puntero a sí mismo
+    import pytest
+    with pytest.raises(ValueError, match="DNS label pointer loop detected"):
+        decode_domain_name(loop_buf, 0)
+
+
+def test_dns_packet_parse_and_build_roundtrip():
+    """Test 149: Valida serialización y deserialización binaria de tramas completas DNSPacket RFC 1035."""
+    from ipvn7.network.dns_server import DNSPacket, DNSQuestion, DNSRecord, TYPE_A, TYPE_AAAA, CLASS_IN
+    import socket
+
+    req_pkt = DNSPacket(
+        tx_id=0xABCD,
+        flags=0x0100,  # Standard Query, RD=1
+        questions=[
+            DNSQuestion(qname="node.ipv7", qtype=TYPE_A, qclass=CLASS_IN),
+        ],
+        answers=[
+            DNSRecord(
+                name="node.ipv7",
+                rtype=TYPE_A,
+                rclass=CLASS_IN,
+                ttl=120,
+                rdata=socket.inet_aton("10.7.0.1"),
+                rdata_text="10.7.0.1",
+            ),
+        ],
+    )
+
+    wire = req_pkt.build()
+    assert len(wire) >= 12
+    assert wire[:2] == b"\xab\xcd"
+
+    parsed = DNSPacket.parse(wire)
+    assert parsed.tx_id == 0xABCD
+    assert parsed.flags == 0x0100
+    assert len(parsed.questions) == 1
+    assert parsed.questions[0].qname == "node.ipv7"
+    assert parsed.questions[0].qtype == TYPE_A
+    assert len(parsed.answers) == 1
+    assert parsed.answers[0].rdata_text == "10.7.0.1"
+
+
+def test_dns_server_synthetic_a_and_aaaa_resolution():
+    """Test 150: Valida síntesis de registros A (IPv4) y AAAA (IPv6) sobre dominios soberanos .ipv7."""
+    from ipvn7.network.dns_server import SovereignDNSServer, DNSPacket, DNSQuestion, TYPE_A, TYPE_AAAA, TYPE_ANY, RCODE_NOERROR, RCODE_NXDOMAIN
+
+    server = SovereignDNSServer(host="127.0.0.1", port=0)
+
+    # 1. Consulta Tipo A para dominio soberano .ipv7
+    req_a = DNSPacket(tx_id=0x1111, flags=0x0100, questions=[DNSQuestion("cluster.ipv7", TYPE_A, 1)]).build()
+    resp_a_wire = server.handle_query_datagram(req_a)
+    resp_a = DNSPacket.parse(resp_a_wire)
+
+    assert resp_a.tx_id == 0x1111
+    assert resp_a.rcode == RCODE_NOERROR
+    assert len(resp_a.answers) == 1
+    assert resp_a.answers[0].rtype == TYPE_A
+    assert resp_a.answers[0].rdata_text.startswith("10.7.")
+
+    # 2. Consulta Tipo AAAA para dominio soberano .ipv7
+    req_aaaa = DNSPacket(tx_id=0x2222, flags=0x0100, questions=[DNSQuestion("cluster.ipv7", TYPE_AAAA, 1)]).build()
+    resp_aaaa_wire = server.handle_query_datagram(req_aaaa)
+    resp_aaaa = DNSPacket.parse(resp_aaaa_wire)
+
+    assert resp_aaaa.tx_id == 0x2222
+    assert resp_aaaa.rcode == RCODE_NOERROR
+    assert len(resp_aaaa.answers) == 1
+    assert resp_aaaa.answers[0].rtype == TYPE_AAAA
+    assert resp_aaaa.answers[0].rdata_text.startswith("fd07:")
+
+    # 3. Consulta de dominio desconocido fuera de .ipv7 devuelve NXDOMAIN
+    req_nx = DNSPacket(tx_id=0x3333, flags=0x0100, questions=[DNSQuestion("nonexistent.unknown", TYPE_A, 1)]).build()
+    resp_nx = DNSPacket.parse(server.handle_query_datagram(req_nx))
+    assert resp_nx.rcode == RCODE_NXDOMAIN
+
+
+def test_dns_server_reverse_ptr_and_petname_mapping():
+    """Test 151: Valida resolución inversa PTR (in-addr.arpa) hacia petnames soberanos y shadow devices."""
+    from ipvn7.network.dns_server import SovereignDNSServer, DNSPacket, DNSQuestion, TYPE_PTR, RCODE_NOERROR
+    from ipvn7.identity.petnames import PetnameResolver
+
+    resolver = PetnameResolver()
+    resolver.register_petname("gateway.ipv7", "did:ipvn7:gateway123", virtual_ipv4="10.7.15.1")
+
+    server = SovereignDNSServer(petname_resolver=resolver, host="127.0.0.1", port=0)
+
+    # Consulta inversa para 10.7.15.1 -> 1.15.7.10.in-addr.arpa
+    ptr_query_domain = "1.15.7.10.in-addr.arpa"
+    req_ptr = DNSPacket(tx_id=0x4444, flags=0x0100, questions=[DNSQuestion(ptr_query_domain, TYPE_PTR, 1)]).build()
+    resp_ptr = DNSPacket.parse(server.handle_query_datagram(req_ptr))
+
+    assert resp_ptr.rcode == RCODE_NOERROR
+    assert len(resp_ptr.answers) == 1
+    assert resp_ptr.answers[0].rtype == TYPE_PTR
+    assert resp_ptr.answers[0].rdata_text == "gateway.ipv7"
+
+
+def test_mcp_dns_server_tool_76_and_node_integration():
+    """Test 152: Valida registro y ejecución de MCP Tool 76 (ipvn7_dns_server) e integración en IPVN7Node."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="mcp-dns-node")
+
+    # 1. Catálogo total de herramientas MCP debe ser 76
+    tools = node.mcp_server.get_supported_tools()
+    assert len(tools) == 76
+    tool_names = [t["name"] for t in tools]
+    assert "ipvn7_dns_server" in tool_names
+
+    # 2. Acción get_status
+    ok, res = node.mcp_server.execute_tool("ipvn7_dns_server", {"action": "get_status"})
+    assert ok is True
+    assert "running" in res
+    assert "stats" in res
+
+    # 3. Acción add_record (Registro estático)
+    ok, add_res = node.mcp_server.execute_tool(
+        "ipvn7_dns_server",
+        {
+            "action": "add_record",
+            "domain": "alpha.ipv7",
+            "qtype": "A",
+            "rdata": "10.7.88.99",
+            "ttl": 600,
+        },
+    )
+    assert ok is True
+    assert add_res["domain"] == "alpha.ipv7"
+
+    # 4. Acción resolve_query (Consulta resuelta)
+    ok, q_res = node.mcp_server.execute_tool(
+        "ipvn7_dns_server",
+        {"action": "resolve_query", "domain": "alpha.ipv7", "qtype": "A"},
+    )
+    assert ok is True
+    assert q_res["rcode"] == 0
+    assert len(q_res["answers"]) == 1
+    assert q_res["answers"][0]["rdata_text"] == "10.7.88.99"
+
+    # 5. Acción list_records
+    ok, list_res = node.mcp_server.execute_tool("ipvn7_dns_server", {"action": "list_records"})
+    assert ok is True
+    assert "alpha.ipv7" in list_res["records"]
+
+    # 6. Acción start_server y stop_server
+    ok, start_res = node.mcp_server.execute_tool("ipvn7_dns_server", {"action": "start_server", "port": 0})
+    assert ok is True
+    assert start_res["success"] is True
+    assert start_res["bound_port"] > 0
+    assert node.dns_server.is_running() is True
+
+    ok, stop_res = node.mcp_server.execute_tool("ipvn7_dns_server", {"action": "stop_server"})
+    assert ok is True
+    assert node.dns_server.is_running() is False
+
 
 
 

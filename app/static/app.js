@@ -3337,6 +3337,77 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // --- Línea V: Sovereign RFC 1035 UDP DNS Server ---
+  async function fetchDnsServerStatus() {
+    try {
+      const res = await fetch("/api/dns/server/status");
+      const data = await res.json();
+      const badge = document.getElementById("dnsServerStateBadge");
+      const portDisp = document.getElementById("dnsServerPortDisplay");
+      const out = document.getElementById("dnsServerStatusOutput");
+
+      if (badge) {
+        badge.textContent = data.running ? `Activo (:${data.bound_port || data.requested_port} UDP)` : "Inactivo (Bajo Demanda)";
+        badge.style.background = data.running ? "var(--cyan-glow)" : "var(--success)";
+      }
+      if (portDisp) {
+        portDisp.textContent = `${data.bound_port || data.requested_port || 1053} UDP`;
+      }
+      if (out) {
+        out.textContent = JSON.stringify(data, null, 2);
+      }
+    } catch (err) {
+      console.error("DNS Server status fetch error:", err);
+    }
+  }
+
+  const btnStartDnsServer = document.getElementById("btnStartDnsServer");
+  if (btnStartDnsServer) {
+    btnStartDnsServer.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/dns/server/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ port: 1053 })
+        });
+        const data = await res.json();
+        await fetchDnsServerStatus();
+      } catch (err) {
+        console.error("DNS start error:", err);
+      }
+    });
+  }
+
+  const btnRefreshDnsStatus = document.getElementById("btnRefreshDnsStatus");
+  if (btnRefreshDnsStatus) {
+    btnRefreshDnsStatus.addEventListener("click", fetchDnsServerStatus);
+  }
+
+  const btnRunDnsQuery = document.getElementById("btnRunDnsQuery");
+  if (btnRunDnsQuery) {
+    btnRunDnsQuery.addEventListener("click", async () => {
+      const domain = (document.getElementById("dnsQueryDomainInput").value || "laptop.ipv7").trim();
+      const qtype = document.getElementById("dnsQueryTypeSelect").value || "A";
+      const out = document.getElementById("dnsQueryResultOutput");
+      if (out) out.textContent = `Resolviendo ${qtype} para '${domain}' vía wire RFC 1035...`;
+
+      try {
+        const res = await fetch("/api/dns/server/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain: domain, qtype: qtype })
+        });
+        const data = await res.json();
+        if (out) {
+          out.textContent = JSON.stringify(data.result || data, null, 2);
+        }
+        await fetchDnsServerStatus();
+      } catch (err) {
+        if (out) out.textContent = "Error al resolver consulta: " + err;
+      }
+    });
+  }
+
   // Initializations
   fetchDagBlocks();
   fetchDiagnostics();
@@ -3360,5 +3431,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchXdpStats();
   fetchModeStatus();
   fetchOtaStatus();
+  fetchDnsServerStatus();
 });
+
 

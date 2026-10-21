@@ -91,6 +91,7 @@ from ..security.ring_signature import SovereignRingSignature
 from ..access.xdp_switch import XDPKernelSimulator, XDPAction, XDPFilterStats
 from ..security.operating_modes import OperatingModeController, NodeOperatingMode, ModeTransition
 from ..access.ota_hotswap import SovereignOTAManager, ModuleManifest, ModuleLifecycleState
+from ..network.dns_server import SovereignDNSServer, TYPE_A, TYPE_AAAA, TYPE_TXT, TYPE_PTR, str_to_qtype, qtype_to_str
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -325,6 +326,14 @@ class IPVN7Node:
             private_key=self.identity.keypair.ed25519_priv,
         )
 
+        # Sovereign RFC 1035 UDP DNS Server & Binary Wire Codec (Línea V / Port 1053)
+        self.dns_server = SovereignDNSServer(
+            petname_resolver=self.petnames,
+            shadow_registry=self.shadow_registry,
+            host=self.bind_host,
+            port=0,  # Ephemeral / unprivileged safe default
+        )
+
     # -------------------------------------------------------------
     # Lifecycle Management
     # -------------------------------------------------------------
@@ -378,6 +387,7 @@ class IPVN7Node:
                 pass
         if self._listen_task:
             self._listen_task.cancel()
+        self.dns_server.stop()
         if self.driver:
             self.driver.close()
             self.driver = None
@@ -1253,6 +1263,7 @@ class IPVN7Node:
             "dark_node": self.dark_node.get_status(),
             "operating_mode": self.mode_controller.get_status(),
             "ota_manager": self.ota_manager.get_status(),
+            "dns_server": self.dns_server.get_status(),
             "silent_dispatcher": self.silent_dispatcher.get_stats(),
             "link_healing": self.link_healing.get_summary(),
             "blackout_recovery": self.blackout_recovery.get_status(),
@@ -1669,6 +1680,40 @@ class IPVN7Node:
     def list_ota_modules(self) -> List[Dict[str, Any]]:
         """Lists active and installed swappable modules."""
         return self.ota_manager.list_modules()
+
+    def start_dns_server(self, port: int = 1053) -> Tuple[bool, str]:
+        """Starts the local Sovereign RFC 1035 UDP DNS Server."""
+        self.dns_server.requested_port = port
+        return self.dns_server.start()
+
+    def stop_dns_server(self) -> None:
+        """Stops the local Sovereign RFC 1035 UDP DNS Server."""
+        self.dns_server.stop()
+
+    def resolve_dns_query(self, domain: str, qtype_str: str = "A") -> Dict[str, Any]:
+        """Simulates an RFC 1035 wire query resolution through the DNS server."""
+        from ..network.dns_server import DNSPacket, DNSQuestion, str_to_qtype
+        qtype = str_to_qtype(qtype_str)
+        req = DNSPacket(tx_id=0x1234, flags=0x0100, questions=[DNSQuestion(qname=domain, qtype=qtype, qclass=1)])
+        wire_req = req.build()
+        wire_resp = self.dns_server.handle_query_datagram(wire_req)
+        resp = DNSPacket.parse(wire_resp)
+        return {
+            "tx_id": hex(resp.tx_id),
+            "flags": hex(resp.flags),
+            "rcode": resp.rcode,
+            "questions": [q.to_dict() for q in resp.questions],
+            "answers": [a.to_dict() for a in resp.answers],
+        }
+
+    def add_dns_record(self, domain: str, rtype_str: str, rdata: str, ttl: Optional[int] = None) -> bool:
+        """Adds a static DNS record to the server."""
+        from ..network.dns_server import str_to_qtype
+        return self.dns_server.add_static_record(domain, str_to_qtype(rtype_str), rdata, ttl=ttl)
+
+    def get_dns_server_status(self) -> Dict[str, Any]:
+        """Returns DNS server telemetry and configuration."""
+        return self.dns_server.get_status()
 
 
 

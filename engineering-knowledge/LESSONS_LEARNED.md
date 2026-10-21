@@ -167,5 +167,19 @@
 - **Regla Creada:** `ER-OPS-016` (Self-Contained Manifest Payload Invariant for Agentic OTA Distribution).
 - **Pruebas de Regresión:** Tests 143–147 (`test_ota_manifest_packaging_and_signature_verification`, `test_ota_sandbox_preflight_validation`, `test_ota_atomic_hotswap_and_execution`, `test_ota_watchdog_auto_rollback_during_probation`, `test_mcp_ota_tool_75_and_node_integration`).
 
+---
+
+### LL-015 — Discrepancia de Nombres de Atributos de Subsistemas en `IPVN7Node` (`shadow_registry` vs `shadow_device_registry`)
+- **Contexto:** Al instanciar `SovereignDNSServer` dentro de `IPVN7Node.__init__`, se intentó inyectar la referencia al registro de dispositivos LAN mediante `shadow_registry=self.shadow_device_registry`.
+- **Qué se esperaba:** Inicializar el servidor DNS enlazado al catálogo de hardware LAN para resolución reversa y directa de DIDs/VIPs.
+- **Qué ocurrió realmente:** El atributo real en `IPVN7Node` es `self.shadow_registry` (definido al integrar `ShadowDeviceRegistry`). La invocación arrojó `AttributeError: 'IPVN7Node' object has no attribute 'shadow_device_registry'`, causando la falla de pruebas unitarias dependientes de la inicialización de `IPVN7Node`.
+- **Causa Raíz:** Suposición del nombre del atributo sin verificar la definición previa en `IPVN7Node.__init__`.
+- **Acción Correctiva:**
+  1. Corregir la referencia a `self.shadow_registry` en `IPVN7Node.__init__`.
+  2. Establecer en la base de conocimiento LAIA la regla de verificación mandatoria de campos de atributos en el orquestador principal de nodo.
+- **Regla Creada:** `ER-NET-015` (Node Subsystem Attribute Name Consistency and Verification Invariant).
+- **Pruebas de Regresión:** Tests 148–152 (`test_dns_codec_domain_name_encoding_and_pointer_loops`, `test_dns_packet_parse_and_build_roundtrip`, `test_dns_server_synthetic_a_and_aaaa_resolution`, `test_dns_server_reverse_ptr_and_petname_mapping`, `test_mcp_dns_server_tool_76_and_node_integration`).
+
+
 
 

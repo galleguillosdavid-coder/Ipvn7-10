@@ -888,10 +888,34 @@ La arquitectura cuenta con una suite integral de 42 pruebas de integración y re
 
 ---
 
+## 68. Servidor DNS UDP Soberano RFC 1035 / RFC 3596 & Códec Binario de Alambre
+
+- **Estructura Canónica del Datagrama DNS Binario (`DNSPacket`):**
+  - Cabecera fija de 12 bytes: `tx_id` (2B), `flags` (2B), `qdcount` (2B), `ancount` (2B), `nscount` (2B), `arcount` (2B).
+  - Flags de respuesta autoritativa: `QR = 1` (Respuesta), `AA = 1` (Autoritativo para `.ipv7`), `RA = 1` (Recursión disponible).
+  - Formato de etiquetas de dominio: bytes prefijados por longitud ($0 < \text{len} \le 63$) terminados en `0x00`.
+  - Punteros de compresión (`0xC000` con máscara de 14 bits de offset) con guardia finita de saltos (`max_jumps = 16`) que impide bucles infinitos de punteros circulares.
+- **Intercepción y Síntesis de Registros Soberanos `.ipv7` (Zero-ISP Leakage):**
+  - Toda consulta hacia el TLD `.ipv7` es capturada por el listener UDP en el host (`127.0.0.1:1053` o `5353/53`).
+  - **Registros A (IPv4):** Traduce el nombre memorable a la dirección sintética local (`10.7.0.0/16`) consultando a `PetnameResolver` o `ShadowDeviceRegistry`, o sintetizada deterministamente mediante SHA-256.
+  - **Registros AAAA (IPv6):** Traduce hacia la dirección soberana overlay (`fd07::/64`).
+  - **Resolución Inversa PTR:** Consultas sobre `in-addr.arpa` e `ip6.arpa` se revierten para responder con el nombre memorable `.ipv7` asociado.
+- **Códigos de Retorno Canónicos:**
+  - `RCODE_NOERROR` ($0$): Consulta resuelta con éxito con al menos un registro en la sección Answer.
+  - `RCODE_NXDOMAIN` ($3$): Nombre de dominio no existente fuera del espacio soberano y sin correspondencia estática.
+  - `RCODE_FORMERR` ($1$): Trama binaria truncada ($< 12$ bytes) o malformada.
+- **Integración MCP (Herramienta 76: `ipvn7_dns_server`):**
+  - Acciones: `get_status`, `resolve_query`, `add_record`, `list_records`, `start_server`, `stop_server`.
+- **Endpoints REST:**
+  - `GET /api/dns/server/status`, `GET /api/dns/server/records`, `POST /api/dns/server/query`, `POST /api/dns/server/record`, `POST /api/dns/server/start`, `POST /api/dns/server/stop`.
+
+---
+
 ## Resumen de Verificación y Suites de Prueba
 
-- **Suites de Prueba Ejecutadas:** Pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados (147/147 pruebas unitarias aprobadas al 100% sin regresiones).
-- **Herramientas MCP Activas:** 75 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
-- **Versión Oficial del Protocolo:** IPVN 7.16.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65).
+- **Suites de Prueba Ejecutadas:** Pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados (152/152 pruebas unitarias aprobadas al 100% sin regresiones).
+- **Herramientas MCP Activas:** 76 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+- **Versión Oficial del Protocolo:** IPVN 7.17.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65).
+
 
 

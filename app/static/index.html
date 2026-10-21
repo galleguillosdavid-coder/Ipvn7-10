@@ -152,12 +152,13 @@
           <button class="tab-btn" data-tab="tab-uin-shadow-pfo">Identidad UIN, Shadow & PFO</button>
           <button class="tab-btn" data-tab="tab-wan-desktop">Sondeo WAN & Escritorio Remoto</button>
           <button class="tab-btn" data-tab="tab-bitnet">BitNet b1.58 Ternary AI</button>
-          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (75 Herramientas IA)</button>
+          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (76 Herramientas IA)</button>
           <button class="tab-btn" data-tab="tab-tee-formal">Enclave TEE & Validación Formal</button>
           <button class="tab-btn" data-tab="tab-zkp-ring">Línea Q: ZKP & Firmas en Anillo</button>
           <button class="tab-btn" data-tab="tab-xdp">Línea S: eBPF/XDP Switch & Early-Drop</button>
           <button class="tab-btn" data-tab="tab-operating-mode">Línea T: Modos Tri-Estado & Salud</button>
           <button class="tab-btn" data-tab="tab-ota">Línea U: Hot-Swapping OTA & Sandbox</button>
+          <button class="tab-btn" data-tab="tab-dns-server">Línea V: Servidor DNS RFC 1035 UDP</button>
         </div>
 
         <!-- Tab 1: PQ-QUIC & Migration -->
@@ -1816,6 +1817,41 @@
             </div>
 
             <pre class="json-viewer mono-text mt-3" id="otaInstallOutput" style="max-height:140px; overflow-y:auto;">Presione 'Empaquetar, Firmar & Hot-Swap' para ejecutar el ciclo OTA seguro...</pre>
+          </div>
+        </div>
+
+        <!-- Tab 22: Sovereign RFC 1035 UDP DNS Server (Línea V) -->
+        <div class="tab-pane" id="tab-dns-server">
+          <div class="interactive-card">
+            <h3>Servidor DNS UDP Soberano RFC 1035 / RFC 3596 (Línea V)</h3>
+            <p class="desc">Listener UDP de bajo nivel para intercepción autoritativa de dominios soberanos <code>.ipv7</code> y resolución inversa PTR para <code>10.7.0.0/16</code> y <code>fd07::/64</code> sin fugas al proveedor de Internet.</p>
+            <div class="streaming-control-bar">
+              <span class="badge" id="dnsServerStateBadge" style="background:var(--success); color:#000;">Inactivo (Bajo Demanda)</span>
+              <span style="font-size:0.85rem; color:var(--text-muted); margin-left:8px;">Puerto: <strong id="dnsServerPortDisplay">1053 UDP</strong></span>
+              <button class="btn btn-primary btn-small" id="btnStartDnsServer">Iniciar Listener UDP</button>
+              <button class="btn btn-outline btn-small" id="btnRefreshDnsStatus">Refrescar Estado</button>
+            </div>
+            <pre class="json-viewer mono-text mt-3" id="dnsServerStatusOutput" style="max-height:120px; overflow-y:auto;">Consultando telemetría del servidor DNS...</pre>
+          </div>
+
+          <div class="interactive-card mt-3">
+            <h3>Consulta Interactiva de Alambre RFC 1035</h3>
+            <p class="desc">Sintetiza una trama binaria RFC 1035 con ID de transacción, flags canónicas y cabeceras de pregunta/respuesta.</p>
+            <div class="streaming-control-bar">
+              <label style="font-size:0.85rem; color:var(--text-muted);">Dominio:
+                <input type="text" id="dnsQueryDomainInput" class="select-field" style="width:160px; margin-left:6px;" value="laptop.ipv7">
+              </label>
+              <label style="font-size:0.85rem; color:var(--text-muted);">Tipo:
+                <select id="dnsQueryTypeSelect" class="select-field" style="width:90px; margin-left:6px;">
+                  <option value="A" selected>A (IPv4)</option>
+                  <option value="AAAA">AAAA (IPv6)</option>
+                  <option value="PTR">PTR (Inversa)</option>
+                  <option value="TXT">TXT</option>
+                </select>
+              </label>
+              <button class="btn btn-primary btn-small" id="btnRunDnsQuery">Resolver Consulta Wire</button>
+            </div>
+            <pre class="json-viewer mono-text mt-3" id="dnsQueryResultOutput" style="max-height:140px; overflow-y:auto;">Seleccione un dominio y presione 'Resolver Consulta Wire'...</pre>
           </div>
         </div>
       </section>

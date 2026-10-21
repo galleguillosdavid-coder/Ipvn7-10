@@ -1532,6 +1532,41 @@ class IPVN7MCPServer:
                     "required": ["action"],
                 },
             },
+            {
+                "name": "ipvn7_dns_server",
+                "description": "[Línea V / Tool 76] Administra el Servidor DNS UDP Soberano RFC 1035 / RFC 3596 y Códec Binario. Permite consultar el estado del socket UDP (1053/5353/53), resolver consultas DNS binarias sobre dominios soberanos .ipv7, registrar registros estáticos A/AAAA/TXT/PTR, y gestionar el inicio/detención del listener local.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["get_status", "resolve_query", "add_record", "list_records", "start_server", "stop_server"],
+                            "description": "Acción a realizar en el servidor DNS",
+                        },
+                        "domain": {
+                            "type": "string",
+                            "description": "Nombre de dominio a consultar o registrar (ej: 'laptop.ipv7' o '10.7.100.1.in-addr.arpa')",
+                        },
+                        "qtype": {
+                            "type": "string",
+                            "description": "Tipo de registro DNS para 'resolve_query' o 'add_record' (ej: 'A', 'AAAA', 'TXT', 'PTR')",
+                        },
+                        "rdata": {
+                            "type": "string",
+                            "description": "Datos del registro para 'add_record' (ej: '10.7.0.5' para A, 'fd07::1' para AAAA, 'node.ipv7' para PTR)",
+                        },
+                        "ttl": {
+                            "type": "integer",
+                            "description": "Tiempo de vida TTL en segundos para 'add_record' (defecto 300)",
+                        },
+                        "port": {
+                            "type": "integer",
+                            "description": "Puerto UDP para action='start_server' (defecto 1053, o 0 para efímero)",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -2550,6 +2585,42 @@ class IPVN7MCPServer:
                     return res.get("success", False), res
                 else:
                     return False, f"Acción OTA desconocida: {act}"
+
+            elif name == "ipvn7_dns_server":
+                act = arguments.get("action", "get_status")
+                if act == "get_status":
+                    return True, self.node.get_dns_server_status()
+                elif act == "resolve_query":
+                    dom = arguments.get("domain")
+                    if not dom:
+                        return False, "Se requiere 'domain' para 'resolve_query'"
+                    qt = arguments.get("qtype", "A")
+                    res = self.node.resolve_dns_query(dom, qtype_str=qt)
+                    return True, res
+                elif act == "add_record":
+                    dom = arguments.get("domain")
+                    qt = arguments.get("qtype", "A")
+                    rd = arguments.get("rdata")
+                    if not dom or not rd:
+                        return False, "Se requieren 'domain' y 'rdata' para 'add_record'"
+                    ttl_val = arguments.get("ttl", 300)
+                    ok = self.node.add_dns_record(dom, qt, rd, ttl=ttl_val)
+                    return ok, {"domain": dom, "qtype": qt, "rdata": rd, "ttl": ttl_val, "success": ok}
+                elif act == "list_records":
+                    recs = {}
+                    with self.node.dns_server._lock:
+                        for d, r_list in self.node.dns_server.static_records.items():
+                            recs[d] = [r.to_dict() for r in r_list]
+                    return True, {"records": recs, "count": sum(len(v) for v in recs.values())}
+                elif act == "start_server":
+                    srv_port = arguments.get("port", 1053)
+                    ok, msg = self.node.start_dns_server(port=srv_port)
+                    return ok, {"success": ok, "message": msg, "bound_port": self.node.dns_server.bound_port}
+                elif act == "stop_server":
+                    self.node.stop_dns_server()
+                    return True, {"success": True, "message": "DNS Server detenido"}
+                else:
+                    return False, f"Acción DNS desconocida: {act}"
 
             else:
                 return False, f"Herramienta desconocida: {name}"

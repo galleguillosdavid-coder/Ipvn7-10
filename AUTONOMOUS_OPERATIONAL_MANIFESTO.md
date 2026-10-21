@@ -9,9 +9,9 @@
 > **4. Naturaleza Ampliable y Mejorable:** Este manifiesto está diseñado para la auto-evolución continua. Es plenamente extensible y mejorable para incorporar nuevos subsistemas (L0 a L4), optimizaciones algorítmicas, herramientas MCP, registros de decisiones (ADRs) y lecciones de ingeniería LAIA.  
 > **5. Acción en Conformidad:** Toda operación de diseño, testing, refactorización y despliegue debe ejecutarse en estricta conformidad con las cláusulas aquí estipuladas.
 
-> **Versión Canónica de Referencia:** IPVN 7.16.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
-> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (147/147 pasadas en CI Python 3.12, 3.13 y 3.14).  
-> **Política de Gobernanza y Anti-Fallos:** Cumplimiento obligatorio de [SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md), [ADR-010](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md), [ADR-011](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md), [ADR-012](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md), [ADR-013](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md), [ADR-014](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-014-CRYPTOGRAPHIC-TEE-ENCLAVE-AND-RUNTIME-FORMAL-VERIFICATION.md), [ADR-015](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-015-ZERO-KNOWLEDGE-PROOFS-AND-EPHEMERAL-RING-SIGNATURES.md), [ADR-016](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-016-EBPF-XDP-WIRESPEED-SWITCH-AND-EARLY-DROP.md), [ADR-017](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-017-TRI-STATE-OPERATING-MODE-CONTROLLER.md), [ADR-018](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-018-OTA-HOTSWAP-AND-SANDBOXED-MODULE-DISTRIBUTION.md) y [`engineering-knowledge/`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/engineering-knowledge/README.md).  
+> **Versión Canónica de Referencia:** IPVN 7.17.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
+> **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (152/152 pasadas en CI Python 3.12, 3.13 y 3.14).  
+> **Política de Gobernanza y Anti-Fallos:** Cumplimiento obligatorio de [SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md), [ADR-010](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md), [ADR-011](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md), [ADR-012](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md), [ADR-013](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md), [ADR-014](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-014-CRYPTOGRAPHIC-TEE-ENCLAVE-AND-RUNTIME-FORMAL-VERIFICATION.md), [ADR-015](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-015-ZERO-KNOWLEDGE-PROOFS-AND-EPHEMERAL-RING-SIGNATURES.md), [ADR-016](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-016-EBPF-XDP-WIRESPEED-SWITCH-AND-EARLY-DROP.md), [ADR-017](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-017-TRI-STATE-OPERATING-MODE-CONTROLLER.md), [ADR-018](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-018-OTA-HOTSWAP-AND-SANDBOXED-MODULE-DISTRIBUTION.md), [ADR-019](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-019-SOVEREIGN-RFC1035-UDP-DNS-SERVER-AND-BINARY-WIRE-CODEC.md) y [`engineering-knowledge/`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/engineering-knowledge/README.md).  
 > **Fecha de Sincronización:** Octubre 2026
 
 ---
@@ -25,7 +25,7 @@ El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red 
 2. **Identidad Descentralizada Soberana (DID):** Espacio de direccionamiento de 256 bits (`did:ipvn7:<hex>`), eliminando la dependencia de servidores DNS o entidades certificadoras (CA) centrales.
 3. **Privacidad & Evasión de DPI por Defecto:** Enrutamiento cebolla Sphinx de 3 saltos, camuflaje TLS 1.3 RFC 8446 (`0x17 0x03 0x03`), detección activa de envenenamiento DNS e inyecciones TCP RST.
 4. **Resiliencia Extrema & Auto-Reparación:** Red de mundo pequeño de Kleinberg ($r=2$), detector de fallos SWIM $O(1)$, protocolo de recuperación post-apagón en 5 fases, y copiloto IA de red con auto-reparación en bucle cerrado.
-5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con **75 herramientas nativas** para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
+5. **Plano de Control Agéntico (MCP):** Servidor JSON-RPC 2.0 integrado con **76 herramientas nativas** para introspección y gobierno autónomo por Modelos de Lenguaje (LLMs).
 6. **Gobernanza de Seguridad Inmutable:** Aislamiento universal de salida anti-SSRF (`ipaddress`), autenticación obligatoria del plano de control MCP, mitigación anti-DNS Rebinding y datapath 100% honesto y verificable.
 7. **Transporte de Salida Real por Malla (Exit Relay IP7X):** Canal de datos overlay cifrado de extremo a extremo que desacopla físicamente al cliente de los destinos finales en Internet.
 8. **Liquidación Soberana de Reciprocidad (Línea O IP7R):** Tokens de reciprocidad P2P firmados criptográficamente para gobernanza micro-económica y remediación de cuotas QoS.
@@ -34,13 +34,14 @@ El proyecto **IPVN 7 (Internet Protocol Version 7)** es una arquitectura de red 
 11. **Conmutador eBPF / XDP Wire-Speed & Descarte Temprano O(1) (Línea S):** Conmutación acelerada en driver de kernel, comprobación estricta de límites eBPF y descarte inmediato de tráfico ilegítimo o que viole MTU 1280B antes de asignar buffers de red.
 12. **Gobernador Adaptativo de Salud & Modos Tri-Estado (Línea T):** Controlador macro-atómico que orquesta el perfil de seguridad del nodo entre MODE_OPEN, MODE_SAFE y MODE_DEGRADED según umbrales de pérdida (>30%), early-drop XDP (>25%) o buffer (>80%) con auto-recuperación determinista.
 13. **Distribución Soberana Over-The-Air (OTA) & Hot-Swapping con Sandboxing AST (Línea U):** Empaquetado firmado Ed25519 con DAG CIDs (`cid:ipvn7:manifest:...`), pre-vuelo en sandbox con exclusión de módulos de SO (`os`, `sys`, `socket`) y builtins peligrosos, reemplazo atómico de punteros en memoria sin reinicio de nodo, y watchdog con auto-rollback inmediato ante excepciones en periodo de prueba (5s).
-14. **Sistema Permanente de Ingeniería LAIA:** Memoria técnica persistente en `engineering-knowledge/` para prevención transversal de errores recurrentes.
+14. **Servidor DNS UDP Soberano RFC 1035 / RFC 3596 & Códec Binario (Línea V):** Listener UDP nativo en puerto 1053/5353/53, códec binario con compresión de etiquetas anti-loops, intercepción autoritativa de `.ipv7` (Zero-ISP Leakage), síntesis de registros A/AAAA y resolución inversa PTR para `10.7.0.0/16` y `fd07::/64`.
+15. **Sistema Permanente de Ingeniería LAIA:** Memoria técnica persistente en `engineering-knowledge/` para prevención transversal de errores recurrentes.
 
 ---
 
 ## 2. Catálogo de Subsistemas Activos (Capas L0 a L4)
 
-Actualmente, el repositorio cuenta con **74 subsistemas de protocolo integrados** y probados al 100% (147 pruebas unitarias):
+Actualmente, el repositorio cuenta con **75 subsistemas de protocolo integrados** y probados al 100% (152 pruebas unitarias):
 
 ### Capa L0: Acceso al Medio & Aceleración Datapath
 - [`ipvn7/access/xdp_switch.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/xdp_switch.py): Conmutador acelerado a nivel de kernel eBPF / XDP, verificación de límites (*packet bounds checking*) y motor de early-drop en alambre $O(1)$ con exportación de programa C nativo para `clang -target bpf`.
@@ -115,9 +116,10 @@ Actualmente, el repositorio cuenta con **74 subsistemas de protocolo integrados*
 - [`ipvn7/network/dns_proxy.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/dns_proxy.py): Proxy DNS anti-fugas con caché local y resolución petname nativa.
 - [`ipvn7/network/settlement.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/settlement.py): Liquidación soberana de reciprocidad (Línea O) con tokens firmados Ed25519 (`IP7R`), prevención de doble gasto y remediación de cuotas QoS.
 - [`ipvn7/access/ota_hotswap.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/ota_hotswap.py): Motor soberano de Over-The-Air (OTA) Hot-Swapping y sandboxing AST de módulos y extensiones dinámicas con firma Ed25519, DAG CIDs (`cid:ipvn7:manifest:...`), reemplazo atómico de punteros en memoria y auto-rollback por watchdog en período de prueba (ADR-018).
+- [`ipvn7/network/dns_server.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/dns_server.py): Servidor DNS UDP soberano RFC 1035 / RFC 3596 y códec binario de alambre con resolución autoritativa `.ipv7`, síntesis de registros A/AAAA y resolución inversa PTR para `10.7.0.0/16` y `fd07::/64` (ADR-019).
 
 ### Plano de Control IA (MCP Server JSON-RPC 2.0)
-- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **75 herramientas nativas de introspección, streaming, BitNet, settlement, TEE attestation, conmutador eBPF/XDP, modos de operación y distribución OTA** expuestas según la especificación Model Context Protocol (2024-11-05).
+- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **76 herramientas nativas de introspección, streaming, BitNet, settlement, TEE attestation, conmutador eBPF/XDP, modos de operación, distribución OTA y servidor DNS** expuestas según la especificación Model Context Protocol (2024-11-05).
 
 ---
 
@@ -133,11 +135,11 @@ Cualquier agente o usuario puede verificar y ejecutar el sistema de forma comple
 
 ### 3.2. Ejecución de la Suite de Pruebas (Zero Regressions)
 ```powershell
-# Ejecutar la suite completa de 147 tests unitarios
+# Ejecutar la suite completa de 152 tests unitarios
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (147/147) con código de salida 0.**
+*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (152/152) con código de salida 0.**
 
 ### 3.3. Lanzamiento del Servidor y Control Center Web
 ```powershell

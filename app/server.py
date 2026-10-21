@@ -621,6 +621,20 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 "count": len(modules),
             })
 
+        elif path == "/api/dns/server/status":
+            self._send_json(PRIMARY_NODE.get_dns_server_status())
+
+        elif path == "/api/dns/server/records":
+            recs = {}
+            with PRIMARY_NODE.dns_server._lock:
+                for d, r_list in PRIMARY_NODE.dns_server.static_records.items():
+                    recs[d] = [r.to_dict() for r in r_list]
+            self._send_json({
+                "success": True,
+                "records": recs,
+                "count": sum(len(v) for v in recs.values()),
+            })
+
         elif path == "/api/upnp/status":
             self._send_json(PRIMARY_NODE.upnp_mapper.get_summary())
 
@@ -1670,6 +1684,35 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
             reason = body.get("reason", "api_request")
             res = PRIMARY_NODE.rollback_ota_module(mod_name, reason=reason)
             self._send_json(res)
+
+        elif path == "/api/dns/server/query":
+            dom = body.get("domain")
+            if not dom:
+                self._send_json({"success": False, "error": "Requiere 'domain'"}, status=400)
+                return
+            qt = body.get("qtype", "A")
+            res = PRIMARY_NODE.resolve_dns_query(dom, qtype_str=qt)
+            self._send_json({"success": True, "result": res})
+
+        elif path == "/api/dns/server/record":
+            dom = body.get("domain")
+            qt = body.get("qtype", "A")
+            rd = body.get("rdata")
+            if not dom or not rd:
+                self._send_json({"success": False, "error": "Requiere 'domain' y 'rdata'"}, status=400)
+                return
+            ttl_val = body.get("ttl", 300)
+            ok = PRIMARY_NODE.add_dns_record(dom, qt, rd, ttl=ttl_val)
+            self._send_json({"success": ok, "domain": dom, "qtype": qt, "rdata": rd, "ttl": ttl_val})
+
+        elif path == "/api/dns/server/start":
+            port_val = int(body.get("port", 1053))
+            ok, msg = PRIMARY_NODE.start_dns_server(port=port_val)
+            self._send_json({"success": ok, "message": msg, "bound_port": PRIMARY_NODE.dns_server.bound_port})
+
+        elif path == "/api/dns/server/stop":
+            PRIMARY_NODE.stop_dns_server()
+            self._send_json({"success": True, "message": "DNS Server detenido"})
 
         elif path in ("/api/mcp", "/mcp"):
             # Audit H-03: Mandatory authentication for MCP JSON-RPC control plane
