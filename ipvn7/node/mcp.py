@@ -1567,6 +1567,61 @@ class IPVN7MCPServer:
                     "required": ["action"],
                 },
             },
+            {
+                "name": "ipvn7_knowledge_graph",
+                "description": "[Línea W / Tool 77] Motor Soberano de Grafo de Conocimiento y Evaluador openCypher. Permite ejecutar consultas estructuradas openCypher (MATCH ... WHERE ... RETURN ... LIMIT), consultar la topología y métricas de cobertura relacional, auditar la coherencia axiomática PFO (Zero Huérfanos, Detección de Contradicciones), buscar rutas semánticas más cortas (BFS) e insertar vértices y relaciones dinámicas.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["query_cypher", "get_topology", "audit_coherence", "find_orphans", "find_path", "extract_subgraph", "register_node", "register_edge"],
+                            "description": "Acción a ejecutar en el motor de grafo de conocimiento",
+                        },
+                        "query": {
+                            "type": "string",
+                            "description": "Sentencia de consulta openCypher para action='query_cypher' (ej: 'MATCH (a:AxiomPrinciple) RETURN a.id, a.name')",
+                        },
+                        "source_id": {
+                            "type": "string",
+                            "description": "ID del vértice de origen para action='find_path' o 'register_edge'",
+                        },
+                        "target_id": {
+                            "type": "string",
+                            "description": "ID del vértice de destino para action='find_path' o 'register_edge'",
+                        },
+                        "node_id": {
+                            "type": "string",
+                            "description": "ID del vértice para action='extract_subgraph' o 'register_node'",
+                        },
+                        "label": {
+                            "type": "string",
+                            "description": "Etiqueta tipada para action='register_node' (ej: 'AxiomPrinciple', 'Subsystem', 'OperationalFunction', 'Peer')",
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "Nombre legible del vértice para action='register_node'",
+                        },
+                        "layer": {
+                            "type": "string",
+                            "description": "Capa arquitectónica para action='register_node' (ej: 'L0', 'L1', 'L2', 'L3', 'Core', 'App')",
+                        },
+                        "rel_type": {
+                            "type": "string",
+                            "description": "Tipo de relación dirigida para action='register_edge' o filtro en 'find_path' (ej: 'IMPLEMENTS', 'DERIVED_FROM', 'GOVERNED_BY', 'PEER_LINK')",
+                        },
+                        "max_depth": {
+                            "type": "integer",
+                            "description": "Profundidad máxima de saltos en 'extract_subgraph' (defecto 1)",
+                        },
+                        "properties": {
+                            "type": "object",
+                            "description": "Diccionario de propiedades semánticas adicionales para 'register_node' o 'register_edge'",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -2621,6 +2676,57 @@ class IPVN7MCPServer:
                     return True, {"success": True, "message": "DNS Server detenido"}
                 else:
                     return False, f"Acción DNS desconocida: {act}"
+
+            elif name == "ipvn7_knowledge_graph":
+                act = arguments.get("action", "get_topology")
+                if act == "query_cypher":
+                    q = arguments.get("query")
+                    if not q:
+                        return False, "Se requiere 'query' para 'query_cypher'"
+                    res = self.node.query_knowledge_graph(q)
+                    return True, res
+                elif act == "get_topology":
+                    return True, self.node.get_knowledge_graph_topology()
+                elif act == "audit_coherence":
+                    return True, self.node.audit_knowledge_graph()
+                elif act == "find_orphans":
+                    return True, self.node.knowledge_graph.validate_zero_orphans()
+                elif act == "find_path":
+                    src = arguments.get("source_id")
+                    tgt = arguments.get("target_id")
+                    if not src or not tgt:
+                        return False, "Se requieren 'source_id' y 'target_id' para 'find_path'"
+                    r_type = arguments.get("rel_type")
+                    p = self.node.knowledge_graph.find_shortest_path(src, tgt, rel_type=r_type)
+                    return True, {"source_id": src, "target_id": tgt, "path": p, "found": p is not None}
+                elif act == "extract_subgraph":
+                    nid = arguments.get("node_id")
+                    if not nid:
+                        return False, "Se requiere 'node_id' para 'extract_subgraph'"
+                    depth = int(arguments.get("max_depth", 1))
+                    sub = self.node.knowledge_graph.extract_subgraph(nid, max_depth=depth)
+                    return True, sub
+                elif act == "register_node":
+                    nid = arguments.get("node_id")
+                    if not nid:
+                        return False, "Se requiere 'node_id' para 'register_node'"
+                    lbl = arguments.get("label", "Component")
+                    nm = arguments.get("name", nid)
+                    lyr = arguments.get("layer", "L0")
+                    props = arguments.get("properties", {})
+                    node = self.node.knowledge_graph.register_node(node_or_id=nid, label=lbl, name=nm, layer=lyr, properties=props)
+                    return True, {"registered": True, "node": node.to_dict()}
+                elif act == "register_edge":
+                    src = arguments.get("source_id")
+                    tgt = arguments.get("target_id")
+                    if not src or not tgt:
+                        return False, "Se requieren 'source_id' y 'target_id' para 'register_edge'"
+                    rel = arguments.get("rel_type", "CONNECTS_TO")
+                    props = arguments.get("properties", {})
+                    edge = self.node.knowledge_graph.register_edge(edge_or_source=src, target_id=tgt, rel_type=rel, properties=props)
+                    return True, {"registered": True, "edge": edge.to_dict()}
+                else:
+                    return False, f"Acción de grafo desconocida: {act}"
 
             else:
                 return False, f"Herramienta desconocida: {name}"

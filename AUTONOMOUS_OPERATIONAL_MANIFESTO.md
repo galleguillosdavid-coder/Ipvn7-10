@@ -117,9 +117,10 @@ Actualmente, el repositorio cuenta con **75 subsistemas de protocolo integrados*
 - [`ipvn7/network/settlement.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/settlement.py): Liquidación soberana de reciprocidad (Línea O) con tokens firmados Ed25519 (`IP7R`), prevención de doble gasto y remediación de cuotas QoS.
 - [`ipvn7/access/ota_hotswap.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/ota_hotswap.py): Motor soberano de Over-The-Air (OTA) Hot-Swapping y sandboxing AST de módulos y extensiones dinámicas con firma Ed25519, DAG CIDs (`cid:ipvn7:manifest:...`), reemplazo atómico de punteros en memoria y auto-rollback por watchdog en período de prueba (ADR-018).
 - [`ipvn7/network/dns_server.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/network/dns_server.py): Servidor DNS UDP soberano RFC 1035 / RFC 3596 y códec binario de alambre con resolución autoritativa `.ipv7`, síntesis de registros A/AAAA y resolución inversa PTR para `10.7.0.0/16` y `fd07::/64` (ADR-019).
+- [`ipvn7/diagnostics/graph.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/diagnostics/graph.py): Motor soberano de grafo de conocimiento ontológico (AFE-Kùzu), evaluador de consultas openCypher (MATCH ... WHERE ... RETURN ... LIMIT), auditoría de coherencia axiomática PFO, verificación de cero huérfanos, caminos semánticos BFS y subgrafos contextuales (ADR-020).
 
 ### Plano de Control IA (MCP Server JSON-RPC 2.0)
-- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **76 herramientas nativas de introspección, streaming, BitNet, settlement, TEE attestation, conmutador eBPF/XDP, modos de operación, distribución OTA y servidor DNS** expuestas según la especificación Model Context Protocol (2024-11-05).
+- [`ipvn7/node/mcp.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/node/mcp.py): **77 herramientas nativas de introspección, streaming, BitNet, settlement, TEE attestation, conmutador eBPF/XDP, modos de operación, distribución OTA, servidor DNS y grafo de conocimiento openCypher** expuestas según la especificación Model Context Protocol (2024-11-05).
 
 ---
 
@@ -135,11 +136,11 @@ Cualquier agente o usuario puede verificar y ejecutar el sistema de forma comple
 
 ### 3.2. Ejecución de la Suite de Pruebas (Zero Regressions)
 ```powershell
-# Ejecutar la suite completa de 152 tests unitarios
+# Ejecutar la suite completa de 157 tests unitarios
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (152/152) con código de salida 0.**
+*Criterio de Aceptación Obligatorio:* **100% de tests aprobados (157/157) con código de salida 0.**
 
 ### 3.3. Lanzamiento del Servidor y Control Center Web
 ```powershell

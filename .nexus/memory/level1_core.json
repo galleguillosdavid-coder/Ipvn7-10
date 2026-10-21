@@ -1,17 +1,17 @@
 {
   "system": "IPVN 7 Autonomous Network Operating System",
-  "version": "7.17.0",
+  "version": "7.18.0",
   "git": {
     "branch": "main",
     "remote_origin": "https://github.com/galleguillosdavid-coder/Ipvn7-10.git",
-    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0", "v7.4.0", "v7.5.0", "v7.6.0", "v7.7.0", "v7.8.0", "v7.9.0", "v7.10.0", "v7.11.0", "v7.12.0", "v7.13.0", "v7.14.0", "v7.15.0", "v7.16.0", "v7.17.0"],
+    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0", "v7.4.0", "v7.5.0", "v7.6.0", "v7.7.0", "v7.8.0", "v7.9.0", "v7.10.0", "v7.11.0", "v7.12.0", "v7.13.0", "v7.14.0", "v7.15.0", "v7.16.0", "v7.17.0", "v7.18.0"],
     "clean_working_tree": true
   },
   "runtime_environment": {
     "os": "Windows 11 AMD64 (PowerShell)",
     "python": ".\\.venv\\Scripts\\python.exe (Python 3.14.6)",
     "pytest_command": ".\\.venv\\Scripts\\pytest.exe -q",
-    "test_suite_status": "152/152 passing (100% pass rate, 0 regressions)",
+    "test_suite_status": "157/157 passing (100% pass rate, 0 regressions)",
     "ports": {
       "web_ui": 7070,
       "mcp_server": "7070/mcp",
@@ -49,9 +49,9 @@
     "security_governance_policy": ".nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md"
   },
   "subsystems": {
-    "total_active_subsystems": 75,
+    "total_active_subsystems": 76,
     "network_layers": 4,
-    "mcp_tools_count": 76,
+    "mcp_tools_count": 77,
     "operating_modes": [
       "MODE_OPEN",
       "MODE_SAFE",
@@ -93,8 +93,8 @@
   "documentation_hierarchy": [
     "README.md (Master Handover & Architecture Map)",
     ".nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md (Immutable Anti-Failure & Security Policy)",
-    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 75 Subsystems)",
-    "IPVN7_RFC_SPECIFICATION.md (68 Technical RFC Sections)",
+    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 76 Subsystems)",
+    "IPVN7_RFC_SPECIFICATION.md (69 Technical RFC Sections)",
     "genesis.md (Genesis Mandate v2.0)",
     ".nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md (Consolidated Decisions)",
     ".nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md (Edge AI & Media Datapath)",
@@ -114,11 +114,12 @@
     ".nexus/decisions/ADR-016-EBPF-XDP-WIRESPEED-SWITCH-AND-EARLY-DROP.md (eBPF/XDP Wire-Speed Switch & Early-Drop Engine IP7V..IP7P)",
     ".nexus/decisions/ADR-017-TRI-STATE-OPERATING-MODE-CONTROLLER.md (Tri-State Operating Mode Controller & Adaptive Health Governor)",
     ".nexus/decisions/ADR-018-OTA-HOTSWAP-AND-SANDBOXED-MODULE-DISTRIBUTION.md (Sovereign Over-The-Air Hot-Swapping & Sandboxing Engine)",
-    ".nexus/decisions/ADR-019-SOVEREIGN-RFC1035-UDP-DNS-SERVER-AND-BINARY-WIRE-CODEC.md (Sovereign RFC 1035 UDP DNS Server & Binary Wire Codec)"
+    ".nexus/decisions/ADR-019-SOVEREIGN-RFC1035-UDP-DNS-SERVER-AND-BINARY-WIRE-CODEC.md (Sovereign RFC 1035 UDP DNS Server & Binary Wire Codec)",
+    ".nexus/decisions/ADR-020-SOVEREIGN-KNOWLEDGE-GRAPH-AND-OPENCYPHER-ENGINE.md (Sovereign In-Memory Knowledge Graph Engine & openCypher Pattern Matcher)"
   ],
   "handover": {
     "ready_for_clean_agent": true,
-    "audit_status": "LINE_V_SOVEREIGN_RFC1035_UDP_DNS_SERVER_AND_CODEC_CONSOLIDATED"
+    "audit_status": "LINE_W_SOVEREIGN_KNOWLEDGE_GRAPH_AND_OPENCYPHER_CONSOLIDATED"
   }
 }
 

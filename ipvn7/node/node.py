@@ -92,6 +92,7 @@ from ..access.xdp_switch import XDPKernelSimulator, XDPAction, XDPFilterStats
 from ..security.operating_modes import OperatingModeController, NodeOperatingMode, ModeTransition
 from ..access.ota_hotswap import SovereignOTAManager, ModuleManifest, ModuleLifecycleState
 from ..network.dns_server import SovereignDNSServer, TYPE_A, TYPE_AAAA, TYPE_TXT, TYPE_PTR, str_to_qtype, qtype_to_str
+from ..diagnostics.graph import KnowledgeGraphEngine, GraphNode, GraphEdge, CypherExecutionResult
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -334,6 +335,10 @@ class IPVN7Node:
             port=0,  # Ephemeral / unprivileged safe default
         )
 
+        # Sovereign In-Memory Knowledge Graph Engine & openCypher Pattern Matcher (Línea W)
+        self.knowledge_graph = KnowledgeGraphEngine()
+        self.knowledge_graph.seed_canonical_architecture(node_ref=self)
+
     # -------------------------------------------------------------
     # Lifecycle Management
     # -------------------------------------------------------------
@@ -403,6 +408,20 @@ class IPVN7Node:
         self.dht.add_peer(peer_node)
         self.dht.store_locators(peer_did, [loc])
         self.split_brain_guard.register_peer(peer_did)
+        if hasattr(self, "knowledge_graph") and self.knowledge_graph:
+            self.knowledge_graph.register_node(
+                node_or_id=peer_did,
+                label="Peer",
+                name=f"Peer ({peer_did[:12]})",
+                layer="L1",
+                properties={"host": peer_host, "port": peer_port, "tier": tier.name},
+            )
+            self.knowledge_graph.register_edge(
+                edge_or_source=self.did,
+                target_id=peer_did,
+                rel_type="PEER_LINK",
+                properties={"latency_ms": 1.0},
+            )
 
     def register_message_handler(self, callback: Callable[[str, bytes], None]) -> None:
         """Registers listener callback for incoming payload deliveries."""
@@ -1264,6 +1283,7 @@ class IPVN7Node:
             "operating_mode": self.mode_controller.get_status(),
             "ota_manager": self.ota_manager.get_status(),
             "dns_server": self.dns_server.get_status(),
+            "knowledge_graph": self.knowledge_graph.export_topology()["metrics"],
             "silent_dispatcher": self.silent_dispatcher.get_stats(),
             "link_healing": self.link_healing.get_summary(),
             "blackout_recovery": self.blackout_recovery.get_status(),
@@ -1714,6 +1734,29 @@ class IPVN7Node:
     def get_dns_server_status(self) -> Dict[str, Any]:
         """Returns DNS server telemetry and configuration."""
         return self.dns_server.get_status()
+
+    # -------------------------------------------------------------
+    # Sovereign In-Memory Knowledge Graph & openCypher Engine (Línea W)
+    # -------------------------------------------------------------
+
+    def query_knowledge_graph(self, query: str) -> Dict[str, Any]:
+        """Executes an openCypher query against the Sovereign Knowledge Graph."""
+        return self.knowledge_graph.execute_cypher(query).to_dict()
+
+    def get_knowledge_graph_topology(self) -> Dict[str, Any]:
+        """Exports the complete topological knowledge graph with metrics."""
+        return self.knowledge_graph.export_topology()
+
+    def audit_knowledge_graph(self) -> Dict[str, Any]:
+        """Audits axiomatic coherence and zero-orphan invariants across the knowledge graph."""
+        audit = self.knowledge_graph.audit_axiomatic_coherence()
+        orphans = self.knowledge_graph.validate_zero_orphans()
+        audit["orphan_status"] = orphans
+        return audit
+
+    def find_knowledge_graph_path(self, source_id: str, target_id: str) -> Optional[List[str]]:
+        """Finds the shortest semantic traversal path between two knowledge graph vertices."""
+        return self.knowledge_graph.find_shortest_path(source_id, target_id)
 
 
 

@@ -911,11 +911,37 @@ La arquitectura cuenta con una suite integral de 42 pruebas de integración y re
 
 ---
 
+## 69. Motor Soberano de Grafo de Conocimiento & Evaluador de Patrones openCypher
+
+- **Modelo Ontológico AFE-Kùzu Multi-Capa en Memoria (`KnowledgeGraphEngine`):**
+  - Representación unificada de entidades del sistema: Principios Axiomáticos (`AxiomPrinciple`), Subcistemas (`Subsystem`), Funciones Operativas (`OperationalFunction`), Observaciones Empíricas (`EmpiricalObservation`), Decisiones de Arquitectura (`Decision` / ADR) y Nodos de Red (`Peer`).
+  - Aristas dirigidas tipadas: `GOVERNED_BY`, `DECIDED_BY`, `IMPLEMENTS`, `DERIVED_FROM`, `VALIDATED_BY`, `PEER_LINK`, `TRANSFERS_DATA_TO`, `SECURED_BY`.
+  - Índices bidireccionales de adyacencia (`_out_edges`, `_in_edges`) e índices categóricos por etiqueta, capa (`L0` a `L4`, `Core`, `App`) y tipo de relación para traversal en $O(1)$.
+- **Evaluador de Consultas openCypher (`execute_cypher`):**
+  - Gramática de patrones declarativos soportada:
+    * Vértices: `MATCH (n)`, `MATCH (n:Label)`.
+    * Relaciones dirigidas e inversas: `MATCH (n:L1)-[r:TYPE]->(m:L2)`, `MATCH (n:L1)<-[r:TYPE]-(m:L2)`.
+    * Filtrado relacional: cláusulas `WHERE` con operadores `=`, `!=`, `<`, `>`, `<=`, `>=`, evaluando atributos de vértices y propiedades semánticas anidadas (`a.layer = 'L0'`, `r.weight > 2.0`).
+    * Proyecciones: cláusula `RETURN` con renombre de columnas (`AS`) y paginación determinista mediante `LIMIT <N>`.
+  - Cronometría de ejecución de alta resolución (`exec_ms`) para observabilidad en microsegundos.
+- **Auditoría de Invariantes y Detección de Contradicciones:**
+  - **Invariante Zero Huérfanos (`validate_zero_orphans`):** Inspecciona in-degree y out-degree de cada vértice para certificar que ningún elemento arquitectónico se encuentre desconectado o huérfano.
+  - **Auditoría de Coherencia Axiomática (`audit_axiomatic_coherence`):** Garantiza que toda función operativa descienda formalmente de un axioma raíz (`DERIVED_FROM`), que todo subcistema esté gobernado por un axioma (`GOVERNED_BY`) o implemente una función (`IMPLEMENTS`), y que toda observación empírica conectada sea conforme (`compliant == True`), alertando inmediatamente sobre inconsistencias ontológicas.
+- **Algoritmos de Traversal y Sub-Grafos:**
+  - **Ruta Semántica Óptima (`find_shortest_path`):** Algoritmo Breadth-First Search (BFS) que localiza la cadena de relaciones más corta entre cualquier par de entidades, con soporte de restricción por tipo de relación.
+  - **Extracción de Red Egocéntrica (`extract_subgraph`):** Genera subgrafos contextuales a una profundidad radial $k$ para inspección y síntesis de agentes de IA.
+- **Integración MCP (Herramienta 77: `ipvn7_knowledge_graph`):**
+  - Acciones: `query_cypher`, `get_topology`, `audit_coherence`, `find_orphans`, `find_path`, `extract_subgraph`, `register_node`, `register_edge`.
+- **Endpoints REST:**
+  - `POST /api/graph/query`, `GET /api/graph/topology`, `GET /api/graph/audit`, `GET /api/graph/path`, `POST /api/graph/node`, `POST /api/graph/edge`.
+
+---
+
 ## Resumen de Verificación y Suites de Prueba
 
-- **Suites de Prueba Ejecutadas:** Pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados (152/152 pruebas unitarias aprobadas al 100% sin regresiones).
-- **Herramientas MCP Activas:** 76 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
-- **Versión Oficial del Protocolo:** IPVN 7.17.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65).
+- **Suites de Prueba Ejecutadas:** Pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados (157/157 pruebas unitarias aprobadas al 100% sin regresiones).
+- **Herramientas MCP Activas:** 77 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+- **Versión Oficial del Protocolo:** IPVN 7.18.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65).
 
 
 

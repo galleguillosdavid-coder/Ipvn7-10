@@ -1,5 +1,5 @@
 # IPVN 7 — Internet Protocol Version 7
-> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.17.0)**  
+> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.18.0)**  
 > *Implementación Canónica en Python 3.14 con Criptografía Híbrida NIST FIPS 203 & 204*  
 > **Repositorio Oficial:** [https://github.com/galleguillosdavid-coder/Ipvn7-10](https://github.com/galleguillosdavid-coder/Ipvn7-10)
 
@@ -13,8 +13,8 @@
 > 1. Este archivo [`README.md`](README.md) *(Visión ejecutiva, estructura global, mapa del repo y protocolo de handover)*.
 > 2. [`engineering-knowledge/`](engineering-knowledge/README.md) *(Sistema LAIA: Constitución, Reglas Operativas ER-SEC-001..014, Invariantes y Lecciones Aprendidas LL-001..012)*.
 > 3. [`.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md`](.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md) *(Política inmutable anti-fallos, gobernanza SSRF, autenticación de control y modos de falla de IA)*.
-> 4. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(DIRECTIVA SUPREMA DE PRIORIDAD 0: Auto-invocable, Inviolable, Inmodificable en sus principios rectores, pero permanentemente Ampliable y Mejorable. Procedimiento autónomo de desarrollo, catálogo de 75 subsistemas y directivas operativas de auto-evolución)*.
-> 5. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 68 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
+> 4. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(DIRECTIVA SUPREMA DE PRIORIDAD 0: Auto-invocable, Inviolable, Inmodificable en sus principios rectores, pero permanentemente Ampliable y Mejorable. Procedimiento autónomo de desarrollo, catálogo de 76 subsistemas y directivas operativas de auto-evolución)*.
+> 5. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 69 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
 > 6. [`genesis.md`](genesis.md) *(Mandato Génesis v2.0, principios ontológicos, gobernanza evolutiva y multi-agente)*.
 > 7. **Architecture Decision Records (ADRs Inmutables):**
 >    - [`.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md`](.nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md) *(Consolidación silenciosa IPv7-HRS e Identidad Efímera 24h)*.
@@ -36,6 +36,7 @@
 >    - [`.nexus/decisions/ADR-017-TRI-STATE-OPERATING-MODE-CONTROLLER.md`](.nexus/decisions/ADR-017-TRI-STATE-OPERATING-MODE-CONTROLLER.md) *(Gobernador Adaptativo de Salud, Modos Tri-Estado OPEN/SAFE/DEGRADED y Anillo Causal de Transiciones)*.
 >    - [`.nexus/decisions/ADR-018-OTA-HOTSWAP-AND-SANDBOXED-MODULE-DISTRIBUTION.md`](.nexus/decisions/ADR-018-OTA-HOTSWAP-AND-SANDBOXED-MODULE-DISTRIBUTION.md) *(Distribución Soberana OTA, Sandboxing AST, Reemplazo Atómico en Caliente y Auto-Rollback por Watchdog)*.
 >    - [`.nexus/decisions/ADR-019-SOVEREIGN-RFC1035-UDP-DNS-SERVER-AND-BINARY-WIRE-CODEC.md`](.nexus/decisions/ADR-019-SOVEREIGN-RFC1035-UDP-DNS-SERVER-AND-BINARY-WIRE-CODEC.md) *(Servidor DNS UDP Soberano RFC 1035 / RFC 3596 y Códec Binario de Alambre)*.
+>    - [`.nexus/decisions/ADR-020-SOVEREIGN-KNOWLEDGE-GRAPH-AND-OPENCYPHER-ENGINE.md`](.nexus/decisions/ADR-020-SOVEREIGN-KNOWLEDGE-GRAPH-AND-OPENCYPHER-ENGINE.md) *(Motor Soberano de Grafo de Conocimiento y Evaluador de Patrones openCypher)*.
 > 8. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
 > 9. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
@@ -50,7 +51,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **152/152 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~7.0s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
+*Criterio de Aceptación Innegociable:* **157/157 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~7.8s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell
@@ -60,8 +61,8 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 ### 1.3. Puntos de Entrada y Servicios Activos
 | Servicio / Protocolo | Dirección / Puerto | Propósito |
 |---|---|---|
-| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 75 subsistemas y consola MCP |
-| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **76 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
+| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 76 subsistemas y consola MCP |
+| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **77 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
 | **Proxy HTTP/HTTPS Interceptor** | `http://127.0.0.1:8888` | Pasarela transparente de intercepción y tunelización cuántica |
 | **Proxy SOCKS5 RFC 1928** | `127.0.0.1:10807` | Proxy anónimo para enrutamiento transparente de aplicaciones TCP |
 | **Servidor DNS UDP (RFC 1035)** | `127.0.0.1:1053` | Intercepción autoritativa de dominios .ipv7 y resolución inversa PTR |
@@ -69,7 +70,7 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 
 ---
 
-## 🏛️ 2. Arquitectura de Capas y Catálogo de Archivos (75 Subsistemas)
+## 🏛️ 2. Arquitectura de Capas y Catálogo de Archivos (76 Subsistemas)
 
 El árbol del repositorio está diseñado para una navegación directa y modular:
 
@@ -168,7 +169,8 @@ ipvn7-10/
 │   │   ├── copilot.py                  # Copiloto IA de red con remediación en bucle cerrado
 │   │   ├── censorship.py               # Detector de censura por DPI, DNS poisoning y TCP RST
 │   │   ├── formal_verifier.py          # Verificación formal en tiempo de ejecución de las 6 invariantes
-│   │   └── pfo.py                      # Gobernanza ontológica PFO (5 Principios -> 12 Funciones)
+│   │   ├── pfo.py                      # Gobernanza ontológica PFO (5 Principios -> 12 Funciones)
+│   │   └── graph.py                    # Motor soberano de grafo de conocimiento y evaluador openCypher
 │   ├── simulation/                     # Simulación & Estrés Topológico
 │   │   └── churn.py                    # Simulador Small-World y benchmark de estrés con pérdida y jitter
 │   ├── benchmark/                      # Rendimiento y Saturación de Datapath

@@ -3408,6 +3408,87 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Línea W: Knowledge Graph & openCypher
+  async function fetchGraphTopology() {
+    try {
+      const res = await fetch("/api/graph/topology");
+      const data = await res.json();
+      const metrics = data.metrics || {};
+      const nodesBadge = document.getElementById("graphNodesBadge");
+      const edgesBadge = document.getElementById("graphEdgesBadge");
+      const covBadge = document.getElementById("graphCoverageBadge");
+      if (nodesBadge) nodesBadge.textContent = `Nodos: ${metrics.total_nodes || 0}`;
+      if (edgesBadge) edgesBadge.textContent = `Aristas: ${metrics.total_edges || 0}`;
+      if (covBadge) covBadge.textContent = `Cobertura: ${metrics.coverage_pct || 100}%`;
+    } catch (err) {
+      console.warn("Error fetching graph topology:", err);
+    }
+  }
+
+  async function auditGraphAxioms() {
+    const out = document.getElementById("cypherJsonOutput");
+    if (out) out.textContent = "Auditando coherencia axiomática y zero huérfanos...";
+    try {
+      const res = await fetch("/api/graph/audit");
+      const data = await res.json();
+      const cohBadge = document.getElementById("graphCoherenceBadge");
+      if (cohBadge) cohBadge.textContent = `Coherencia: ${data.coherence_score || 100}%`;
+      if (out) out.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      if (out) out.textContent = "Error al auditar axiomas: " + err;
+    }
+  }
+
+  async function executeCypherQuery(queryStr) {
+    const out = document.getElementById("cypherJsonOutput");
+    const timeSpan = document.getElementById("cypherExecTime");
+    const q = queryStr || (document.getElementById("cypherQueryInput") ? document.getElementById("cypherQueryInput").value : "");
+    if (!q) return;
+
+    if (out) out.textContent = `Evaluando consulta openCypher: "${q}"...`;
+    try {
+      const res = await fetch("/api/graph/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q })
+      });
+      const data = await res.json();
+      const r = data.result || data;
+      if (timeSpan && r.exec_ms !== undefined) {
+        timeSpan.textContent = `Tiempo ejecución: ${r.exec_ms} ms (${r.row_count || 0} filas)`;
+      }
+      if (out) {
+        out.textContent = JSON.stringify(r, null, 2);
+      }
+      await fetchGraphTopology();
+    } catch (err) {
+      if (out) out.textContent = "Error al ejecutar consulta Cypher: " + err;
+    }
+  }
+
+  const btnRefreshGraph = document.getElementById("btnRefreshGraphMetrics");
+  if (btnRefreshGraph) btnRefreshGraph.addEventListener("click", fetchGraphTopology);
+
+  const btnAuditAxioms = document.getElementById("btnAuditAxioms");
+  if (btnAuditAxioms) btnAuditAxioms.addEventListener("click", auditGraphAxioms);
+
+  const btnExecCypher = document.getElementById("btnExecuteCypher");
+  if (btnExecCypher) {
+    btnExecCypher.addEventListener("click", () => {
+      const val = document.getElementById("cypherQueryInput").value;
+      executeCypherQuery(val);
+    });
+  }
+
+  document.querySelectorAll(".cypher-preset").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const query = e.target.getAttribute("data-query");
+      const txt = document.getElementById("cypherQueryInput");
+      if (txt) txt.value = query;
+      executeCypherQuery(query);
+    });
+  });
+
   // Initializations
   fetchDagBlocks();
   fetchDiagnostics();
@@ -3432,6 +3513,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchModeStatus();
   fetchOtaStatus();
   fetchDnsServerStatus();
+  fetchGraphTopology();
 });
 
 

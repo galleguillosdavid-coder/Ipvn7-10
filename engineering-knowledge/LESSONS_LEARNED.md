@@ -180,6 +180,19 @@
 - **Regla Creada:** `ER-NET-015` (Node Subsystem Attribute Name Consistency and Verification Invariant).
 - **Pruebas de Regresión:** Tests 148–152 (`test_dns_codec_domain_name_encoding_and_pointer_loops`, `test_dns_packet_parse_and_build_roundtrip`, `test_dns_server_synthetic_a_and_aaaa_resolution`, `test_dns_server_reverse_ptr_and_petname_mapping`, `test_mcp_dns_server_tool_76_and_node_integration`).
 
+---
+
+### LL-016 — Aserciones Resilientes de Catálogo de Herramientas MCP y Preservación de Cardinalidad Aditiva
+- **Contexto:** En suites de pruebas unitarias históricas, se evaluaba la cardinalidad de herramientas del servidor MCP mediante `assert len(tools) == N`.
+- **Qué se esperaba:** Validar que el servidor MCP registrara exactamente las herramientas disponibles para el hito respectivo.
+- **Qué ocurrió realmente:** Al registrar nuevas herramientas para subsistemas evolutivos (ej: Herramienta 76 para DNS o Herramienta 77 para Knowledge Graph), las pruebas de hitos anteriores que usaban `== N` fallaban por incremento estricto (`N+1 != N`), generando regresiones aparentes.
+- **Causa Raíz:** Aserción de igualdad estricta sobre una colección ontológica que es por definición permanentemente ampliable y acumulativa.
+- **Acción Correctiva:**
+  1. Modificar las aserciones de catálogo a cotas mínimas inclusivas: `assert len(tools) >= N`.
+  2. Verificar explícitamente la presencia de la herramienta evaluada mediante su nombre (`assert "tool_name" in [t["name"] for t in tools]`).
+- **Regla Creada:** `ER-ONT-016` (Additive MCP Tool Count and Open-Ended Assertion Contract).
+- **Pruebas de Regresión:** Tests 153–157 (`test_knowledge_graph_node_edge_crud_and_orphans`, `test_opencypher_pattern_matcher_and_queries`, `test_knowledge_graph_shortest_path_and_subgraph`, `test_axiomatic_coherence_audit_and_canonical_seeding`, `test_node_knowledge_graph_integration_and_mcp_tool_77`).
+
 
 
 

@@ -635,6 +635,22 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 "count": sum(len(v) for v in recs.values()),
             })
 
+        elif path == "/api/graph/topology":
+            self._send_json(PRIMARY_NODE.get_knowledge_graph_topology())
+
+        elif path == "/api/graph/audit":
+            self._send_json(PRIMARY_NODE.audit_knowledge_graph())
+
+        elif path == "/api/graph/path":
+            qs = urllib.parse.parse_qs(parsed.query)
+            src = qs.get("source", [""])[0]
+            tgt = qs.get("target", [""])[0]
+            if not src or not tgt:
+                self._send_json({"error": "Requiere 'source' y 'target' en query params"}, status=400)
+            else:
+                p_nodes = PRIMARY_NODE.find_knowledge_graph_path(src, tgt)
+                self._send_json({"source": src, "target": tgt, "path": p_nodes, "found": p_nodes is not None})
+
         elif path == "/api/upnp/status":
             self._send_json(PRIMARY_NODE.upnp_mapper.get_summary())
 
@@ -1713,6 +1729,37 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
         elif path == "/api/dns/server/stop":
             PRIMARY_NODE.stop_dns_server()
             self._send_json({"success": True, "message": "DNS Server detenido"})
+
+        elif path == "/api/graph/query":
+            q_str = body.get("query", "")
+            if not q_str:
+                self._send_json({"error": "Requiere campo 'query'"}, status=400)
+                return
+            res = PRIMARY_NODE.query_knowledge_graph(q_str)
+            self._send_json({"success": True, "result": res})
+
+        elif path == "/api/graph/node":
+            nid = body.get("id")
+            lbl = body.get("label", "Component")
+            nm = body.get("name", nid)
+            lyr = body.get("layer", "L0")
+            props = body.get("properties", {})
+            if not nid:
+                self._send_json({"error": "Requiere campo 'id'"}, status=400)
+                return
+            n = PRIMARY_NODE.knowledge_graph.register_node(node_or_id=nid, label=lbl, name=nm, layer=lyr, properties=props)
+            self._send_json({"success": True, "node": n.to_dict()})
+
+        elif path == "/api/graph/edge":
+            src = body.get("source_id")
+            tgt = body.get("target_id")
+            rel = body.get("rel_type", "CONNECTS_TO")
+            props = body.get("properties", {})
+            if not src or not tgt:
+                self._send_json({"error": "Requiere 'source_id' y 'target_id'"}, status=400)
+                return
+            e = PRIMARY_NODE.knowledge_graph.register_edge(edge_or_source=src, target_id=tgt, rel_type=rel, properties=props)
+            self._send_json({"success": True, "edge": e.to_dict()})
 
         elif path in ("/api/mcp", "/mcp"):
             # Audit H-03: Mandatory authentication for MCP JSON-RPC control plane

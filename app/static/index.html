@@ -152,13 +152,14 @@
           <button class="tab-btn" data-tab="tab-uin-shadow-pfo">Identidad UIN, Shadow & PFO</button>
           <button class="tab-btn" data-tab="tab-wan-desktop">Sondeo WAN & Escritorio Remoto</button>
           <button class="tab-btn" data-tab="tab-bitnet">BitNet b1.58 Ternary AI</button>
-          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (76 Herramientas IA)</button>
+          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (77 Herramientas IA)</button>
           <button class="tab-btn" data-tab="tab-tee-formal">Enclave TEE & Validación Formal</button>
           <button class="tab-btn" data-tab="tab-zkp-ring">Línea Q: ZKP & Firmas en Anillo</button>
           <button class="tab-btn" data-tab="tab-xdp">Línea S: eBPF/XDP Switch & Early-Drop</button>
           <button class="tab-btn" data-tab="tab-operating-mode">Línea T: Modos Tri-Estado & Salud</button>
           <button class="tab-btn" data-tab="tab-ota">Línea U: Hot-Swapping OTA & Sandbox</button>
           <button class="tab-btn" data-tab="tab-dns-server">Línea V: Servidor DNS RFC 1035 UDP</button>
+          <button class="tab-btn" data-tab="tab-knowledge-graph">Línea W: Grafo de Conocimiento & openCypher</button>
         </div>
 
         <!-- Tab 1: PQ-QUIC & Migration -->
@@ -1852,6 +1853,43 @@
               <button class="btn btn-primary btn-small" id="btnRunDnsQuery">Resolver Consulta Wire</button>
             </div>
             <pre class="json-viewer mono-text mt-3" id="dnsQueryResultOutput" style="max-height:140px; overflow-y:auto;">Seleccione un dominio y presione 'Resolver Consulta Wire'...</pre>
+          </div>
+        </div>
+
+        <!-- Tab: Línea W: Grafo de Conocimiento & openCypher -->
+        <div class="tab-pane" id="tab-knowledge-graph">
+          <div class="interactive-card">
+            <h3>Motor Soberano de Grafo de Conocimiento & openCypher (Línea W)</h3>
+            <p class="desc">Grafo relacional dirigido multi-capa en memoria conforme al modelo ontológico AFE-Kùzu (MAGNA SKILL 7.0). Conecta Principios Axiomáticos (L0), Subcistemas, Funciones Operativas, Observaciones Empíricas y Decisiones de Arquitectura (ADRs).</p>
+            <div class="streaming-control-bar" style="flex-wrap:wrap; gap:10px;">
+              <span class="badge" id="graphNodesBadge" style="background:var(--primary); color:#fff;">Nodos: --</span>
+              <span class="badge" id="graphEdgesBadge" style="background:var(--accent); color:#000;">Aristas: --</span>
+              <span class="badge" id="graphCoverageBadge" style="background:var(--success); color:#000;">Cobertura: --%</span>
+              <span class="badge" id="graphCoherenceBadge" style="background:var(--warning); color:#000;">Coherencia: --%</span>
+              <button class="btn btn-outline btn-small" id="btnRefreshGraphMetrics">Refrescar Topología</button>
+              <button class="btn btn-primary btn-small" id="btnAuditAxioms">Auditar Coherencia Axiomática</button>
+            </div>
+          </div>
+
+          <div class="interactive-card mt-3">
+            <h3>Consola de Consulta openCypher</h3>
+            <p class="desc">Ejecuta sentencias openCypher estructuradas (<code>MATCH ... WHERE ... RETURN ... LIMIT</code>) contra la topología activa en memoria con resolución de sub-grafos y rutas semánticas.</p>
+            <div class="quick-preset-bar" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+              <span style="font-size:0.8rem; color:var(--text-muted); align-self:center;">Presets:</span>
+              <button class="btn btn-outline btn-small cypher-preset" data-query="MATCH (a:AxiomPrinciple) RETURN a.id, a.layer, a.properties.statement">Axiomas L0</button>
+              <button class="btn btn-outline btn-small cypher-preset" data-query="MATCH (s:Subsystem)-[:GOVERNED_BY]->(a:AxiomPrinciple) RETURN s.id, a.id">Gobernanza Subcistemas</button>
+              <button class="btn btn-outline btn-small cypher-preset" data-query="MATCH (s:Subsystem)-[:DECIDED_BY]->(d:Decision) RETURN s.id, d.id, d.name">Trazabilidad ADR</button>
+              <button class="btn btn-outline btn-small cypher-preset" data-query="MATCH (f:OperationalFunction)-[:DERIVED_FROM]->(a:AxiomPrinciple) RETURN f.id, a.id, f.status">Funciones PFO</button>
+              <button class="btn btn-outline btn-small cypher-preset" data-query="MATCH (n) RETURN n.id, n.label, n.layer LIMIT 25">Topología General</button>
+            </div>
+            <textarea id="cypherQueryInput" class="select-field mono-text" style="width:100%; height:70px; resize:vertical; font-size:0.85rem;" placeholder="Escriba su consulta openCypher aquí...">MATCH (a:AxiomPrinciple) RETURN a.id, a.layer, a.properties.statement</textarea>
+            <div class="streaming-control-bar mt-2">
+              <button class="btn btn-primary btn-small" id="btnExecuteCypher">Ejecutar Consulta Cypher</button>
+              <span id="cypherExecTime" style="font-size:0.8rem; color:var(--text-muted); margin-left:10px;"></span>
+            </div>
+            <div id="cypherResultContainer" class="mt-3" style="max-height:220px; overflow-y:auto;">
+              <pre class="json-viewer mono-text" id="cypherJsonOutput">Presione 'Ejecutar Consulta Cypher' o seleccione un preset para evaluar el grafo...</pre>
+            </div>
           </div>
         </div>
       </section>

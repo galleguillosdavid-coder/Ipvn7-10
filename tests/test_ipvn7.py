@@ -5640,9 +5640,9 @@ def test_mcp_dns_server_tool_76_and_node_integration():
 
     node = IPVN7Node(alias="mcp-dns-node")
 
-    # 1. Catálogo total de herramientas MCP debe ser 76
+    # 1. Catálogo total de herramientas MCP debe ser al menos 76
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 76
+    assert len(tools) >= 76
     tool_names = [t["name"] for t in tools]
     assert "ipvn7_dns_server" in tool_names
 
@@ -5691,6 +5691,303 @@ def test_mcp_dns_server_tool_76_and_node_integration():
     ok, stop_res = node.mcp_server.execute_tool("ipvn7_dns_server", {"action": "stop_server"})
     assert ok is True
     assert node.dns_server.is_running() is False
+
+
+def test_knowledge_graph_node_edge_crud_and_orphans():
+    """Test 153: Valida inserción, indexación, consulta de vecinos y detección de huérfanos en KnowledgeGraphEngine."""
+    from ipvn7.diagnostics.graph import KnowledgeGraphEngine, GraphNode, GraphEdge
+
+    kg = KnowledgeGraphEngine()
+
+    # 1. Registro de nodos
+    n1 = kg.register_node(
+        node_or_id="AXIOM_1",
+        label="AxiomPrinciple",
+        name="Axiom 1",
+        layer="L0",
+        properties={"immutable": True},
+    )
+    n2 = kg.register_node(
+        node_or_id="FUNC_1",
+        label="OperationalFunction",
+        name="Function 1",
+        layer="L1",
+        properties={"status": "VERIFIED"},
+    )
+    assert kg.get_node("AXIOM_1") is not None
+    assert kg.get_node("FUNC_1") is not None
+    assert kg.get_node("UNKNOWN") is None
+
+    # 2. Registro de arista
+    e1 = kg.register_edge(
+        edge_or_source="FUNC_1",
+        target_id="AXIOM_1",
+        rel_type="DERIVED_FROM",
+        properties={"weight": 1.0},
+    )
+    assert kg.get_edge(e1.id) is not None
+
+    # 3. Consulta de vecinos
+    out_neighbors = kg.get_neighbors("FUNC_1", direction="out")
+    assert len(out_neighbors) == 1
+    assert out_neighbors[0][1].id == "AXIOM_1"
+
+    in_neighbors = kg.get_neighbors("AXIOM_1", direction="in")
+    assert len(in_neighbors) == 1
+    assert in_neighbors[0][1].id == "FUNC_1"
+
+    # 4. Verificación de cero huérfanos (ambos nodos conectados)
+    orphan_res = kg.validate_zero_orphans()
+    assert orphan_res["zero_orphans"] is True
+    assert orphan_res["orphan_count"] == 0
+    assert orphan_res["coverage_pct"] == 100.0
+
+    # 5. Agregar nodo huérfano desconectado
+    kg.register_node("ORPHAN_NODE", label="Component", name="Orphan")
+    orphan_res2 = kg.validate_zero_orphans()
+    assert orphan_res2["zero_orphans"] is False
+    assert orphan_res2["orphan_count"] == 1
+    assert "ORPHAN_NODE" in orphan_res2["orphans"]
+
+    # 6. Eliminar nodo y comprobar remoción de incidentes
+    assert kg.remove_node("ORPHAN_NODE") is True
+    assert kg.validate_zero_orphans()["zero_orphans"] is True
+
+    # 7. Exportación topológica
+    topo = kg.export_topology()
+    assert topo["metrics"]["total_nodes"] == 2
+    assert topo["metrics"]["total_edges"] == 1
+    assert topo["metrics"]["zero_orphans"] is True
+
+
+def test_opencypher_pattern_matcher_and_queries():
+    """Test 154: Valida evaluación de patrones openCypher (MATCH, WHERE, RETURN, LIMIT, alias)."""
+    from ipvn7.diagnostics.graph import KnowledgeGraphEngine
+
+    kg = KnowledgeGraphEngine()
+    kg.register_node("A1", label="AxiomPrinciple", name="Principle Alpha", layer="L0", properties={"score": 10})
+    kg.register_node("A2", label="AxiomPrinciple", name="Principle Beta", layer="L1", properties={"score": 5})
+    kg.register_node("F1", label="OperationalFunction", name="Function 1", layer="L1", properties={"status": "VERIFIED"})
+    kg.register_node("F2", label="OperationalFunction", name="Function 2", layer="L2", properties={"status": "DEPRECATED"})
+
+    kg.register_edge("F1", "A1", rel_type="DERIVED_FROM", properties={"weight": 2.5})
+    kg.register_edge("F2", "A2", rel_type="DERIVED_FROM", properties={"weight": 1.0})
+    kg.register_edge("F1", "F2", rel_type="CALLS", properties={"freq": 100})
+
+    # 1. MATCH simple de nodos por etiqueta
+    res1 = kg.execute_cypher("MATCH (a:AxiomPrinciple) RETURN a.id, a.layer")
+    assert res1.row_count == 2
+    assert "a.id" in res1.columns
+    assert "a.layer" in res1.columns
+    ids = [r["a.id"] for r in res1.rows]
+    assert "A1" in ids and "A2" in ids
+
+    # 2. MATCH con WHERE y operadores de comparación
+    res2 = kg.execute_cypher("MATCH (a:AxiomPrinciple) WHERE a.layer = 'L0' RETURN a.id, a.properties.score")
+    assert res2.row_count == 1
+    assert res2.rows[0]["a.id"] == "A1"
+    assert res2.rows[0]["a.properties.score"] == 10
+
+    # 3. MATCH de arista dirigida
+    res3 = kg.execute_cypher("MATCH (f:OperationalFunction)-[r:DERIVED_FROM]->(a:AxiomPrinciple) RETURN f.id, a.id, r.properties.weight")
+    assert res3.row_count == 2
+    f_ids = [r["f.id"] for r in res3.rows]
+    assert "F1" in f_ids and "F2" in f_ids
+
+    # 4. MATCH de arista reversa (<-)
+    res4 = kg.execute_cypher("MATCH (a:AxiomPrinciple)<-[r:DERIVED_FROM]-(f:OperationalFunction) RETURN a.id, f.id")
+    assert res4.row_count == 2
+    assert "a.id" in res4.columns
+    assert "f.id" in res4.columns
+
+    # 5. MATCH con alias de columnas (AS)
+    res5 = kg.execute_cypher("MATCH (f:OperationalFunction) WHERE f.status = 'VERIFIED' RETURN f.id AS function_identifier, f.name AS title")
+    assert res5.row_count == 1
+    assert "function_identifier" in res5.columns
+    assert "title" in res5.columns
+    assert res5.rows[0]["function_identifier"] == "F1"
+
+    # 6. MATCH con LIMIT
+    res6 = kg.execute_cypher("MATCH (n) RETURN n.id LIMIT 2")
+    assert res6.row_count == 2
+    assert len(res6.rows) == 2
+
+
+def test_knowledge_graph_shortest_path_and_subgraph():
+    """Test 155: Valida cálculo de rutas semánticas más cortas (BFS) y extracción de subgrafos locales."""
+    from ipvn7.diagnostics.graph import KnowledgeGraphEngine
+
+    kg = KnowledgeGraphEngine()
+    # Construcción de topología:
+    # Camino 1: N1 -> N2 -> N3 -> N4 (3 saltos)
+    # Camino 2: N1 -> N5 -> N4 (2 saltos, más corto)
+    for i in range(1, 6):
+        kg.register_node(f"N{i}", label="Node", name=f"Node {i}")
+
+    kg.register_edge("N1", "N2", rel_type="ROUTES_TO")
+    kg.register_edge("N2", "N3", rel_type="ROUTES_TO")
+    kg.register_edge("N3", "N4", rel_type="ROUTES_TO")
+
+    kg.register_edge("N1", "N5", rel_type="SHORTCUT")
+    kg.register_edge("N5", "N4", rel_type="SHORTCUT")
+
+    # 1. Camino más corto sin filtro de relación
+    path = kg.find_shortest_path("N1", "N4")
+    assert path == ["N1", "N5", "N4"]
+
+    # 2. Camino más corto restringido a rel_type='ROUTES_TO'
+    path_routed = kg.find_shortest_path("N1", "N4", rel_type="ROUTES_TO")
+    assert path_routed == ["N1", "N2", "N3", "N4"]
+
+    # 3. Camino inexistente
+    kg.register_node("ISOLATED", label="Node")
+    assert kg.find_shortest_path("N1", "ISOLATED") is None
+
+    # 4. Extracción de subgrafo local (ego-network)
+    sub = kg.extract_subgraph("N5", max_depth=1)
+    assert sub["seed_id"] == "N5"
+    sub_ids = [n["id"] for n in sub["nodes"]]
+    assert "N5" in sub_ids
+    assert "N1" in sub_ids
+    assert "N4" in sub_ids
+    assert len(sub["edges"]) >= 2
+
+
+def test_axiomatic_coherence_audit_and_canonical_seeding():
+    """Test 156: Valida auto-inicialización de la arquitectura canónica IPVN 7 y auditoría de coherencia."""
+    from ipvn7.diagnostics.graph import KnowledgeGraphEngine
+
+    kg = KnowledgeGraphEngine()
+    kg.seed_canonical_architecture()
+
+    # 1. Verificación de axiomas sembrados
+    axioms = kg.execute_cypher("MATCH (a:AxiomPrinciple) RETURN a.id")
+    assert axioms.row_count >= 7
+    axiom_ids = [r["a.id"] for r in axioms.rows]
+    assert "AXIOM_ZERO_PII" in axiom_ids
+    assert "AXIOM_STRICT_CORE_FREEZE" in axiom_ids
+    assert "AXIOM_FAST_PATH_FIRST" in axiom_ids
+    assert "AXIOM_SOVEREIGNTY" in axiom_ids
+
+    # 2. Verificación de subcistemas sembrados
+    subsystems = kg.execute_cypher("MATCH (s:Subsystem) RETURN s.id")
+    assert subsystems.row_count >= 15
+    sub_ids = [r["s.id"] for r in subsystems.rows]
+    assert "subsystem-dns-server" in sub_ids
+    assert "subsystem-xdp-switch" in sub_ids
+    assert "subsystem-ota-hotswap" in sub_ids
+
+    # 3. Verificación de decisiones ADR sembradas
+    adrs = kg.execute_cypher("MATCH (d:Decision) RETURN d.id")
+    assert adrs.row_count >= 19
+    adr_ids = [r["d.id"] for r in adrs.rows]
+    assert "ADR-001" in adr_ids
+    assert "ADR-019" in adr_ids
+
+    # 4. Auditoría de coherencia axiomática de base
+    audit = kg.audit_axiomatic_coherence()
+    assert audit["is_coherent"] is True
+    assert len(audit["unanchored_functions"]) == 0
+    assert len(audit["unanchored_subsystems"]) == 0
+    assert audit["coherence_score"] == 100.0
+
+    # 5. Detección de contradicciones ante observaciones no conformes
+    kg.register_node(
+        node_or_id="OBS_FAULT_001",
+        label="EmpiricalObservation",
+        name="Latency Violation",
+        properties={"metric_name": "rtt_ewma", "value": 500.0, "compliant": False},
+    )
+    kg.register_edge("L1_PACKET_PACER", "OBS_FAULT_001", rel_type="VALIDATED_BY")
+
+    fault_audit = kg.audit_axiomatic_coherence()
+    assert fault_audit["is_coherent"] is False
+    assert len(fault_audit["non_compliant_observations"]) == 1
+    assert fault_audit["non_compliant_observations"][0]["id"] == "OBS_FAULT_001"
+    assert fault_audit["coherence_score"] < 100.0
+
+
+def test_node_knowledge_graph_integration_and_mcp_tool_77():
+    """Test 157: Valida integración en IPVN7Node, sincronización de peers y ejecución de MCP Tool 77."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="graph-test-node")
+
+    # 1. Instanciación y pre-siembra automática
+    assert hasattr(node, "knowledge_graph")
+    assert node.knowledge_graph is not None
+
+    # 2. Comprobación en get_status()
+    st = node.get_status()
+    assert "knowledge_graph" in st
+    assert st["knowledge_graph"]["total_nodes"] > 20
+    assert st["knowledge_graph"]["total_edges"] > 20
+
+    # 3. Sincronización en bootstrap_peer
+    node.bootstrap_peer(
+        peer_did="did:ipvn7:peer-remote-9999",
+        peer_host="127.0.0.1",
+        peer_port=9999,
+    )
+    peer_node = node.knowledge_graph.get_node("did:ipvn7:peer-remote-9999")
+    assert peer_node is not None
+    assert peer_node.label == "Peer"
+
+    # 4. Catálogo MCP: Tool 77 (ipvn7_knowledge_graph)
+    tools = node.mcp_server.get_supported_tools()
+    assert len(tools) >= 77
+    tool_names = [t["name"] for t in tools]
+    assert "ipvn7_knowledge_graph" in tool_names
+
+    # 5. Ejecución MCP action='get_topology'
+    ok, topo = node.mcp_server.execute_tool("ipvn7_knowledge_graph", {"action": "get_topology"})
+    assert ok is True
+    assert "metrics" in topo
+    assert topo["metrics"]["total_nodes"] > 20
+
+    # 6. Ejecución MCP action='query_cypher'
+    ok, q_res = node.mcp_server.execute_tool(
+        "ipvn7_knowledge_graph",
+        {"action": "query_cypher", "query": "MATCH (a:AxiomPrinciple) RETURN a.id, a.layer"},
+    )
+    assert ok is True
+    assert q_res["row_count"] >= 7
+
+    # 7. Ejecución MCP action='audit_coherence'
+    ok, audit_res = node.mcp_server.execute_tool("ipvn7_knowledge_graph", {"action": "audit_coherence"})
+    assert ok is True
+    assert "is_coherent" in audit_res
+
+    # 8. Ejecución MCP action='find_orphans'
+    ok, orphan_res = node.mcp_server.execute_tool("ipvn7_knowledge_graph", {"action": "find_orphans"})
+    assert ok is True
+    assert "orphan_count" in orphan_res
+
+    # 9. Ejecución MCP action='register_node' y 'register_edge'
+    ok, reg_n = node.mcp_server.execute_tool(
+        "ipvn7_knowledge_graph",
+        {
+            "action": "register_node",
+            "node_id": "TEST_COMP_X",
+            "label": "Component",
+            "name": "Test Component X",
+            "layer": "L2",
+        },
+    )
+    assert ok is True
+    assert reg_n["registered"] is True
+
+    ok, reg_e = node.mcp_server.execute_tool(
+        "ipvn7_knowledge_graph",
+        {
+            "action": "register_edge",
+            "source_id": "TEST_COMP_X",
+            "target_id": "AXIOM_ZERO_PII",
+            "rel_type": "GOVERNED_BY",
+        },
+    )
+    assert ok is True
+    assert reg_e["registered"] is True
 
 
 
