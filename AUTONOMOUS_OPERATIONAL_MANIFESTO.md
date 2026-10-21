@@ -176,6 +176,29 @@ Para que el agente o la IA continúe investigando, expandiendo y perfeccionando 
 ### Línea E: Integración de Inferencia Edge AI Local (BitNet / Ollama)
 - Aprovechar el subsistema [`ipvn7/access/shadow_device.py`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/ipvn7/access/shadow_device.py) (tipo `edge_ai`) para permitir que el nodo delegue consultas de diagnóstico a modelos 1-bit locales o servidores locales de Ollama, permitiendo auto-reparación 100% offline sin conexión a nubes comerciales.
 
+### Línea Q (v7.13.0 Planificada): Emparejamiento Fuera de Banda (OOB) con SAS Visual y UR Fountain Chunks
+- **Origen:** Arquitectura validada en `ipvn7  vX7/pkg/l4/oob_pairing.go`.
+- **Objetivo:** Canal de emparejamiento soberano sin red previa (Air-Gapped).
+- **Componentes:**
+  1. `SASCode`: Derivación determinista de 6 dígitos + 4 emojis culturales desde el hash SHA-256 canónico de las claves públicas Ed25519 de ambos nodos.
+  2. `URFrame`: Segmentación fountain animada en base64URL para escaneo óptico secuencial sin límite de tamaño de perfil.
+  3. Herramientas MCP y endpoints Web UI con previsualización SVG/Canvas.
+
+### Línea R (v7.14.0 Planificada): Directorio dDNS Descentralizado y Libreta Mnemotécnica Petnames (`.ipv7`)
+- **Origen:** Arquitectura validada en `ipvn7  vX7/pkg/l4/ddns_petnames.go`.
+- **Objetivo:** Resolución de nombres locales libres de censura y de ICANN sin servidores centrales de DNS.
+- **Componentes:**
+  1. `PetnameResolver`: Mapeo contextual bidireccional entre alias memorables (ej. `laptop.ipv7`), DIDs soberanos, IPv4 sintéticas `10.7.0.0/16` y direcciones IPv6 overlay `fd07::/64`.
+  2. Context roots criptográficos para evitar homoglyph attacks y colisiones de nombres.
+  3. Servidor DNS UDP local (puerto 5353/53) con fallback transparente.
+
+### Línea S (v7.15.0 Planificada): Conmutador de Malla Acelerado y Verificador eBPF/XDP
+- **Origen:** Arquitectura validada en `0.7/src/pkg/l0/ebpf_xdp_spec.go` y `xdp_ipvn7.c`.
+- **Objetivo:** Filtrado en el kernel y descarte en alambre (wire-speed early drop) de datagramas UDP que no porten el número mágico canónico o violen las invariantes de MTU antes de alcanzar el espacio de usuario.
+- **Componentes:**
+  1. Simulador riguroso de microinstrucciones de filtro XDP en Python/C-ABI.
+  2. Telemetría atómica de paquetes descartados vs conmutados.
+
 ---
 
 ## 5. Protocolo de Auto-Mejora Continua y Temporizador (`schedule`)
