@@ -90,6 +90,7 @@ from ..crypto.zkp import SovereignZKSchnorr, SovereignBulletproof
 from ..security.ring_signature import SovereignRingSignature
 from ..access.xdp_switch import XDPKernelSimulator, XDPAction, XDPFilterStats
 from ..security.operating_modes import OperatingModeController, NodeOperatingMode, ModeTransition
+from ..access.ota_hotswap import SovereignOTAManager, ModuleManifest, ModuleLifecycleState
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -316,6 +317,12 @@ class IPVN7Node:
             firewall=self.firewall,
             scheduler=self.scheduler,
             xdp_switch=self.xdp_switch,
+        )
+
+        # Sovereign Over-The-Air (OTA) Hot-Swapping & Sandboxed Module Distribution (Línea U)
+        self.ota_manager = SovereignOTAManager(
+            local_did=self.did,
+            private_key=self.identity.keypair.ed25519_priv,
         )
 
     # -------------------------------------------------------------
@@ -1245,6 +1252,7 @@ class IPVN7Node:
             "resilience_guardian": self.resilience_guardian.get_health_status(),
             "dark_node": self.dark_node.get_status(),
             "operating_mode": self.mode_controller.get_status(),
+            "ota_manager": self.ota_manager.get_status(),
             "silent_dispatcher": self.silent_dispatcher.get_stats(),
             "link_healing": self.link_healing.get_summary(),
             "blackout_recovery": self.blackout_recovery.get_status(),
@@ -1603,6 +1611,65 @@ class IPVN7Node:
     ) -> Dict[str, Any]:
         """Evaluates loss, drop, and buffer telemetry to adaptively trip or recover mode."""
         return self.mode_controller.evaluate_health(loss_pct, drop_ratio_pct, buffer_util_pct)
+
+    # -------------------------------------------------------------
+    # Sovereign OTA Hot-Swapping & Sandboxed Distribution (Línea U)
+    # -------------------------------------------------------------
+
+    def package_ota_module(
+        self,
+        module_name: str,
+        version: str,
+        code_str: str,
+        target_subsystem: str = "custom",
+        dependencies: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Compiles, signs, and packages an inmutable DAG-anchored module manifest."""
+        manifest = self.ota_manager.package_module(
+            module_name=module_name,
+            version=version,
+            code_str=code_str,
+            target_subsystem=target_subsystem,
+            dependencies=dependencies,
+            author_did=self.did,
+        )
+        return manifest.to_dict()
+
+    def install_ota_module(
+        self,
+        manifest_data: Dict[str, Any],
+        expected_class_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Sandboxes, verifies signature, and atomically hot-swaps module into memory."""
+        manifest = ModuleManifest(
+            module_name=manifest_data["module_name"],
+            version=manifest_data["version"],
+            author_did=manifest_data["author_did"],
+            timestamp_epoch=float(manifest_data.get("timestamp_epoch", time.time())),
+            code_payload=manifest_data["code_payload"],
+            payload_sha256=manifest_data["payload_sha256"],
+            signature_hex=manifest_data["signature_hex"],
+            dag_cid=manifest_data["dag_cid"],
+            target_subsystem=manifest_data.get("target_subsystem", "custom"),
+            dependencies=manifest_data.get("dependencies", []),
+            compatibility_min_ipvn7=manifest_data.get("compatibility_min_ipvn7", "7.0.0"),
+        )
+        return self.ota_manager.install_and_hotswap(
+            manifest, expected_class_name=expected_class_name
+        )
+
+    def rollback_ota_module(self, module_name: str, reason: str = "manual_override") -> Dict[str, Any]:
+        """Instantly restores previous version snapshot of a module."""
+        return self.ota_manager.rollback(module_name, reason=reason)
+
+    def get_ota_status(self) -> Dict[str, Any]:
+        """Returns OTA manager telemetry and active probation windows."""
+        return self.ota_manager.get_status()
+
+    def list_ota_modules(self) -> List[Dict[str, Any]]:
+        """Lists active and installed swappable modules."""
+        return self.ota_manager.list_modules()
+
 
 
 

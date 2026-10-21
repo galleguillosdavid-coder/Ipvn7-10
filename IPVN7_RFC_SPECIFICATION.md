@@ -861,9 +861,37 @@ La arquitectura cuenta con una suite integral de 42 pruebas de integración y re
 
 ---
 
+## 67. Distribución y Reemplazo en Caliente Soberano Over-The-Air (OTA) & Sandboxing AST
+
+- **Manifiesto Criptográfico y Direccionamiento DAG (`ModuleManifest`):**
+  - Empaquetado soberano de módulos y extensiones dinámicas sin dependencias centralizadas.
+  - Campos canónicos: `module_name`, `version`, `author_did`, `target_subsystem`, `description`, `code_sha256`, `signature`, `dag_cid`.
+  - Firma Ed25519 generada sobre la representación serializada JSON canónica de los metadatos y del hash del código.
+  - Identificador de contenido DAG: `cid:ipvn7:manifest:<sha256(canonical_bytes)>`.
+- **Caja de Arena de Pre-Vuelo y Sanitización AST (`IsolatedModuleSandbox`):**
+  - Análisis estático previo a compilación mediante el árbol de sintaxis abstracta (`ast.parse`).
+  - Bloqueo incondicional de librerías de sistema operativo (`os`, `sys`, `subprocess`, `socket`, `shutil`, `pty`, `commands`).
+  - Prohibición estricta de built-ins inseguros (`eval`, `exec`, `__import__`, `open`, `compile`, `getattr`, `globals`, `locals`).
+  - Entorno de ejecución confinado con `__builtins__` restringidos para ejecución segura en el espacio de usuario.
+- **Intercambio Atómico de Punteros en Memoria (*Atomic Hot-Swap*):**
+  - Registro de módulos protegido con exclusión mutua reentrante (`threading.RLock`).
+  - Creación previa de snapshot (`ModuleSnapshot`) conteniendo la versión activa anterior, código fuente y referencia de clase.
+  - Inserción y reemplazo atómico en tiempo de ejecución sin reinicio de proceso ni desconexión de túneles PQC.
+- **Watchdog de Período de Prueba y Auto-Reversión (*Probation Watchdog*):**
+  - Los módulos recién instalados entran en estado `PROBATION` durante una ventana configurable (por defecto $5.0$ segundos).
+  - En caso de excepción no controlada durante las ejecuciones probatorias, el watchdog dispara la reversión inmediata al snapshot previo (`rollback_module`), devolviendo el sistema al estado estable sin degradación permanente.
+  - Finalizada la ventana de prueba sin incidencias, el módulo es promovido automáticamente a `ACTIVE`.
+- **Integración MCP (Herramienta 75: `ipvn7_ota_hotswap`):**
+  - Acciones: `get_status`, `list_modules`, `package_module`, `install_module`, `rollback_module`.
+- **Endpoints REST:**
+  - `GET /api/ota/status`, `GET /api/ota/modules`, `POST /api/ota/package`, `POST /api/ota/install`, `POST /api/ota/rollback`.
+
+---
+
 ## Resumen de Verificación y Suites de Prueba
 
-- **Suites de Prueba Ejecutadas:** Pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados (142/142 pruebas unitarias aprobadas al 100% sin regresiones).
-- **Herramientas MCP Activas:** 74 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
-- **Versión Oficial del Protocolo:** IPVN 7.15.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65).
+- **Suites de Prueba Ejecutadas:** Pruebas automáticas continuas en pytest cubriendo el 100% de subsistemas integrados (147/147 pruebas unitarias aprobadas al 100% sin regresiones).
+- **Herramientas MCP Activas:** 75 herramientas nativas disponibles en el servidor Model Context Protocol para asistentes inteligentes y sistemas agénticos.
+- **Versión Oficial del Protocolo:** IPVN 7.16.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65).
+
 

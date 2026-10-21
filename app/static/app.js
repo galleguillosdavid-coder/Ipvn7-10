@@ -3201,6 +3201,142 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // -----------------------------------------------------------------
+  // Línea U: Sovereign Over-The-Air (OTA) Hot-Swapping & Sandboxing
+  // -----------------------------------------------------------------
+  async function fetchOtaStatus() {
+    try {
+      const res = await fetch("/api/ota/status");
+      const data = await res.json();
+
+      const authEl = document.getElementById("otaAuthorityDidShort");
+      const installedEl = document.getElementById("otaInstalledCount");
+      const probEl = document.getElementById("otaProbationWindow");
+      const snapEl = document.getElementById("otaSnapshotsCount");
+
+      if (authEl) authEl.textContent = `${data.authority_did.slice(0, 24)}...`;
+      if (installedEl) installedEl.textContent = data.installed_modules_count;
+      if (probEl) probEl.textContent = `${data.probation_window_sec}s`;
+      if (snapEl) snapEl.textContent = data.snapshots_available ? data.snapshots_available.length : 0;
+
+      await fetchOtaModules();
+    } catch (err) {
+      console.warn("Error fetching OTA status:", err);
+    }
+  }
+
+  async function fetchOtaModules() {
+    try {
+      const res = await fetch("/api/ota/modules");
+      const data = await res.json();
+      const listEl = document.getElementById("otaModulesList");
+      if (!listEl) return;
+
+      if (!data.modules || data.modules.length === 0) {
+        listEl.textContent = "No hay módulos OTA personalizados instalados actualmente (sistema en configuración base).";
+        return;
+      }
+
+      listEl.innerHTML = data.modules.map(m => `
+        <div style="border-bottom:1px solid rgba(255,255,255,0.08); padding:6px 0;">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="color:var(--accent-glow);">${m.module_name} (v${m.version})</strong>
+            <span class="badge-tag">${m.state}</span>
+          </div>
+          <div style="color:var(--text-muted); font-size:0.75rem;">
+            CID: ${m.dag_cid} &bull; Instalado: ${m.installed_at_iso} &bull; Snapshot disponible: ${m.has_rollback_snapshot ? "SÍ" : "NO"}
+          </div>
+        </div>
+      `).join("");
+    } catch (err) {
+      console.warn("Error fetching OTA modules list:", err);
+    }
+  }
+
+  const btnRefreshOtaStatus = document.getElementById("btnRefreshOtaStatus");
+  if (btnRefreshOtaStatus) {
+    btnRefreshOtaStatus.addEventListener("click", fetchOtaStatus);
+  }
+
+  const btnPackageAndInstallOta = document.getElementById("btnPackageAndInstallOta");
+  if (btnPackageAndInstallOta) {
+    btnPackageAndInstallOta.addEventListener("click", async () => {
+      const modName = document.getElementById("otaModuleNameInput").value.trim();
+      const ver = document.getElementById("otaModuleVerInput").value.trim();
+      const expClass = document.getElementById("otaExpectedClassInput").value.trim();
+      const codeStr = document.getElementById("otaModuleCodeInput").value;
+      const out = document.getElementById("otaInstallOutput");
+
+      if (!modName || !codeStr) {
+        alert("Debe especificar nombre y código del módulo");
+        return;
+      }
+
+      if (out) out.textContent = "1. Empaquetando y firmando manifiesto DAG...";
+
+      try {
+        // Step 1: Package
+        const pkgRes = await fetch("/api/ota/package", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ module_name: modName, version: ver, code: codeStr })
+        });
+        const pkgData = await pkgRes.json();
+        if (!pkgData.success) {
+          if (out) out.textContent = "Error al empaquetar: " + pkgData.error;
+          return;
+        }
+
+        if (out) out.textContent = "2. Validando en sandbox y ejecutando hot-swap atómico...";
+
+        // Step 2: Install
+        const instRes = await fetch("/api/ota/install", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ manifest: pkgData.manifest, expected_class: expClass })
+        });
+        const instData = await instRes.json();
+
+        if (out) {
+          out.textContent = JSON.stringify({
+            packaging: pkgData,
+            installation: instData,
+            live_status: "Hot-swap exitoso. Módulo en estado PROBATION."
+          }, null, 2);
+        }
+
+        await fetchOtaStatus();
+      } catch (err) {
+        if (out) out.textContent = "Error en pipeline OTA: " + err;
+      }
+    });
+  }
+
+  const btnRollbackOta = document.getElementById("btnRollbackOta");
+  if (btnRollbackOta) {
+    btnRollbackOta.addEventListener("click", async () => {
+      const modName = document.getElementById("otaModuleNameInput").value.trim();
+      const out = document.getElementById("otaInstallOutput");
+      if (!modName) return alert("Ingrese el nombre del módulo a revertir");
+
+      if (out) out.textContent = `Revirtiendo módulo '${modName}' a su versión anterior...`;
+      try {
+        const res = await fetch("/api/ota/rollback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ module_name: modName, reason: "ui_operator_rollback" })
+        });
+        const data = await res.json();
+        if (out) {
+          out.textContent = JSON.stringify(data, null, 2);
+        }
+        await fetchOtaStatus();
+      } catch (err) {
+        if (out) out.textContent = "Error al ejecutar rollback: " + err;
+      }
+    });
+  }
+
   // Initializations
   fetchDagBlocks();
   fetchDiagnostics();
@@ -3223,5 +3359,6 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchTeeStatus();
   fetchXdpStats();
   fetchModeStatus();
+  fetchOtaStatus();
 });
 

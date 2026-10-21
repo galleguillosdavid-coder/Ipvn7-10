@@ -1489,6 +1489,49 @@ class IPVN7MCPServer:
                     "required": ["action"],
                 },
             },
+            {
+                "name": "ipvn7_ota_hotswap",
+                "description": "[Línea U / Tool 75] Administra la distribución de módulos Over-The-Air (OTA) y hot-swapping atómico en memoria sin reinicio de nodo. Permite empaquetar y firmar manifiestos anclados al DAG (cid:ipvn7:manifest:...), verificar código en sandbox aislado, realizar hot-swapping con ventana de prueba (probation) y ejecutar rollback automático o manual.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["get_status", "list_modules", "package_module", "install_module", "rollback_module"],
+                            "description": "Acción a realizar en el motor OTA",
+                        },
+                        "module_name": {
+                            "type": "string",
+                            "description": "Nombre del módulo (ej: 'telemetry_filter_v2')",
+                        },
+                        "version": {
+                            "type": "string",
+                            "description": "Versión semántica del módulo (ej: '1.2.0')",
+                        },
+                        "code": {
+                            "type": "string",
+                            "description": "Código fuente en Python para empaquetar con action='package_module'",
+                        },
+                        "target_subsystem": {
+                            "type": "string",
+                            "description": "Subsistema destino (ej: 'network', 'security', 'custom')",
+                        },
+                        "manifest": {
+                            "type": "object",
+                            "description": "Diccionario completo del manifiesto firmado para action='install_module'",
+                        },
+                        "expected_class": {
+                            "type": "string",
+                            "description": "Nombre de clase a instanciar en el sandbox para action='install_module'",
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": "Razón para action='rollback_module'",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -2464,6 +2507,49 @@ class IPVN7MCPServer:
                     }
                 else:
                     return False, f"Acción de Operating Mode desconocida: {act}"
+
+            elif name == "ipvn7_ota_hotswap":
+                act = arguments.get("action", "get_status")
+                if act == "get_status":
+                    return True, self.node.get_ota_status()
+                elif act == "list_modules":
+                    modules = self.node.list_ota_modules()
+                    return True, {
+                        "modules": modules,
+                        "count": len(modules),
+                    }
+                elif act == "package_module":
+                    mod_name = arguments.get("module_name")
+                    ver = arguments.get("version", "1.0.0")
+                    code_str = arguments.get("code")
+                    target = arguments.get("target_subsystem", "custom")
+                    if not mod_name or not code_str:
+                        return False, "Se requieren 'module_name' y 'code' para 'package_module'"
+                    res = self.node.package_ota_module(
+                        module_name=mod_name,
+                        version=ver,
+                        code_str=code_str,
+                        target_subsystem=target,
+                    )
+                    return True, res
+                elif act == "install_module":
+                    manifest_data = arguments.get("manifest")
+                    exp_class = arguments.get("expected_class")
+                    if not manifest_data:
+                        return False, "Se requiere 'manifest' dict para 'install_module'"
+                    res = self.node.install_ota_module(
+                        manifest_data, expected_class_name=exp_class
+                    )
+                    return res.get("success", False), res
+                elif act == "rollback_module":
+                    mod_name = arguments.get("module_name")
+                    if not mod_name:
+                        return False, "Se requiere 'module_name' para 'rollback_module'"
+                    reason = arguments.get("reason", "mcp_override")
+                    res = self.node.rollback_ota_module(mod_name, reason=reason)
+                    return res.get("success", False), res
+                else:
+                    return False, f"Acción OTA desconocida: {act}"
 
             else:
                 return False, f"Herramienta desconocida: {name}"

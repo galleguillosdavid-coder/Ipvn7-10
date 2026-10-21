@@ -610,6 +610,17 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 "count": len(history),
             })
 
+        elif path == "/api/ota/status":
+            self._send_json(PRIMARY_NODE.get_ota_status())
+
+        elif path == "/api/ota/modules":
+            modules = PRIMARY_NODE.list_ota_modules()
+            self._send_json({
+                "success": True,
+                "modules": modules,
+                "count": len(modules),
+            })
+
         elif path == "/api/upnp/status":
             self._send_json(PRIMARY_NODE.upnp_mapper.get_summary())
 
@@ -1619,6 +1630,46 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
             buffer_util_pct = float(body.get("buffer_util_pct", 0.0))
             status = PRIMARY_NODE.evaluate_operating_health(loss_pct, drop_ratio_pct, buffer_util_pct)
             self._send_json({"success": True, "status": status})
+
+        elif path == "/api/ota/package":
+            mod_name = body.get("module_name")
+            ver = body.get("version", "1.0.0")
+            code_str = body.get("code")
+            target = body.get("target_subsystem", "custom")
+            if not mod_name or not code_str:
+                self._send_json({"success": False, "error": "Requiere 'module_name' y 'code'"}, status=400)
+                return
+            try:
+                res = PRIMARY_NODE.package_ota_module(
+                    module_name=mod_name,
+                    version=ver,
+                    code_str=code_str,
+                    target_subsystem=target,
+                )
+                self._send_json({"success": True, "manifest": res})
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=400)
+
+        elif path == "/api/ota/install":
+            manifest_dict = body.get("manifest")
+            exp_class = body.get("expected_class")
+            if not manifest_dict:
+                self._send_json({"success": False, "error": "Requiere 'manifest' dict"}, status=400)
+                return
+            try:
+                res = PRIMARY_NODE.install_ota_module(manifest_dict, expected_class_name=exp_class)
+                self._send_json(res)
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=400)
+
+        elif path == "/api/ota/rollback":
+            mod_name = body.get("module_name")
+            if not mod_name:
+                self._send_json({"success": False, "error": "Requiere 'module_name'"}, status=400)
+                return
+            reason = body.get("reason", "api_request")
+            res = PRIMARY_NODE.rollback_ota_module(mod_name, reason=reason)
+            self._send_json(res)
 
         elif path in ("/api/mcp", "/mcp"):
             # Audit H-03: Mandatory authentication for MCP JSON-RPC control plane

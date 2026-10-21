@@ -154,4 +154,18 @@
 - **Regla Creada:** `ER-OPS-015` (Cross-Layer Enum Discrimination and Wire-vs-Queue Contract).
 - **Pruebas de Regresión:** Tests 138–142 (`test_operating_mode_controller_tri_state_transitions`, `test_adaptive_health_governor_trip_and_auto_recovery`, `test_operating_mode_subsystem_cascades`, `test_ipvn7_node_operating_mode_integration`, `test_mcp_operating_mode_tool_74`).
 
+---
+
+### LL-014 — Inclusión Mandatoria de Código Fuente en Serialización de Manifiestos OTA (`code_payload`)
+- **Contexto:** Al empaquetar un módulo en `SovereignOTAManager.package_module()`, se generaba un objeto `ModuleManifest` firmado y se exportaba con `manifest.to_dict()`.
+- **Qué se esperaba:** Que el diccionario devuelto contuviera todos los atributos necesarios para que un nodo receptor o cliente agéntico MCP pudiera registrar e instalar el módulo inmediatamente con `install_module(manifest=manifest_dict)`.
+- **Qué ocurrió realmente:** `to_dict()` excluía deliberadamente `code_payload` para mantener breves las respuestas serializadas, asumiendo una transferencia de código fuera de banda. Al invocar `install_module` vía MCP o REST pasando dicho diccionario, la caja de arena abortaba la instalación con `ValueError: Manifest must contain code_payload or bytecode`.
+- **Causa Raíz:** Asunción no documentada de transporte secundario fuera de banda, violando la autonomía y auto-contención de los comandos agénticos de la herramienta MCP 75.
+- **Acción Correctiva:**
+  1. Incluir incondicionalmente `code_payload` en `ModuleManifest.to_dict()`.
+  2. Preservar la estricta verificación criptográfica cruzada: `hashlib.sha256(code_payload.encode()).hexdigest() == manifest.code_sha256` antes de autorizar la compilación y el hot-swap.
+- **Regla Creada:** `ER-OPS-016` (Self-Contained Manifest Payload Invariant for Agentic OTA Distribution).
+- **Pruebas de Regresión:** Tests 143–147 (`test_ota_manifest_packaging_and_signature_verification`, `test_ota_sandbox_preflight_validation`, `test_ota_atomic_hotswap_and_execution`, `test_ota_watchdog_auto_rollback_during_probation`, `test_mcp_ota_tool_75_and_node_integration`).
+
+
 

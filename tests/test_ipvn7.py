@@ -1803,7 +1803,7 @@ def test_mcp_tools_catalog_57_tools():
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 74, f"Expected 74 MCP tools, found {len(tools)}"
+    assert len(tools) == 75, f"Expected 75 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -5045,7 +5045,7 @@ def test_mcp_xdp_switch_tool_73():
 
     # Catálogo de herramientas debe contener exactamente 74 herramientas
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 74
+    assert len(tools) >= 74
     tool_names = [t["name"] for t in tools]
     assert "ipvn7_xdp_switch" in tool_names
 
@@ -5266,7 +5266,7 @@ def test_mcp_operating_mode_tool_74():
 
     # Catálogo de herramientas debe contener exactamente 74 herramientas
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 74
+    assert len(tools) >= 74
     tool_names = [t["name"] for t in tools]
     assert "ipvn7_operating_mode" in tool_names
 
@@ -5301,5 +5301,213 @@ def test_mcp_operating_mode_tool_74():
     ok, res = node.mcp_server.execute_tool("ipvn7_operating_mode", {"action": "unknown_action"})
     assert ok is False
     assert "Acción de Operating Mode desconocida" in str(res)
+
+
+def test_ota_manifest_packaging_and_signature_verification():
+    """Test 143: Valida empaquetado, firma Ed25519 y verificación criptográfica de manifiestos OTA."""
+    from ipvn7.access.ota_hotswap import SovereignOTAManager
+
+    mgr = SovereignOTAManager(local_did="did:ipvn7:test-ota-authority")
+
+    sample_code = """
+class FastChecksumFilter:
+    def evaluate(self, data: bytes) -> int:
+        return sum(data) % 256
+"""
+    # 1. Empaquetar manifiesto
+    manifest = mgr.package_module(
+        module_name="checksum_filter",
+        version="1.0.0",
+        code_str=sample_code,
+        target_subsystem="security",
+        dependencies=["hashlib"],
+    )
+
+    assert manifest.module_name == "checksum_filter"
+    assert manifest.version == "1.0.0"
+    assert manifest.author_did == "did:ipvn7:test-ota-authority"
+    assert manifest.dag_cid.startswith("cid:ipvn7:manifest:")
+    assert len(manifest.signature_hex) == 128  # 64 bytes Ed25519 hex-encoded
+
+    # 2. Verificación criptográfica exitosa
+    valid, err = mgr.verify_manifest(manifest)
+    assert valid is True
+    assert err is None
+
+    # 3. Detección de alteración maliciosa del código
+    tampered_manifest = mgr.package_module(
+        module_name="checksum_filter",
+        version="1.0.0",
+        code_str=sample_code,
+    )
+    tampered_manifest.code_payload = sample_code + "\n# Tampered payload"
+    valid, err = mgr.verify_manifest(tampered_manifest)
+    assert valid is False
+    assert "SHA-256 payload mismatch" in err
+
+
+def test_ota_sandbox_preflight_validation():
+    """Test 144: Valida sandboxing pre-flight, detección de errores de sintaxis y bloqueo de módulos peligrosos."""
+    from ipvn7.access.ota_hotswap import IsolatedModuleSandbox
+
+    # 1. Código válido
+    valid_code = "class ValidMod:\n    def compute(self):\n        return 42\n"
+    ok, ast_err = IsolatedModuleSandbox.validate_ast(valid_code)
+    assert ok is True
+
+    # 2. Error de sintaxis
+    syntax_code = "class BrokenSyntax:\n    def broken(:\n"
+    ok, ast_err = IsolatedModuleSandbox.validate_ast(syntax_code)
+    assert ok is False
+    assert "Syntax error" in ast_err
+
+    # 3. Importación prohibida (subprocess)
+    malicious_code = "import subprocess\nclass Exploit:\n    pass\n"
+    ok, ast_err = IsolatedModuleSandbox.validate_ast(malicious_code)
+    assert ok is False
+    assert "Disallowed import" in ast_err
+
+    # 4. Preflight execution con instanciación de clase
+    ok, inst, err = IsolatedModuleSandbox.execute_preflight(
+        valid_code, expected_class_name="ValidMod"
+    )
+    assert ok is True
+    assert hasattr(inst, "compute")
+    assert inst.compute() == 42
+
+
+def test_ota_atomic_hotswap_and_execution():
+    """Test 145: Valida hot-swapping atómico en memoria y sustitución de versión con estado PROBATION."""
+    from ipvn7.access.ota_hotswap import SovereignOTAManager, ModuleLifecycleState
+
+    mgr = SovereignOTAManager(probation_sec=10.0)
+
+    code_v1 = """
+class WorkerService:
+    def run(self):
+        return "Worker V1"
+"""
+    manifest_v1 = mgr.package_module("worker_svc", "1.0.0", code_v1)
+    res = mgr.install_and_hotswap(manifest_v1, expected_class_name="WorkerService")
+    assert res["success"] is True
+    assert res["state"] == ModuleLifecycleState.PROBATION.value
+
+    # Ejecutar V1
+    inst_v1 = mgr.get_module_instance("worker_svc")
+    assert inst_v1.run() == "Worker V1"
+
+    # Sustituir en vivo por V2
+    code_v2 = """
+class WorkerService:
+    def run(self):
+        return "Worker V2 Accelerated"
+"""
+    manifest_v2 = mgr.package_module("worker_svc", "2.0.0", code_v2)
+    res2 = mgr.install_and_hotswap(manifest_v2, expected_class_name="WorkerService")
+    assert res2["success"] is True
+
+    # Instancia activa ahora debe ser V2
+    inst_v2 = mgr.get_module_instance("worker_svc")
+    assert inst_v2.run() == "Worker V2 Accelerated"
+
+    # Rollback a V1
+    rb_res = mgr.rollback("worker_svc", reason="unit_test_rollback")
+    assert rb_res["success"] is True
+    assert rb_res["restored_version"] == "1.0.0"
+
+    inst_restored = mgr.get_module_instance("worker_svc")
+    assert inst_restored.run() == "Worker V1"
+
+
+def test_ota_watchdog_auto_rollback_during_probation():
+    """Test 146: Valida disparador automático de rollback ante fallos en tiempo de ejecución durante probation."""
+    from ipvn7.access.ota_hotswap import SovereignOTAManager
+
+    mgr = SovereignOTAManager(probation_sec=10.0)
+
+    # 1. Instalar V1 estable
+    code_v1 = "class Mod:\n    def val(self): return 100\n"
+    m_v1 = mgr.package_module("fragile_mod", "1.0.0", code_v1)
+    mgr.install_and_hotswap(m_v1, expected_class_name="Mod")
+    # Consolidar V1
+    mgr._active_modules["fragile_mod"]["probation_expires_at"] = 0.0
+    mgr.evaluate_probation("fragile_mod")
+
+    # 2. Instalar V2 (en probation)
+    code_v2 = "class Mod:\n    def val(self): return 200\n"
+    m_v2 = mgr.package_module("fragile_mod", "2.0.0", code_v2)
+    mgr.install_and_hotswap(m_v2, expected_class_name="Mod")
+    assert mgr.get_module_instance("fragile_mod").val() == 200
+
+    # 3. Reportar error crítico mientras está en probation -> Auto Rollback
+    err_res = mgr.report_runtime_error("fragile_mod", "ZeroDivisionError in critical path")
+    assert err_res["auto_rollback_triggered"] is True
+
+    # 4. Módulo restaurado a V1
+    assert mgr.get_module_instance("fragile_mod").val() == 100
+
+
+def test_mcp_ota_tool_75_and_node_integration():
+    """Test 147: Valida integración de SovereignOTAManager en IPVN7Node y MCP Tool 75 (ipvn7_ota_hotswap)."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="ota-node-integration")
+
+    # 1. Catálogo total de herramientas MCP debe ser 75
+    tools = node.mcp_server.get_supported_tools()
+    assert len(tools) == 75
+    tool_names = [t["name"] for t in tools]
+    assert "ipvn7_ota_hotswap" in tool_names
+
+    # 2. Acción get_status
+    ok, res = node.mcp_server.execute_tool("ipvn7_ota_hotswap", {"action": "get_status"})
+    assert ok is True
+    assert "authority_did" in res
+    assert res["probation_window_sec"] == 5.0
+
+    # 3. Acción package_module
+    code_sample = "class SimpleEcho:\n    def echo(self, msg):\n        return f'Echo: {msg}'\n"
+    ok, manifest_dict = node.mcp_server.execute_tool(
+        "ipvn7_ota_hotswap",
+        {
+            "action": "package_module",
+            "module_name": "echo_svc",
+            "version": "1.0.0",
+            "code": code_sample,
+            "target_subsystem": "application",
+        },
+    )
+    assert ok is True
+    assert manifest_dict["module_name"] == "echo_svc"
+    assert manifest_dict["dag_cid"].startswith("cid:ipvn7:manifest:")
+
+    # 4. Acción install_module
+    ok, inst_res = node.mcp_server.execute_tool(
+        "ipvn7_ota_hotswap",
+        {
+            "action": "install_module",
+            "manifest": manifest_dict,
+            "expected_class": "SimpleEcho",
+        },
+    )
+    assert ok is True
+    assert inst_res["module_name"] == "echo_svc"
+    assert inst_res["state"] == "PROBATION"
+
+    # 5. Acción list_modules
+    ok, list_res = node.mcp_server.execute_tool("ipvn7_ota_hotswap", {"action": "list_modules"})
+    assert ok is True
+    assert list_res["count"] == 1
+    assert list_res["modules"][0]["module_name"] == "echo_svc"
+
+    # 6. Acción rollback_module
+    # Intentar rollback de un módulo sin snapshot debe fallar con error descriptivo
+    ok, rb_res = node.mcp_server.execute_tool(
+        "ipvn7_ota_hotswap",
+        {"action": "rollback_module", "module_name": "echo_svc"},
+    )
+    assert ok is False
+    assert "No previous snapshot exists" in rb_res["error"]
+
 
 
