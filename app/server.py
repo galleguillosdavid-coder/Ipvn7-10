@@ -554,6 +554,15 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
         elif path == "/api/tunnel/telemetry":
             self._send_json(PRIMARY_NODE.tunnel_telemetry.get_summary())
 
+        elif path == "/api/settlement/summary":
+            self._send_json(PRIMARY_NODE.get_settlement_ledger_summary())
+
+        elif path == "/api/tee/status":
+            self._send_json(PRIMARY_NODE.enclave.get_enclave_status())
+
+        elif path == "/api/formal/verify":
+            self._send_json(PRIMARY_NODE.run_formal_verification())
+
         elif path == "/api/upnp/status":
             self._send_json(PRIMARY_NODE.upnp_mapper.get_summary())
 
@@ -1353,6 +1362,40 @@ class IPVN7DashboardHandler(SimpleHTTPRequestHandler):
                 rem = PRIMARY_NODE.remediate_quota_with_reciprocity(token_dict.get("beneficiary_did", PRIMARY_NODE.did))
                 res["remediation"] = rem
             self._send_json(res)
+
+        elif path == "/api/tee/attest":
+            nonce = body.get("challenge_nonce", "")
+            rep = PRIMARY_NODE.attest_enclave(challenge_nonce=nonce)
+            self._send_json({"success": True, "report": rep})
+
+        elif path == "/api/tee/verify_attestation":
+            rep_dict = body.get("report")
+            if not rep_dict:
+                self._send_json({"success": False, "error": "Missing 'report' payload"}, status=400)
+                return
+            expected_nonce = body.get("challenge_nonce")
+            valid, reason = PRIMARY_NODE.verify_enclave_attestation(rep_dict, expected_nonce=expected_nonce)
+            self._send_json({"success": True, "valid": valid, "reason": reason})
+
+        elif path == "/api/enclave/frame":
+            action = body.get("action", "encode")
+            if action == "encode":
+                opcode = body.get("opcode", "OP_ATTESTATION_CHALLENGE")
+                payload = body.get("payload", {})
+                raw_bytes = PRIMARY_NODE.dispatch_enclave_frame(opcode, payload)
+                self._send_json({
+                    "success": True,
+                    "frame_hex": raw_bytes.hex(),
+                    "frame_len": len(raw_bytes),
+                    "mtu_valid": len(raw_bytes) <= 1280,
+                })
+            else:
+                raw_hex = body.get("raw_frame_hex", "")
+                if not raw_hex:
+                    self._send_json({"success": False, "error": "Missing raw_frame_hex"}, status=400)
+                    return
+                parsed_frame = PRIMARY_NODE.parse_enclave_frame(bytes.fromhex(raw_hex))
+                self._send_json({"success": True, "parsed": parsed_frame})
 
         elif path in ("/api/mcp", "/mcp"):
             # Audit H-03: Mandatory authentication for MCP JSON-RPC control plane

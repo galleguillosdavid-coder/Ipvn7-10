@@ -1,5 +1,5 @@
 # IPVN 7 — Internet Protocol Version 7
-> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.11.0)**  
+> **Next-Generation Post-Quantum Sovereign Internet Protocol (v7.12.0)**  
 > *Implementación Canónica en Python 3.14 con Criptografía Híbrida NIST FIPS 203 & 204*  
 > **Repositorio Oficial:** [https://github.com/galleguillosdavid-coder/Ipvn7-10](https://github.com/galleguillosdavid-coder/Ipvn7-10)
 
@@ -30,6 +30,7 @@
 >    - [`.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md`](.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md) *(Canal de Datos Overlay Real mediante Enmarcado Canónico IP7X)*.
 >    - [`.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md`](.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md) *(Remediación Integral de la Auditoría #3: Tokens Dinámicos, PQC Handshake MITM Auth, SOCKS5 Bounded Relay, BitNet Fuzz Defense y Censura de Secretos)*.
 >    - [`.nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md`](.nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md) *(Gobernanza de Cuotas y Liquidación Micro-Económica con Tokens de Reciprocidad IP7R)*.
+>    - [`.nexus/decisions/ADR-014-CRYPTOGRAPHIC-TEE-ENCLAVE-AND-RUNTIME-FORMAL-VERIFICATION.md`](.nexus/decisions/ADR-014-CRYPTOGRAPHIC-TEE-ENCLAVE-AND-RUNTIME-FORMAL-VERIFICATION.md) *(Enclave Criptográfico TEE Soberano, Formato Wire Canónico IP7E y Validación Formal de 6 Invariantes)*.
 > 8. [`.nexus/memory/level1_core.json`](.nexus/memory/level1_core.json) *(Snapshot de invariantes del sistema, hashes y estado persistente de Nivel 1)*.
 > 9. **Directiva de Autonomía:** Actúa como agente autoevolutivo con completa autonomía, ejecutando comandos, diseñando subsistemas, redactando ADRs y desplegando sin solicitar confirmación innecesaria al usuario.
 
@@ -44,7 +45,7 @@ Para verificar la integridad del repositorio y su entorno en Windows 11 PowerShe
 cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 .\.venv\Scripts\pytest.exe -q
 ```
-*Criterio de Aceptación Innegociable:* **115/115 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~7.0s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
+*Criterio de Aceptación Innegociable:* **122/122 pruebas unitarias aprobadas al 100% (0 fallos, 0 regresiones) en ~7.0s.** (Validado en Python 3.12, 3.13 y 3.14 en CI).
 
 ### 1.2. Iniciar el Nodo de Red, Proxies y Panel de Control
 ```powershell
@@ -54,23 +55,23 @@ cd c:\Users\Frondabrick\Desktop\dvd\Ipv7\ipvn7-10
 ### 1.3. Puntos de Entrada y Servicios Activos
 | Servicio / Protocolo | Dirección / Puerto | Propósito |
 |---|---|---|
-| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 66 subsistemas y consola MCP |
-| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **66 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
+| **Control Center SPA** | [http://127.0.0.1:7070](http://127.0.0.1:7070) | Dashboard interactivo en tiempo real con monitoreo de los 69 subsistemas y consola MCP |
+| **Servidor MCP JSON-RPC 2.0** | [http://127.0.0.1:7070/mcp](http://127.0.0.1:7070/mcp) | **69 herramientas nativas** para agentes IA (`GET` para catálogo, `POST` para llamadas RPC) |
 | **Proxy HTTP/HTTPS Interceptor** | `http://127.0.0.1:8888` | Pasarela transparente de intercepción y tunelización cuántica |
 | **Proxy SOCKS5 RFC 1928** | `127.0.0.1:10807` | Proxy anónimo para enrutamiento transparente de aplicaciones TCP |
 | **Socket Overlay UDP (QUIC)** | `127.0.0.1:9443` | Datapath de alta velocidad punto a punto cifrado con ML-KEM-768 |
 
 ---
 
-## 🏛️ 2. Arquitectura de Capas y Catálogo de Archivos (66 Subsistemas)
+## 🏛️ 2. Arquitectura de Capas y Catálogo de Archivos (69 Subsistemas)
 
 El árbol del repositorio está diseñado para una navegación directa y modular:
 
 ```
 ipvn7-10/
 ├── README.md                           # Master Orientation & Handover Guide (este documento)
-├── AUTONOMOUS_OPERATIONAL_MANIFESTO.md # Manifiesto Operacional de Auto-Evolución (58 subsistemas)
-├── IPVN7_RFC_SPECIFICATION.md          # Especificación RFC Técnica Formal (58 Secciones)
+├── AUTONOMOUS_OPERATIONAL_MANIFESTO.md # Manifiesto Operacional de Auto-Evolución (69 subsistemas)
+├── IPVN7_RFC_SPECIFICATION.md          # Especificación RFC Técnica Formal (61 Secciones)
 ├── genesis.md                          # Mandato Génesis v2.0 y Principios Ontológicos PFO
 ├── .gitignore                          # Exclusión limpia de venv, pycache y logs
 ├── .nexus/                             # Sistema de Memoria Agéntica y ADRs
@@ -180,19 +181,19 @@ Todo agente que continúe el desarrollo debe respetar estos 6 mandatos estrictos
 1. **Cero Dependencias Externas:**
    - La implementación se basa exclusivamente en la **librería estándar de Python 3.14** y el paquete criptográfico oficial `cryptography`. Queda prohibido añadir frameworks pesados o dependencias externas innecesarias.
 2. **Inmutabilidad del Formato Wire:**
-   - Los paquetes canónicos de red están alineados al MTU estándar de Internet de **1280 bytes**. Las tramas de sustrato `IP7H`, paquetes `IP7M`, `IP7B`, `IP7X`, `IP7R` y datagramas QUIC mantienen serialización binaria canónica con verificación CRC32 o HMAC.
+   - Los paquetes canónicos de red están alineados al MTU estándar de Internet de **1280 bytes**. Las tramas de sustrato `IP7H`, paquetes `IP7M`, `IP7B`, `IP7X`, `IP7R`, `IP7S`, `IP7T`, `IP7E` y datagramas QUIC mantienen serialización binaria canónica con verificación CRC32 o HMAC.
 3. **"La Red Responde, No Grita" (IPv7-HRS):**
    - Prohibido el uso de tormentas de broadcast para descubrimiento indiscriminado. Las consultas son dirigidas (unicast) con límites de tasa por par y SLAs adaptativos según el tier de hardware.
 4. **Rotación Efímera de Identidad (24 Horas):**
    - Los nodos rotan diariamente su DID de capa física (`did:ipvn7:ephemeral:...`) mediante HMAC-SHA256 para impedir el rastreo físico, manteniendo inmutables los petnames `.ipv7` y el DID raíz en la capa de aplicación.
 5. **Cero Regresiones (100% Tests Passing):**
-   - Antes de cada commit, la suite completa debe aprobarse: `.\.venv\Scripts\pytest.exe -q` (**115/115 OK**). Si un cambio rompe un test existente, el cambio es defectuoso y debe corregirse antes de proceder.
+   - Antes de cada commit, la suite completa debe aprobarse: `.\.venv\Scripts\pytest.exe -q` (**122/122 OK**). Si un cambio rompe un test existente, el cambio es defectuoso y debe corregirse antes de proceder.
 
 ---
 
-## 🛠️ 4. Servidor MCP y Plano de Control Agéntico (66 Herramientas)
+## 🛠️ 4. Servidor MCP y Plano de Control Agéntico (69 Herramientas)
 
-El servidor MCP integrado en `http://127.0.0.1:7070/mcp` expone 66 herramientas operativas accesibles tanto por agentes locales como remotos:
+El servidor MCP integrado en `http://127.0.0.1:7070/mcp` expone 69 herramientas operativas accesibles tanto por agentes locales como remotos:
 
 ### 4.1. Invocación desde Agentes y Clientes Externos (JSON-RPC 2.0)
 ```powershell
@@ -239,6 +240,10 @@ Invoke-RestMethod -Uri "http://127.0.0.1:7070/mcp" -Method Post -Body $body -Con
   - `ipvn7_issue_reciprocity_token`: Emisión y firma de comprobantes canónicos de reciprocidad `IP7R` para recompensar ancho de banda de tránsito.
   - `ipvn7_settle_reciprocity_token`: Validación, liquidación y acreditación de tokens con verificación de firmas Ed25519 y prevención de doble gasto.
   - `ipvn7_get_settlement_ledger`: Consulta del libro mayor de liquidación económica, balances de créditos y auditoría contable.
+- **Enclave Criptográfico TEE & Validación Formal de Invariantes (ADR-014):**
+  - `ipvn7_tee_attest_node`: Generación y verificación de reportes de atestación de hardware TEE firmados con EAK (Ed25519) ante desafíos nonce.
+  - `ipvn7_verify_runtime_formal_invariants`: Ejecución continua de auditoría formal matemática sobre las 6 invariantes axiomáticas del nodo.
+  - `ipvn7_dispatch_enclave_frame`: Serialización y análisis de tramas canónicas wire `IP7E` ($\le 1280$B MTU, CRC32).
 
 ---
 
@@ -302,8 +307,12 @@ Renueva o programa el temporizador con la herramienta `schedule` a 1800 segundos
    - Motor `SovereignTunnelTelemetry` y `PathMTUEngine` con tramas canónicas wire `IP7T`, cálculo de Jitter RFC 3550, EWMA RTT y activación automática de failover bicast multipath ante pérdidas >10% o jitter >50ms.
 9. **Línea O — Gobernanza P2P de Cuotas y Liquidación Micro-Económica Soberana:** *(✅ COMPLETADO v7.11.0)*
    - Motor `SovereignReciprocitySettlement` y `ReciprocityToken` con tramas canónicas wire `IP7R` ($\le 1280$B), firmas digitales Ed25519, prevención matemática de doble gasto, nonces monótonos y remediación de cuotas QoS Tit-for-Tat descentralizada.
-10. **Línea P — Próxima Evolución (Backlog v7.12.0):**
-   - Agente Orquestador de Enclaves Criptográficos TEE y Validación Formal de Propiedades de Protocolo en Tiempo de Ejecución.
+10. **Línea P — Orquestador de Enclaves TEE y Validación Formal en Tiempo de Ejecución:** *(✅ COMPLETADO v7.12.0)*
+   - Motor `SovereignEnclave` con medición `MRENCLAVE`, sellado AES-256-GCM, contador monótono de hardware y atestación remota firmada EAK (Ed25519).
+   - Motor `RuntimeFormalVerifier` con demostraciones matemáticas para las 6 invariantes axiomáticas (MTU 1280B, Anti-Replay 1024b, GMA RAM Isolation, Zero Secret Leakage, Anti-SSRF y Reciprocity Monotonicity).
+   - Canal canónico wire `IP7E` ($\le 1280$B MTU) y herramientas MCP nativas (67, 68, 69).
+11. **Línea Q — Próxima Evolución (Backlog v7.13.0):**
+   - Pruebas de Rango Zero-Knowledge (ZK-STARKs / Bulletproofs) y Firmas en Anillo Efímeras para Gobernanza Anónima en la Malla.
 
 ### 6.4. Tarea Ocasional: Auditoría Externa Cruzada con ChatGPT (Multi-LLM Peer Review)
 De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar una auditoría de revisión externa independiente mediante [ChatGPT](https://chatgpt.com/):
@@ -340,7 +349,7 @@ De manera ocasional o tras consolidar hitos mayores de arquitectura, ejecutar un
 
 ---
 
-*Fin del Protocolo de Handover. IPVN 7 v7.11.0 se encuentra auditado, blindado con el sistema permanente de ingeniería LAIA, verificado con 115 pruebas al 100%, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
+*Fin del Protocolo de Handover. IPVN 7 v7.12.0 se encuentra auditado, blindado con el sistema permanente de ingeniería LAIA, verificado con 122 pruebas al 100%, respaldado en GitHub y listo para su continua auto-evolución autónoma.*
 
 ---
 

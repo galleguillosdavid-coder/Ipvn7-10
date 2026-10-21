@@ -50,8 +50,8 @@ def check_inv2_mcp_and_control_auth() -> Tuple[bool, List[str]]:
         node = IPVN7Node(alias="VerifierNode", bind_host="127.0.0.1")
         mcp = node.mcp_server
         tools = mcp.get_supported_tools()
-        if len(tools) < 66:
-            violations.append(f"Expected at least 66 MCP tools registered, found {len(tools)}")
+        if len(tools) < 69:
+            violations.append(f"Expected at least 69 MCP tools registered, found {len(tools)}")
 
         for tool in tools:
             name = tool.get("name")
@@ -137,6 +137,19 @@ def check_inv4_wire_framing_integrity() -> Tuple[bool, List[str]]:
             violations.append("Exit relay magic framing is not b'IP7X'")
     except Exception as e:
         violations.append(f"Exit relay framing check failed: {e}")
+
+    try:
+        from ipvn7.security.tee_enclave import SovereignEnclave, EnclaveOpcode, CANONICAL_ENCLAVE_WIRE_MAGIC
+        enclave_frame = SovereignEnclave.encode_frame(EnclaveOpcode.OP_ATTESTATION_CHALLENGE, b"LAIA_IP7E_VERIFICATION")
+        if not enclave_frame.startswith(CANONICAL_ENCLAVE_WIRE_MAGIC):
+            violations.append("IP7E frame does not start with CANONICAL_ENCLAVE_WIRE_MAGIC")
+        if len(enclave_frame) > 1280:
+            violations.append(f"IP7E frame exceeds 1280 byte MTU limit: {len(enclave_frame)}B")
+        dec_op, dec_pl = SovereignEnclave.decode_frame(enclave_frame)
+        if dec_op != EnclaveOpcode.OP_ATTESTATION_CHALLENGE or dec_pl != b"LAIA_IP7E_VERIFICATION":
+            violations.append("IP7E encode/decode round-trip mismatch")
+    except Exception as e:
+        violations.append(f"IP7E enclave framing check failed: {e}")
 
     return (len(violations) == 0, violations)
 

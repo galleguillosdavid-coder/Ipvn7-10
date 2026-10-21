@@ -1,17 +1,17 @@
 {
   "system": "IPVN 7 Autonomous Network Operating System",
-  "version": "7.11.0",
+  "version": "7.12.0",
   "git": {
     "branch": "main",
     "remote_origin": "https://github.com/galleguillosdavid-coder/Ipvn7-10.git",
-    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0", "v7.4.0", "v7.5.0", "v7.6.0", "v7.7.0", "v7.8.0", "v7.9.0", "v7.10.0", "v7.11.0"],
+    "tags": ["v7.0.0", "v7.1.0", "v7.2.0", "v7.3.0", "v7.4.0", "v7.5.0", "v7.6.0", "v7.7.0", "v7.8.0", "v7.9.0", "v7.10.0", "v7.11.0", "v7.12.0"],
     "clean_working_tree": true
   },
   "runtime_environment": {
     "os": "Windows 11 AMD64 (PowerShell)",
     "python": ".\\.venv\\Scripts\\python.exe (Python 3.14.6)",
     "pytest_command": ".\\.venv\\Scripts\\pytest.exe -q",
-    "test_suite_status": "115/115 passing (100% pass rate, 0 regressions)",
+    "test_suite_status": "122/122 passing (100% pass rate, 0 regressions)",
     "ports": {
       "web_ui": 7070,
       "mcp_server": "7070/mcp",
@@ -26,20 +26,22 @@
       "FIPS 203 ML-KEM-768",
       "FIPS 204 ML-DSA-65",
       "Ed25519",
-      "ChaCha20-Poly1305"
+      "ChaCha20-Poly1305",
+      "AES-256-GCM"
     ],
     "quiet_wire_protocol": "IP7H_HRS_5_FRAME",
     "media_wire_protocol": "IP7M_1280B_CHUNKS",
     "bitnet_quantization": "BITNET_B158_IP7B",
     "reciprocity_settlement": "IP7R_1280B_PROOF_OF_TRANSIT",
+    "enclave_attestation_wire": "IP7E_1280B_CANONICAL_ENCLAVE",
     "ephemeral_rotation_hours": 24,
     "max_acceptable_test_failures": 0,
     "security_governance_policy": ".nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md"
   },
   "subsystems": {
-    "total_active_subsystems": 66,
+    "total_active_subsystems": 69,
     "network_layers": 4,
-    "mcp_tools_count": 66,
+    "mcp_tools_count": 69,
     "hrs_frame_opcodes": [
       "ANNOUNCE (0x01)",
       "QUERY (0x02)",
@@ -52,6 +54,12 @@
       "video_delta (0x02)",
       "audio_opus (0x03)"
     ],
+    "enclave_opcodes": [
+      "OP_ATTESTATION_CHALLENGE (0x01)",
+      "OP_ATTESTATION_REPORT (0x02)",
+      "OP_SEALED_PAYLOAD (0x03)",
+      "OP_ATTESTATION_VERIFIED (0x04)"
+    ],
     "adaptive_slas": {
       "iot": {"heartbeat": 3.0, "timeout": 10.0, "retries": 2},
       "laptop": {"heartbeat": 7.0, "timeout": 20.0, "retries": 3},
@@ -62,8 +70,8 @@
   "documentation_hierarchy": [
     "README.md (Master Handover & Architecture Map)",
     ".nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md (Immutable Anti-Failure & Security Policy)",
-    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 66 Subsystems)",
-    "IPVN7_RFC_SPECIFICATION.md (59 Technical RFC Sections)",
+    "AUTONOMOUS_OPERATIONAL_MANIFESTO.md (Operational Procedure & 69 Subsystems)",
+    "IPVN7_RFC_SPECIFICATION.md (61 Technical RFC Sections)",
     "genesis.md (Genesis Mandate v2.0)",
     ".nexus/decisions/ADR-001-ARCHITECTURE-CONSOLIDATION.md (Consolidated Decisions)",
     ".nexus/decisions/ADR-002-EDGE-AI-AND-MEDIA-DATAPATH.md (Edge AI & Media Datapath)",
@@ -77,10 +85,12 @@
     ".nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md (Second Audit Remediation H-01 to H-08)",
     ".nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md (True Exit Relay IP7X)",
     ".nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md (Third Audit Remediation H-01 to H-10)",
-    ".nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md (Sovereign Reciprocity Settlement IP7R)"
+    ".nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md (Sovereign Reciprocity Settlement IP7R)",
+    ".nexus/decisions/ADR-014-CRYPTOGRAPHIC-TEE-ENCLAVE-AND-RUNTIME-FORMAL-VERIFICATION.md (Cryptographic TEE Enclave & Runtime Formal Verification IP7E)"
   ],
   "handover": {
     "ready_for_clean_agent": true,
-    "audit_status": "AUDIT_3_AND_LINE_O_FULLY_REMEDIATED_VERIFIED"
+    "audit_status": "LINE_P_TEE_AND_FORMAL_VERIFICATION_FULLY_CONSOLIDATED"
   }
 }
+

@@ -1803,7 +1803,7 @@ def test_mcp_tools_catalog_57_tools():
     node.start_background_listener()
 
     tools = node.mcp_server.get_supported_tools()
-    assert len(tools) == 66, f"Expected 66 MCP tools, found {len(tools)}"
+    assert len(tools) == 69, f"Expected 69 MCP tools, found {len(tools)}"
 
     # Tool 1: ipvn7_send_chat_message
     res_chat = node.mcp_server.handle_jsonrpc({
@@ -4444,5 +4444,199 @@ def test_laia_invariants_automated_quality_gate():
 
     inv7_ok, v7 = check_inv7_bounded_concurrency()
     assert inv7_ok, f"INV-7 Violated: {v7}"
+
+
+# -------------------------------------------------------------
+# Línea P (v7.12.0) Tests: Sovereign TEE Enclave & Formal Verification
+# -------------------------------------------------------------
+
+def test_tee_enclave_memory_sealing_and_unsealing():
+    """Validates cryptographic memory sealing and tampering detection under MRENCLAVE mismatch."""
+    from ipvn7.security.tee_enclave import SovereignEnclave, EnclaveIntegrityError, EnclaveState
+
+    enclave = SovereignEnclave(node_id="did:ipvn7:test-node-alpha")
+    assert enclave.state == EnclaveState.ACTIVE
+    assert len(enclave.measurement) == 64
+
+    secret_data = b"POST_QUANTUM_LONG_TERM_ROOT_SEED_32_BYTES!"
+    record = enclave.seal_secret("root_pqc_seed", secret_data)
+    assert record.name == "root_pqc_seed"
+    assert record.counter_at_seal >= 2
+
+    # Clean unseal
+    recovered = enclave.unseal_secret("root_pqc_seed")
+    assert recovered == secret_data
+
+    # Tampering simulation
+    enclave.simulate_tampering_for_test("00" * 32)
+    with pytest.raises(EnclaveIntegrityError):
+        enclave.unseal_secret("root_pqc_seed")
+
+    # Restore clean state
+    enclave.restore_clean_state()
+    assert enclave.unseal_secret("root_pqc_seed") == secret_data
+
+
+def test_tee_enclave_attestation_report_and_verification():
+    """Validates TEE attestation generation, Ed25519 EAK signing, and remote challenge verification."""
+    from ipvn7.security.tee_enclave import SovereignEnclave
+
+    enclave = SovereignEnclave(node_id="did:ipvn7:test-node-beta")
+    nonce = "CHALLENGE_NONCE_ABCD_1234_EF56"
+
+    report = enclave.generate_attestation_report(challenge_nonce=nonce)
+    assert report.challenge_nonce == nonce
+    assert report.state == "ACTIVE"
+    assert len(report.signature_hex) == 128  # 64 bytes Ed25519 in hex
+    assert len(report.enclave_pubkey_hex) == 64
+
+    report_dict = report.to_dict()
+
+    # Valid verification
+    valid, reason = SovereignEnclave.verify_attestation_report(report_dict, expected_nonce=nonce)
+    assert valid is True
+    assert reason == "ATTESTATION_VALID"
+
+    # Nonce mismatch verification
+    invalid_nonce, reason_mismatch = SovereignEnclave.verify_attestation_report(
+        report_dict, expected_nonce="WRONG_NONCE"
+    )
+    assert invalid_nonce is False
+    assert "mismatch" in reason_mismatch
+
+    # Tampered signature verification
+    tampered_dict = dict(report_dict)
+    tampered_dict["signature_hex"] = "00" * 64
+    invalid_sig, reason_sig = SovereignEnclave.verify_attestation_report(tampered_dict, expected_nonce=nonce)
+    assert invalid_sig is False
+
+
+def test_tee_enclave_wire_framing_ip7e():
+    """Validates canonical wire framing IP7E, MTU <= 1280B and CRC32 verification."""
+    from ipvn7.security.tee_enclave import SovereignEnclave, EnclaveOpcode
+
+    payload = b'{"msg":"IP7E_WIRE_TEST","ts":1771400000}'
+    frame = SovereignEnclave.encode_frame(EnclaveOpcode.OP_ATTESTATION_REPORT, payload)
+
+    assert frame[:4] == b"IP7E"
+    assert len(frame) == 11 + len(payload)
+    assert len(frame) <= 1280
+
+    # Clean decode
+    opcode, dec_payload = SovereignEnclave.decode_frame(frame)
+    assert opcode == EnclaveOpcode.OP_ATTESTATION_REPORT
+    assert dec_payload == payload
+
+    # Corrupted CRC check
+    corrupted_frame = bytearray(frame)
+    corrupted_frame[-1] ^= 0xFF
+    with pytest.raises(ValueError, match="CRC32 checksum mismatch"):
+        SovereignEnclave.decode_frame(bytes(corrupted_frame))
+
+    # Oversized payload rejection check
+    oversized = b"Z" * 1275
+    with pytest.raises(ValueError, match="exceeds maximum allowable MTU"):
+        SovereignEnclave.encode_frame(EnclaveOpcode.OP_SEALED_PAYLOAD, oversized)
+
+
+def test_runtime_formal_verifier_mtu_and_replay_invariants():
+    """Validates runtime formal proofs for MTU Boundedness and 1024-bit Anti-Replay window."""
+    from ipvn7.node.node import IPVN7Node
+    from ipvn7.diagnostics.formal_verifier import RuntimeFormalVerifier
+
+    node = IPVN7Node(alias="formal-node-1")
+    verifier = RuntimeFormalVerifier(node)
+
+    res_mtu = verifier.verify_mtu_boundedness()
+    assert res_mtu.passed is True
+    assert "1280" in res_mtu.mathematical_proof
+
+    res_ar = verifier.verify_anti_replay_sliding_window()
+    assert res_ar.passed is True
+    assert "seq <= max_seq - 1024" in res_ar.mathematical_proof
+
+
+def test_runtime_formal_verifier_memory_and_secret_leakage_invariants():
+    """Validates runtime formal proofs for Memory Isolation and Zero Secret Exposure."""
+    from ipvn7.node.node import IPVN7Node
+    from ipvn7.diagnostics.formal_verifier import RuntimeFormalVerifier
+
+    node = IPVN7Node(alias="formal-node-2")
+    verifier = RuntimeFormalVerifier(node)
+
+    res_mem = verifier.verify_gma_memory_isolation()
+    assert res_mem.passed is True
+    assert "Quotas_i" in res_mem.mathematical_proof
+
+    res_sec = verifier.verify_zero_secret_leakage()
+    assert res_sec.passed is True
+    assert "Secrets" in res_sec.mathematical_proof
+
+
+def test_runtime_formal_verifier_full_suite_and_certificate():
+    """Validates full execution of 6 formal invariants and cryptographic proof hash chaining."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="formal-node-cert")
+    cert = node.run_formal_verification()
+
+    assert cert["all_passed"] is True
+    assert cert["total_invariants"] == 6
+    assert cert["passed_invariants"] == 6
+    assert len(cert["proof_hash"]) == 64
+    assert len(cert["invariants"]) == 6
+
+
+def test_mcp_tee_and_formal_verification_tools_67_68_69():
+    """Validates execution of MCP Tools 67, 68 and 69."""
+    from ipvn7.node.node import IPVN7Node
+
+    node = IPVN7Node(alias="mcp-formal-node")
+
+    # Tool 67: ipvn7_tee_attest_node (generate & verify)
+    ok_att, res_att = node.mcp_server.execute_tool(
+        "ipvn7_tee_attest_node",
+        {"challenge_nonce": "MCP_CHALLENGE_999"},
+    )
+    assert ok_att is True
+    assert res_att["challenge_nonce"] == "MCP_CHALLENGE_999"
+
+    # Verify via tool 67
+    ok_v, res_v = node.mcp_server.execute_tool(
+        "ipvn7_tee_attest_node",
+        {"verify_report": res_att, "challenge_nonce": "MCP_CHALLENGE_999"},
+    )
+    assert ok_v is True
+    assert res_v["valid"] is True
+
+    # Tool 68: ipvn7_verify_runtime_formal_invariants
+    ok_form, res_form = node.mcp_server.execute_tool(
+        "ipvn7_verify_runtime_formal_invariants",
+        {},
+    )
+    assert ok_form is True
+    assert res_form["all_passed"] is True
+    assert res_form["total_invariants"] == 6
+
+    # Tool 69: ipvn7_dispatch_enclave_frame (encode & decode)
+    ok_enc, res_enc = node.mcp_server.execute_tool(
+        "ipvn7_dispatch_enclave_frame",
+        {
+            "action": "encode",
+            "opcode": "OP_ATTESTATION_CHALLENGE",
+            "payload": {"nonce": "MCP_NONCE_777"},
+        },
+    )
+    assert ok_enc is True
+    assert res_enc["mtu_valid"] is True
+    frame_hex = res_enc["frame_hex"]
+
+    ok_dec, res_dec = node.mcp_server.execute_tool(
+        "ipvn7_dispatch_enclave_frame",
+        {"action": "decode", "raw_frame_hex": frame_hex},
+    )
+    assert ok_dec is True
+    assert res_dec["opcode"] == "OP_ATTESTATION_CHALLENGE"
+    assert res_dec["payload"]["nonce"] == "MCP_NONCE_777"
 
 

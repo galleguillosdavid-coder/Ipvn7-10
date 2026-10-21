@@ -148,7 +148,8 @@
           <button class="tab-btn" data-tab="tab-uin-shadow-pfo">Identidad UIN, Shadow & PFO</button>
           <button class="tab-btn" data-tab="tab-wan-desktop">Sondeo WAN & Escritorio Remoto</button>
           <button class="tab-btn" data-tab="tab-bitnet">BitNet b1.58 Ternary AI</button>
-          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (66 Herramientas IA)</button>
+          <button class="tab-btn" data-tab="tab-mcp">Servidor MCP (69 Herramientas IA)</button>
+          <button class="tab-btn" data-tab="tab-tee-formal">Enclave TEE & Validación Formal</button>
         </div>
 
         <!-- Tab 1: PQ-QUIC & Migration -->
@@ -1402,6 +1403,9 @@
                   <option value="ipvn7_dag_put">ipvn7_dag_put</option>
                   <option value="ipvn7_firewall_rule">ipvn7_firewall_rule</option>
                   <option value="ipvn7_wot_vouch">ipvn7_wot_vouch</option>
+                  <option value="ipvn7_tee_attest_node">ipvn7_tee_attest_node</option>
+                  <option value="ipvn7_verify_runtime_formal_invariants">ipvn7_verify_runtime_formal_invariants</option>
+                  <option value="ipvn7_dispatch_enclave_frame">ipvn7_dispatch_enclave_frame</option>
                 </select>
                 <button class="btn btn-primary btn-small" id="btnExecuteMcpTool">Invocar Herramienta MCP</button>
               </div>
@@ -1412,6 +1416,62 @@
               <div id="mcpResponseBox" class="json-viewer mono-text mt-2" style="max-height:180px; overflow-y:auto; font-size:0.8rem;">
                 Seleccione una herramienta y presione 'Invocar Herramienta MCP' para ver la respuesta JSON-RPC 2.0.
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 21: TEE Enclave & Formal Verification -->
+        <div class="tab-pane" id="tab-tee-formal">
+          <div class="interactive-card">
+            <div class="bench-header">
+              <h3>Enclave Criptográfico TEE Soberano (Línea P - IP7E)</h3>
+              <button class="btn btn-primary btn-small" id="btnRefreshTeeStatus">Actualizar Estado TEE</button>
+            </div>
+            <p class="desc">Aislamiento de claves maestras en memoria protegida, sellado criptográfico AES-256-GCM / ChaCha20 y reporte de atestación remota firmado con clave EAK (Ed25519).</p>
+
+            <div class="simulation-metrics-bar mt-2">
+              <div class="sim-metric"><span>MRENCLAVE:</span> <strong id="teeMrenclave" class="mono-text" style="font-size:0.75rem;">--</strong></div>
+              <div class="sim-metric"><span>Contador Monótono:</span> <strong id="teeMonotonicCounter">--</strong></div>
+              <div class="sim-metric"><span>Secretos Sellados:</span> <strong id="teeSealedCount">--</strong></div>
+              <div class="sim-metric"><span>Estado del Enclave:</span> <strong id="teeStateBadge" class="badge-status text-green">ACTIVE</strong></div>
+            </div>
+
+            <div class="mt-3">
+              <h4>Generar Reporte de Atestación de Hardware TEE</h4>
+              <div class="action-row" style="display:flex; gap:8px; align-items:center;">
+                <input type="text" id="txtTeeNonce" class="input-field" placeholder="Challenge Nonce (opcional, ej: NONCE-777)" style="flex:1;">
+                <button class="btn btn-accent btn-small" id="btnGenerateTeeAttest">Generar y Firmar Atestación</button>
+              </div>
+              <pre class="json-viewer mono-text mt-2" id="teeAttestationOutput" style="max-height:140px; overflow-y:auto;">Presione 'Generar y Firmar Atestación' para crear un reporte TEE...</pre>
+            </div>
+          </div>
+
+          <div class="interactive-card mt-4">
+            <div class="bench-header">
+              <h3>Motor de Validación Formal en Tiempo de Ejecución</h3>
+              <button class="btn btn-green btn-small" id="btnRunFormalVerification">Ejecutar Auditoría Formal (6 Invariantes)</button>
+            </div>
+            <p class="desc">Verificación matemática en tiempo de ejecución de las 6 invariantes axiomáticas (MTU 1280B, Ventana Anti-Replay 1024b, Aislamiento GMA RAM, Cero Exposición de Secretos, Egress Anti-SSRF y Monotonicidad Tit-for-Tat).</p>
+
+            <div class="mt-2" id="formalProofSummary" style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.25); padding:8px 12px; border-radius:6px;">
+              <span>Hash de Demostración Formal: <strong id="formalProofHash" class="mono-text text-cyan" style="font-size:0.75rem;">--</strong></span>
+              <span id="formalStatusBadge" class="badge-status text-green">6/6 VERIFICADAS</span>
+            </div>
+
+            <div class="table-wrapper mt-2" style="max-height:220px; overflow-y:auto;">
+              <table class="packet-table" style="font-size:0.8rem;">
+                <thead>
+                  <tr>
+                    <th>Invariante</th>
+                    <th>Estado</th>
+                    <th>Demostración Matemática</th>
+                    <th>Tiempo (µs)</th>
+                  </tr>
+                </thead>
+                <tbody id="formalInvariantsTableBody">
+                  <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Presione 'Ejecutar Auditoría Formal' para validar las propiedades matemáticas.</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

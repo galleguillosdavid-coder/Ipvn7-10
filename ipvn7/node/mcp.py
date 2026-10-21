@@ -1259,6 +1259,59 @@ class IPVN7MCPServer:
                     "properties": {},
                 },
             },
+            {
+                "name": "ipvn7_tee_attest_node",
+                "description": "Genera o verifica un reporte criptográfico de atestación de hardware TEE firmado con EAK (Ed25519), conteniendo medición MRENCLAVE, contador monótono y challenge nonce.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "challenge_nonce": {
+                            "type": "string",
+                            "description": "Nonce o desafío aleatorio del retador para garantizar frescura anti-replay (opcional)",
+                        },
+                        "verify_report": {
+                            "type": "object",
+                            "description": "Diccionario opcional de un reporte TEE recibido para su validación matemática",
+                        },
+                    },
+                },
+            },
+            {
+                "name": "ipvn7_verify_runtime_formal_invariants",
+                "description": "Ejecuta una ronda exhaustiva de verificación formal en tiempo de ejecución de las 6 invariantes axiomáticas (MTU 1280B, Anti-Replay 1024b, GMA RAM Isolation, Zero Secret Leakage, Anti-SSRF, Reciprocity Monotonicity).",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                },
+            },
+            {
+                "name": "ipvn7_dispatch_enclave_frame",
+                "description": "Serializa o decodifica una trama canónica de enclave IP7E (MTU <= 1280B, CRC32, cabecera de 11B) para transporte seguro de atestaciones.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["encode", "decode"],
+                            "description": "Acción a realizar: 'encode' o 'decode'",
+                        },
+                        "opcode": {
+                            "type": "string",
+                            "enum": ["OP_ATTESTATION_CHALLENGE", "OP_ATTESTATION_REPORT", "OP_SEALED_PAYLOAD", "OP_ATTESTATION_VERIFIED"],
+                            "description": "Opcode de la trama de enclave",
+                        },
+                        "payload": {
+                            "type": "object",
+                            "description": "Datos a empaquetar si la acción es encode",
+                        },
+                        "raw_frame_hex": {
+                            "type": "string",
+                            "description": "Trama binaria en hexadecimal si la acción es decode",
+                        },
+                    },
+                    "required": ["action"],
+                },
+            },
         ]
 
     def execute_tool(self, name: str, arguments: Dict[str, Any]) -> Tuple[bool, Any]:
@@ -1948,6 +2001,41 @@ class IPVN7MCPServer:
             elif name == "ipvn7_get_settlement_ledger":
                 res = self.node.get_settlement_ledger_summary()
                 return True, res
+
+            elif name == "ipvn7_tee_attest_node":
+                verify_rep = arguments.get("verify_report")
+                if verify_rep:
+                    exp_nonce = arguments.get("challenge_nonce")
+                    valid, reason = self.node.verify_enclave_attestation(verify_rep, expected_nonce=exp_nonce)
+                    return True, {"valid": valid, "reason": reason, "report": verify_rep}
+                else:
+                    nonce = arguments.get("challenge_nonce", "")
+                    rep = self.node.attest_enclave(challenge_nonce=nonce)
+                    return True, rep
+
+            elif name == "ipvn7_verify_runtime_formal_invariants":
+                cert = self.node.run_formal_verification()
+                return True, cert
+
+            elif name == "ipvn7_dispatch_enclave_frame":
+                act = arguments.get("action", "encode")
+                if act == "encode":
+                    opcode_name = arguments.get("opcode", "OP_ATTESTATION_CHALLENGE")
+                    payload_dict = arguments.get("payload", {})
+                    raw_bytes = self.node.dispatch_enclave_frame(opcode_name, payload_dict)
+                    return True, {
+                        "frame_hex": raw_bytes.hex(),
+                        "frame_len": len(raw_bytes),
+                        "opcode": opcode_name,
+                        "mtu_valid": len(raw_bytes) <= 1280,
+                    }
+                else:
+                    raw_hex = arguments.get("raw_frame_hex", "")
+                    if not raw_hex:
+                        return False, "Falta 'raw_frame_hex' para decodificar"
+                    raw_bytes = bytes.fromhex(raw_hex)
+                    res = self.node.parse_enclave_frame(raw_bytes)
+                    return True, res
 
             else:
                 return False, f"Herramienta desconocida: {name}"

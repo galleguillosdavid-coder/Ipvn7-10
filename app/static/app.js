@@ -2688,6 +2688,91 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // =============================================================
+  // TEE ENCLAVE & RUNTIME FORMAL VERIFICATION CONTROLLER (Línea P)
+  // =============================================================
+  async function fetchTeeStatus() {
+    try {
+      const res = await fetch("/api/tee/status");
+      const data = await res.json();
+      const elMrenclave = document.getElementById("teeMrenclave");
+      const elCounter = document.getElementById("teeMonotonicCounter");
+      const elSealed = document.getElementById("teeSealedCount");
+      const elState = document.getElementById("teeStateBadge");
+
+      if (elMrenclave) elMrenclave.textContent = data.mrenclave ? data.mrenclave.slice(0, 24) + "..." : "--";
+      if (elCounter) elCounter.textContent = data.monotonic_counter !== undefined ? data.monotonic_counter : "--";
+      if (elSealed) elSealed.textContent = data.sealed_secrets_count !== undefined ? data.sealed_secrets_count : "--";
+      if (elState) {
+        elState.textContent = data.state || "ACTIVE";
+        elState.className = data.state === "ACTIVE" ? "badge-status text-green" : "badge-status text-red";
+      }
+    } catch (e) {
+      console.warn("Error fetching TEE status:", e);
+    }
+  }
+
+  const btnRefreshTee = document.getElementById("btnRefreshTeeStatus");
+  if (btnRefreshTee) {
+    btnRefreshTee.addEventListener("click", fetchTeeStatus);
+  }
+
+  const btnGenAttest = document.getElementById("btnGenerateTeeAttest");
+  if (btnGenAttest) {
+    btnGenAttest.addEventListener("click", async () => {
+      const nonce = document.getElementById("txtTeeNonce")?.value.trim() || "";
+      const out = document.getElementById("teeAttestationOutput");
+      if (out) out.textContent = "Generando reporte de atestación firmado por el enclave...";
+      try {
+        const res = await fetch("/api/tee/attest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ challenge_nonce: nonce })
+        });
+        const data = await res.json();
+        if (out) out.textContent = JSON.stringify(data, null, 2);
+        fetchTeeStatus();
+      } catch (err) {
+        if (out) out.textContent = "Error: " + err;
+      }
+    });
+  }
+
+  const btnRunFormal = document.getElementById("btnRunFormalVerification");
+  if (btnRunFormal) {
+    btnRunFormal.addEventListener("click", async () => {
+      const tbody = document.getElementById("formalInvariantsTableBody");
+      const proofEl = document.getElementById("formalProofHash");
+      const badge = document.getElementById("formalStatusBadge");
+
+      if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#00f2fe;">Ejecutando demostraciones formales en tiempo real...</td></tr>`;
+
+      try {
+        const res = await fetch("/api/formal/verify");
+        const data = await res.json();
+
+        if (proofEl) proofEl.textContent = data.proof_hash ? data.proof_hash.slice(0, 24) + "..." : "--";
+        if (badge) {
+          badge.textContent = `${data.passed_invariants} / ${data.total_invariants} VERIFICADAS`;
+          badge.className = data.all_passed ? "badge-status text-green" : "badge-status text-red";
+        }
+
+        if (tbody && data.invariants) {
+          tbody.innerHTML = data.invariants.map(inv => `
+            <tr>
+              <td><strong>${inv.name}</strong><br><span style="font-size:0.7rem; color:var(--text-muted);">${inv.invariant_id}</span></td>
+              <td><span class="badge ${inv.passed ? 'badge-green' : 'badge-red'}">${inv.passed ? 'PASSED' : 'FAILED'}</span></td>
+              <td class="mono-text" style="font-size:0.75rem; color:#a5f3fc;">${inv.mathematical_proof}</td>
+              <td class="mono-text">${inv.execution_time_us} µs</td>
+            </tr>
+          `).join("");
+        }
+      } catch (err) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="color:#ff4060;">Error ejecutando verificación formal: ${err}</td></tr>`;
+      }
+    });
+  }
+
   // Initializations
   fetchDagBlocks();
   fetchDiagnostics();
@@ -2707,5 +2792,6 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchRemoteDesktopStatus();
   initPlanetaryGlobe();
   loadBitNetDemo(16, 16, 42);
+  fetchTeeStatus();
 });
 

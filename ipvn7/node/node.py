@@ -84,6 +84,8 @@ from ..network.geopolicy import GeoPolicyRouter, RoutingPolicyMode, GeoRegion, G
 from ..network.dht_sync import PrivateDHTInterregionSync, SovereignBloomFilter, CANONICAL_SYNC_MTU
 from ..network.tunnel_telemetry import SovereignTunnelTelemetry, TunnelMetrics, TunnelHealthState, DEFAULT_PMTU
 from ..network.settlement import SovereignReciprocitySettlement, ReciprocityToken
+from ..security.tee_enclave import SovereignEnclave, EnclaveOpcode, TEEAttestationReport
+from ..diagnostics.formal_verifier import RuntimeFormalVerifier
 from .mcp import IPVN7MCPServer
 
 logger = logging.getLogger("IPVN7Node")
@@ -291,6 +293,10 @@ class IPVN7Node:
             accounting=self.accounting,
             private_key=self.identity.keypair.ed25519_priv,
         )
+
+        # Sovereign Cryptographic TEE Enclave & Runtime Formal Verification (Línea P / IP7E)
+        self.enclave = SovereignEnclave(node_id=self.did)
+        self.formal_verifier = RuntimeFormalVerifier(node=self)
 
     # -------------------------------------------------------------
     # Lifecycle Management
@@ -1438,6 +1444,59 @@ class IPVN7Node:
         Returns full telemetry of the micro-economic settlement engine.
         """
         return self.settlement.get_summary()
+
+    # -------------------------------------------------------------
+    # Sovereign Cryptographic TEE Enclave & Formal Verification (Línea P)
+    # -------------------------------------------------------------
+
+    def attest_enclave(self, challenge_nonce: str = "") -> Dict[str, Any]:
+        """
+        Generates a signed TEE hardware attestation report bound to the challenge nonce.
+        """
+        report = self.enclave.generate_attestation_report(challenge_nonce)
+        return report.to_dict()
+
+    def verify_enclave_attestation(
+        self,
+        report_dict: Dict[str, Any],
+        expected_nonce: Optional[str] = None,
+    ) -> Tuple[bool, str]:
+        """
+        Verifies a remote or local TEE attestation report.
+        """
+        return SovereignEnclave.verify_attestation_report(report_dict, expected_nonce=expected_nonce)
+
+    def run_formal_verification(self) -> Dict[str, Any]:
+        """
+        Executes real-time formal verification of the 6 core mathematical protocol invariants.
+        """
+        return self.formal_verifier.run_formal_verification()
+
+    def dispatch_enclave_frame(self, opcode_name: str, payload_data: Dict[str, Any]) -> bytes:
+        """
+        Serializes and encodes a canonical wire IP7E frame with CRC32 (MTU <= 1280B).
+        """
+        opcode = getattr(EnclaveOpcode, opcode_name, EnclaveOpcode.OP_ATTESTATION_CHALLENGE)
+        import json
+        payload_bytes = json.dumps(payload_data, sort_keys=True).encode("utf-8")
+        return SovereignEnclave.encode_frame(opcode, payload_bytes)
+
+    def parse_enclave_frame(self, raw_bytes: bytes) -> Dict[str, Any]:
+        """
+        Parses and verifies a canonical wire IP7E frame.
+        """
+        import json
+        opcode, payload_bytes = SovereignEnclave.decode_frame(raw_bytes)
+        try:
+            parsed_json = json.loads(payload_bytes.decode("utf-8"))
+        except Exception:
+            parsed_json = {"raw_payload_hex": payload_bytes.hex()}
+        return {
+            "opcode": opcode.name,
+            "opcode_value": int(opcode),
+            "payload": parsed_json,
+            "payload_len": len(payload_bytes),
+        }
 
 
 
