@@ -37,3 +37,10 @@ Esta Constitución define los principios fundamentales que ninguna tarea, desarr
 
 ## 9. Verificación de Efecto Real vs. Notificación
 - Una respuesta HTTP exitosa o un mensaje de control despachado a través de una red no demuestra que los datos hayan transitado por el túnel previsto. El plano de datos debe verificarse mediante la medición real de bytes cursados por el transporte cifrado.
+
+## 10. Supremacía Operativa del Manifiesto Autónomo
+- [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/AUTONOMOUS_OPERATIONAL_MANIFESTO.md) es la directiva suprema de Prioridad 0 para todos los agentes e ingenieros en el ecosistema.
+- Es auto-invocable de forma proactiva al inicio de cada interacción o tarea.
+- Es inviolable e inmodificable en sus principios rectores e invariantes de seguridad y calidad (Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas, MTU Wire 1280B, ZTNA y PQC Híbrido).
+- Es permanentemente ampliable y mejorable mediante la incorporación continua de nuevos subsistemas, refinamientos arquitectónicos y lecciones operacionales. Toda acción técnica debe ejecutarse en estricta conformidad con sus mandatos.
+

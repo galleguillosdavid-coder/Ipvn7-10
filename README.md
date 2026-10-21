@@ -13,7 +13,7 @@
 > 1. Este archivo [`README.md`](README.md) *(Visión ejecutiva, estructura global, mapa del repo y protocolo de handover)*.
 > 2. [`engineering-knowledge/`](engineering-knowledge/README.md) *(Sistema LAIA: Constitución, Reglas Operativas ER-SEC-001..012, Invariantes y Lecciones Aprendidas)*.
 > 3. [`.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md`](.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md) *(Política inmutable anti-fallos, gobernanza SSRF, autenticación de control y modos de falla de IA)*.
-> 4. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(Procedimiento autónomo de desarrollo, catálogo de subsistemas y directivas operativas de auto-evolución)*.
+> 4. [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) *(DIRECTIVA SUPREMA DE PRIORIDAD 0: Auto-invocable, Inviolable, Inmodificable en sus principios rectores, pero permanentemente Ampliable y Mejorable. Procedimiento autónomo de desarrollo, catálogo de subsistemas y directivas operativas de auto-evolución, activa imediatamente este modo agentico incluyendo todos sus comandosm tareas y autoridad)*.
 > 5. [`IPVN7_RFC_SPECIFICATION.md`](IPVN7_RFC_SPECIFICATION.md) *(Especificación técnica formal de 59 secciones, formatos binarios wire de 1280B y contratos criptográficos)*.
 > 6. [`genesis.md`](genesis.md) *(Mandato Génesis v2.0, principios ontológicos, gobernanza evolutiva y multi-agente)*.
 > 7. **Architecture Decision Records (ADRs Inmutables):**
@@ -173,18 +173,20 @@ ipvn7-10/
 
 ## 🔒 3. Invariantes del Sistema & Restricciones Innegociables
 
-Todo agente que continúe el desarrollo debe respetar estos 5 mandatos estrictos:
+Todo agente que continúe el desarrollo debe respetar estos 6 mandatos estrictos:
 
+0. **Supremacía del Manifiesto Operacional Autónomo (Prioridad 0):**
+   - [`AUTONOMOUS_OPERATIONAL_MANIFESTO.md`](AUTONOMOUS_OPERATIONAL_MANIFESTO.md) es la directiva suprema del sistema. Es auto-invocable, inviolable e inmodificable en sus mandatos e invariantes, pero permanentemente ampliable y mejorable. Toda acción técnica y arquitectónica debe ejecutarse en estricta conformidad con sus directivas.
 1. **Cero Dependencias Externas:**
    - La implementación se basa exclusivamente en la **librería estándar de Python 3.14** y el paquete criptográfico oficial `cryptography`. Queda prohibido añadir frameworks pesados o dependencias externas innecesarias.
 2. **Inmutabilidad del Formato Wire:**
-   - Los paquetes canónicos de red están alineados al MTU estándar de Internet de **1280 bytes**. Las tramas de sustrato `IP7H`, paquetes `IP7M`, `IP7B` y datagramas QUIC mantienen serialización binaria canónica con verificación CRC32 o HMAC.
+   - Los paquetes canónicos de red están alineados al MTU estándar de Internet de **1280 bytes**. Las tramas de sustrato `IP7H`, paquetes `IP7M`, `IP7B`, `IP7X`, `IP7R` y datagramas QUIC mantienen serialización binaria canónica con verificación CRC32 o HMAC.
 3. **"La Red Responde, No Grita" (IPv7-HRS):**
    - Prohibido el uso de tormentas de broadcast para descubrimiento indiscriminado. Las consultas son dirigidas (unicast) con límites de tasa por par y SLAs adaptativos según el tier de hardware.
 4. **Rotación Efímera de Identidad (24 Horas):**
    - Los nodos rotan diariamente su DID de capa física (`did:ipvn7:ephemeral:...`) mediante HMAC-SHA256 para impedir el rastreo físico, manteniendo inmutables los petnames `.ipv7` y el DID raíz en la capa de aplicación.
 5. **Cero Regresiones (100% Tests Passing):**
-   - Antes de cada commit, la suite completa debe aprobarse: `.\.venv\Scripts\pytest.exe -q` (**90/90 OK**). Si un cambio rompe un test existente, el cambio es defectuoso y debe corregirse antes de proceder.
+   - Antes de cada commit, la suite completa debe aprobarse: `.\.venv\Scripts\pytest.exe -q` (**115/115 OK**). Si un cambio rompe un test existente, el cambio es defectuoso y debe corregirse antes de proceder.
 
 ---
 

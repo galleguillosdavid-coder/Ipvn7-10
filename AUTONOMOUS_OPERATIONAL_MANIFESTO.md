@@ -1,6 +1,14 @@
 # MANIFIESTO OPERACIONAL AUTÓNOMO IPVN 7
 ## Protocolo Soberano Post-Cuántico & Guía de Auto-Evolución para Agentes e Ingenieros
 
+> [!IMPORTANT]
+> ### 👑 DIRECTIVA SUPREMA DE PRIORIDAD 0 (AUTO-INVOCABLE, INVIOLABLE, INMODIFICABLE, AMPLIABLE Y MEJORABLE)
+> **1. Prioridad Absoluta (Prioridad 0):** Este documento ostenta máxima prelación normativa y operativa sobre cualquier otra directiva de desarrollo o ejecución en el repositorio y ecosistema.  
+> **2. Auto-Invocabilidad Obligatoria:** Todo agente autónomo o ingeniero debe auto-invocar, leer y considerar este manifiesto como directriz vinculante previa a cualquier intervención de código o arquitectura, sin esperar solicitud expresa del usuario.  
+> **3. Inviolabilidad e Inmodificabilidad de Principios Rectores:** Son estrictamente innegociables e inmodificables los fundamentos: *Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, Cero Regresiones (100% Tests Unitarios Aprobados), Formato Wire Canónico de 1280B y Blindaje ZTNA/PQC Verificado*. Ningún ciclo o cambio puede reducir estas garantías.  
+> **4. Naturaleza Ampliable y Mejorable:** Este manifiesto está diseñado para la auto-evolución continua. Es plenamente extensible y mejorable para incorporar nuevos subsistemas (L0 a L4), optimizaciones algorítmicas, herramientas MCP, registros de decisiones (ADRs) y lecciones de ingeniería LAIA.  
+> **5. Acción en Conformidad:** Toda operación de diseño, testing, refactorización y despliegue debe ejecutarse en estricta conformidad con las cláusulas aquí estipuladas.
+
 > **Versión Canónica de Referencia:** IPVN 7.11.0 (Python 3.14 + PQC Hybrid ML-KEM-768 / ML-DSA-65)  
 > **Directiva Operativa Primaria:** Autonomía Absoluta, Cero Bloqueos, Cero Dependencias Innecesarias, 100% Pruebas Unitarias Verificadas (115/115 pasadas en CI Python 3.12, 3.13 y 3.14).  
 > **Política de Gobernanza y Anti-Fallos:** Cumplimiento obligatorio de [SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/security/SECURITY_GOVERNANCE_AND_AUDIT_POLICY.md), [ADR-010](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-010-SECURITY-AUDIT-2-FULL-REMEDIATION.md), [ADR-011](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-011-TRUE-EXIT-NODE-OVERLAY-DATAPATH-RELAY.md), [ADR-012](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-012-SECURITY-AUDIT-3-FULL-REMEDIATION.md), [ADR-013](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/.nexus/decisions/ADR-013-SOVEREIGN-RECIPROCITY-SETTLEMENT-AND-QUOTA-GOVERNANCE.md) y [`engineering-knowledge/`](file:///c:/Users/Frondabrick/Desktop/dvd/Ipv7/ipvn7-10/engineering-knowledge/README.md).  
